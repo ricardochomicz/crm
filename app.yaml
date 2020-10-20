@@ -1,0 +1,22 @@
+runtime: php
+env: flex
+runtime_config:
+  document_root: public
+
+env_variables:
+  APP_NAME: CRMicz
+  APP_ENV: prod
+  APP_KEY: base64:wmP7xJvlSGMHdRaL4ZZvYnE2NH5NPWSCqFWEihMhyzA=
+  APP_DEBUG: true
+  LOG_CHANNEL: errorlog
+  JWT_SECRET: 5Bxmom4NBSEvrP6RmwpwqiOxlAXjN5K6jHuRFGck7Q0CcCSVLirZMjRJ7j4x1iWT
+  DB_HOST: 127.0.0.1
+  DB_DATABASE: crmicz
+  DB_USERNAME: root
+  DB_PASSWORD: root
+  DB_SOCKET: "/cloudsql/crmicz:us-east1:crmicz"
+
+automatic_scaling:
+   min_num_instances: 1
+   max_num_instances: 7
+
