@@ -44,4 +44,12 @@ class ProductController extends Controller
         $product->delete();
         return response()->json([], 204);
     }
+
+    public function getProduct($value)
+    {
+        $product = Product::where('name', 'LIKE', "%$value%")
+            ->get();
+        return response()->json($product);
+
+    }
 }

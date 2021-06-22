@@ -21,10 +21,10 @@ Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
 
-Route::get('/crm', function () {
+Route::get('/app', function () {
     return view('angular');
 });
 
-Route::get('/crm/{angular}', function () {
+Route::get('/app/{angular}', function () {
     return view('angular');
 })->where('angular', '.*');

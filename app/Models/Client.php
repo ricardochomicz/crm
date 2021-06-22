@@ -19,8 +19,20 @@ class Client extends Model
         return $this->hasMany(Opportunity::class, 'client');
     }
 
-    public function contacts()
+    public function setContactNameAttribute($value)
     {
-        return $this->hasMany(Contact::class, 'client');
+        return $this->attributes['contact_name'] = mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
     }
+
+    public function setContactEmailAttribute($value)
+    {
+        return $this->attributes['contact_email'] = mb_strtolower($value);
+    }
+    
+    public function setContactAdmAttribute($value)
+    {
+         return $this->attributes['contact_adm'] = mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
+    }
+
+
 }

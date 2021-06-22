@@ -33,6 +33,7 @@ class OpportunityController extends Controller
     public function update(Request $request, Opportunity $opportunity)
     {
         $opportunity->fill($request->all());
+        $opportunity->touch();
         $opportunity->save();
         return new OpportunityResource($opportunity);
     }

@@ -33,6 +33,11 @@ class ClientResource extends JsonResource
             'classification' => $this->classification,
             'number_client' => $this->number_client,
             'password_client' => $this->password_client,
+            'contact_name' => $this->contact_name,
+            'contact_cellphone' => $this->contact_cellphone,
+            'contact_email' => $this->contact_email,
+            'contact_adm' => $this->contact_adm,
+            'contact_doc' => $this->contact_doc,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];

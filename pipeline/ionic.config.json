@@ -1,0 +1,7 @@
+{
+  "name": "pipeline",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ClientContactOpportunity;
 use App\Http\Resources\ClientResource;
 use App\Models\Client;
 use App\Models\Opportunity;
@@ -13,7 +14,7 @@ class ClientController extends Controller
 
     public function index()
     {
-        $client = Client::with('opportunities', 'contacts')->get();
+        $client = Client::with('opportunities')->get();
         return response()->json($client);
     }
 
