@@ -18,7 +18,7 @@ return new class extends Migration
                 ->constrained('tenants')
                 ->restrictOnDelete();
 
-            $table->foreignUuid('user_id')
+            $table->foreignId('user_id')
                 ->constrained('users')
                 ->restrictOnDelete();
 
