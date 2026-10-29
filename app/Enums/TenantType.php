@@ -4,6 +4,6 @@ namespace App\Enums;
 
 enum TenantType: string
 {
-    case Single = 'PF';
+    case Individual = 'PF';
     case Company = 'PJ';
 }
