@@ -12,17 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tenants', function (Blueprint $table) {
-            $table->uuid()->primary();
-            $table->string('name');
+            $table->uuid('id')->primary();
+            $table->string('name', 180);
             $table->enum('type', ['PF', 'PJ']);
-            $table->string('document');
-            $table->string('trade_name')->nullable(); // Nome fantasia
+            $table->string('document', 14);
+            $table->string('trade_name', 180)->nullable(); // Nome fantasia
             $table->string('email', 254);
-            $table->string('phone');
-                $table->enum('status', ['ACTIVE', 'SUSPENDED', 'CANCELLED'])
-        ->default('ACTIVE');
+            $table->string('phone', 20)->nullable();
+            $table->enum('status', ['ACTIVE', 'SUSPENDED', 'CANCELLED'])
+                ->default('ACTIVE');
 
-    $table->string('timezone', 64)->default('America/Sao_Paulo');
+            $table->string('timezone', 64)->default('America/Sao_Paulo');
             $table->timestamps();
         });
     }
