@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('monthly_price', 12, 2);
             $table->char('currency', 3)->default('BRL');
             $table->unsignedInteger('user_limit');
-            $table->unsignedInteger('storage_limit_mb');
+            $table->unsignedInteger('storage_limit_mb')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
