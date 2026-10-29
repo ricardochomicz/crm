@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('trade_name', 180)->nullable(); // Nome fantasia
             $table->string('email', 254);
             $table->string('phone', 20)->nullable();
+            $table->string('logo')->nullable();
             $table->enum('status', ['ACTIVE', 'SUSPENDED', 'CANCELLED'])
                 ->default('ACTIVE');
 

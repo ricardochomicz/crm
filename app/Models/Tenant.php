@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name', 'type', 'document', 'trade_name', 'email', 'phone', 'status', 'timezone'])]
+#[Fillable(['name', 'type', 'document', 'trade_name', 'email', 'phone', 'logo', 'status', 'timezone'])]
 class Tenant extends Model
 {
     use HasFactory, HasUuids;
