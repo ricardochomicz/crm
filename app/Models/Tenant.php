@@ -7,6 +7,7 @@ use App\Enums\TenantType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable(['name', 'type', 'document', 'trade_name', 'email', 'phone', 'status', 'timezone'])]
 class Tenant extends Model
@@ -23,5 +24,14 @@ class Tenant extends Model
             'status' => TenantStatus::class,
 
         ];
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'tenant_users')
+            ->using(TenantUser::class)
+            ->as('membership')
+            ->withPivot(['id', 'role', 'status', 'joined_at'])
+            ->withTimestamps();
     }
 }
