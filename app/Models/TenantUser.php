@@ -22,6 +22,9 @@ class TenantUser extends Pivot
 
     protected $table = 'tenant_users';
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
