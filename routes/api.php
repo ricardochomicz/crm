@@ -72,18 +72,21 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/', ShowActiveTenantController::class)
                     ->name('tenants.show');
 
-                Route::patch('/', UpdateTenantController::class)
-                    ->name('tenants.update');
-
                 Route::get('/members', ListTenantMembersController::class)
                     ->name('tenant-members.index');
 
-                Route::post('/members', StoreTenantMemberController::class)
-                    ->middleware('throttle:10,1')
-                    ->name('tenant-members.store');
+                Route::middleware('subscription.writable')
+                    ->group(function (): void {
+                        Route::patch('/', UpdateTenantController::class)
+                            ->name('tenants.update');
 
-                Route::post('/teams', StoreTeamController::class)
-                    ->name('teams.store');
+                        Route::post('/members', StoreTenantMemberController::class)
+                            ->middleware('throttle:10,1')
+                            ->name('tenant-members.store');
+
+                        Route::post('/teams', StoreTeamController::class)
+                            ->name('teams.store');
+                    });
             });
     });
 });
