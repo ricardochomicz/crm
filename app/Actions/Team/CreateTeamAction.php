@@ -40,7 +40,7 @@ class CreateTeamAction
 
             return $tenant->teams()->create([
                 'name' => $data['name'],
-                'supervisor_memnership_id' => $supervisor->getKey()
+                'supervisor_membership_id' => $supervisor->getKey()
             ]);
         }, attempts: 5);
     }
