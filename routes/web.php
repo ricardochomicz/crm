@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
+use App\Http\Controllers\Tenant\StoreTenantController;
 use App\Http\Controllers\Tenant\StoreTenantMemberController;
 use App\Http\Controllers\Tenant\UpdateTenantController;
 use Illuminate\Support\Facades\Route;
@@ -48,3 +49,7 @@ Route::post('/reset-password', [PasswordController::class, 'update'])
 Route::post('/api/v1/auth/password/email', [PasswordController::class, 'sendLink'])
     ->middleware('throttle:5,1')
     ->name('api.v1.auth.password.email');
+
+Route::post('/api/v1/tenants', StoreTenantController::class)
+    ->middleware(['auth:web', 'throttle:5,1'])
+    ->name('api.v1.tenants.store');
