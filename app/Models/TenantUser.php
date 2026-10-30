@@ -8,6 +8,7 @@ use App\Enums\TenantUserStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 #[Fillable([
@@ -51,5 +52,10 @@ class TenantUser extends Pivot
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function supervisedTeams(): HasMany
+    {
+        return $this->hasMany(Team::class, 'supervisor_membership_id');
     }
 }
