@@ -10,6 +10,7 @@ use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\ListTenantsController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
+use App\Http\Controllers\Tenant\ShowTenantSubscriptionController;
 use App\Http\Controllers\Tenant\StoreTenantController;
 use App\Http\Controllers\Tenant\StoreTenantMemberController;
 use App\Http\Controllers\Tenant\UpdateTenantController;
@@ -74,6 +75,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                 Route::get('/members', ListTenantMembersController::class)
                     ->name('tenant-members.index');
+
+                Route::get('/subscription', ShowTenantSubscriptionController::class)
+                    ->name('tenants.subscription.show');
 
                 Route::middleware('subscription.writable')
                     ->group(function (): void {
