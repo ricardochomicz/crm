@@ -1,0 +1,103 @@
+name: telecomhub-dev
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "2"
+
+services:
+  app:
+    build:
+      context: .
+    image: telecomhub-php:8.5-dev
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    init: true
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "127.0.0.1:${DOCKER_APP_PORT:-8085}:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: "http://localhost:${DOCKER_APP_PORT:-8085}"
+      # Ignore host-generated config caches and database URLs in development.
+      APP_CONFIG_CACHE: /tmp/telecomhub-config.php
+      DB_URL: ""
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: "${DOCKER_DB_DATABASE:-telecomhub}"
+      DB_USERNAME: "${DOCKER_DB_USERNAME:-telecomhub}"
+      DB_PASSWORD: "${DOCKER_DB_PASSWORD:-telecomhub_local}"
+      SESSION_DRIVER: file
+      SESSION_DOMAIN: ""
+      SESSION_SECURE_COOKIE: "false"
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+      PHP_CLI_SERVER_WORKERS: "1"
+      SANCTUM_STATEFUL_DOMAINS: "localhost:${DOCKER_APP_PORT:-8085},127.0.0.1:${DOCKER_APP_PORT:-8085},localhost:5173,127.0.0.1:5173"
+      MAIL_MAILER: "${DOCKER_MAIL_MAILER:-log}"
+      MAIL_SCHEME: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') === false ? 1 : 0);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    mem_limit: 384m
+    cpus: 1.0
+    pids_limit: 64
+    logging: *logging
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: "${DOCKER_DB_DATABASE:-telecomhub}"
+      MYSQL_USER: "${DOCKER_DB_USERNAME:-telecomhub}"
+      MYSQL_PASSWORD: "${DOCKER_DB_PASSWORD:-telecomhub_local}"
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    command:
+      - --innodb-buffer-pool-size=128M
+      - --innodb-redo-log-capacity=64M
+      - --max-connections=30
+      - --table-open-cache=400
+      - --table-definition-cache=400
+      - --performance-schema=OFF
+      - --mysqlx=OFF
+      - --skip-log-bin
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysql --protocol=TCP -h 127.0.0.1 -u\"$$MYSQL_USER\" \"$$MYSQL_DATABASE\" -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 128
+    logging: *logging
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    profiles: [mail]
+    environment:
+      MP_MAX_MESSAGES: "100"
+    ports:
+      - "127.0.0.1:${DOCKER_MAILPIT_PORT:-8025}:8025"
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 64
+    logging: *logging
+
+volumes:
+  mysql-data:
