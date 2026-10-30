@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Tenant\SelectTenantController;
+use App\Http\Controllers\Tenant\ShowActiveTenantController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/api/v1/auth/login', LoginController::class)
@@ -21,3 +22,7 @@ Route::post('/api/v1/auth/register', RegisterController::class)
 Route::put('/api/v1/active-tenant', SelectTenantController::class)
     ->middleware('auth:web')
     ->name('api.v1.active-tenant.update');
+
+Route::get('/api/v1/active-tenant', ShowActiveTenantController::class)
+    ->middleware(['auth:web', 'tenant.active'])
+    ->name('api.v1.active-tenant.show');
