@@ -15,16 +15,23 @@ class EnsureActiveTenant
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string $source = 'route'): Response
     {
         $user = $request->user('web');
 
         abort_if($user === null, 401, "Não autenticado.");
 
-        $tenantId = $request->session()->get('active_tenant_id');
+        $tenantId = $source === 'selected'
+            ? $request->session()->get('active_tenant_id')
+            : $request->route('tenantId');
 
         if (! is_string($tenantId) || $tenantId === '') {
-            abort(409, 'Selecione um tenant para continuar.');
+            abort(
+                $source === 'selected' ? 409 : 404,
+                $source === 'selected'
+                    ? 'Selecione um tenant para continuar.'
+                    : 'Tenant não disponível.'
+            );
         }
 
         $tenant = $user->tenants()
@@ -34,9 +41,12 @@ class EnsureActiveTenant
             ->first();
 
         if ($tenant === null) {
-            $request->session()->forget('active_tenant_id');
+            if ($source === 'selected') {
+                $request->session()->forget('active_tenant_id');
+            }
 
-            abort(403, 'O tenant selecionado não está disponível.');
+
+            abort(404, 'Tenant não disponível.');
         }
         $request->attributes->set('active_tenant', $tenant);
         return $next($request);
