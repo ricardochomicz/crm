@@ -17,7 +17,7 @@ class StoreTenantController extends Controller
         StoreTenantRequest $request,
         CreateTenantAction $createTenantAction
     ): JsonResponse {
-        $tenantData = $request->validate('tenant');
+        $tenantData = $request->validated('tenant');
         $tenantData['type'] = TenantType::from($tenantData['type']);
 
         $tenant = $createTenantAction->handle(
