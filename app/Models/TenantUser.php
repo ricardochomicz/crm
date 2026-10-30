@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\TeamRole;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -35,7 +34,6 @@ class TenantUser extends Pivot
             'role' => TenantUserRole::class,
             'status' => TenantUserStatus::class,
             'joined_at' => 'datetime',
-            'team_role' => TeamRole::class,
         ];
     }
 
