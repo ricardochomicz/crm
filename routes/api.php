@@ -61,22 +61,29 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::put('/active-tenant', SelectTenantController::class)
             ->name('active-tenant.update');
 
-        Route::middleware('tenant.active')->group(function (): void {
-            Route::get('/active-tenant', ShowActiveTenantController::class)
-                ->name('active-tenant.show');
+        Route::get('/active-tenant', ShowActiveTenantController::class)
+            ->middleware('tenant.active:selected')
+            ->name('active-tenant.show');
 
-            Route::patch('/active-tenant', UpdateTenantController::class)
-                ->name('active-tenant.patch');
+        Route::prefix('tenants/{tenantId}')
+            ->whereUuid('tenantId')
+            ->middleware('tenant.active')
+            ->group(function (): void {
+                Route::get('/', ShowActiveTenantController::class)
+                    ->name('tenants.show');
 
-            Route::get('/tenant-members', ListTenantMembersController::class)
-                ->name('tenant-members.index');
+                Route::patch('/', UpdateTenantController::class)
+                    ->name('tenants.update');
 
-            Route::post('/tenant-members', StoreTenantMemberController::class)
-                ->middleware('throttle:10,1')
-                ->name('tenant-members.store');
+                Route::get('/members', ListTenantMembersController::class)
+                    ->name('tenant-members.index');
 
-            Route::post('/teams', StoreTeamController::class)
-                ->name('teams.store');
-        });
+                Route::post('/members', StoreTenantMemberController::class)
+                    ->middleware('throttle:10,1')
+                    ->name('tenant-members.store');
+
+                Route::post('/teams', StoreTeamController::class)
+                    ->name('teams.store');
+            });
     });
 });
