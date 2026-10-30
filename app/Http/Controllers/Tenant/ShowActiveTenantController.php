@@ -18,7 +18,7 @@ class ShowActiveTenantController extends Controller
      *     }
      * }
      */
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): array
     {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
