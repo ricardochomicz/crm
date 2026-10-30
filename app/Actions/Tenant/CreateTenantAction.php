@@ -32,6 +32,21 @@ class CreateTenantAction
         array $data,
     ): Tenant {
         return DB::transaction(function () use ($owner, $planId, $data): Tenant {
+
+            $owner = User::query()
+                ->lockForUpdate()
+                ->findOrFail($owner->getKey());
+
+            $alreadyOwnsTenant = $owner->tenants()
+                ->wherePivot('role', TenantUserRole::Owner->value)
+                ->exists();
+
+            if ($alreadyOwnsTenant) {
+                throw ValidationException::withMessages([
+                    'tenant' => 'Você já possui uma empresa cadastrada.',
+                ]);
+            }
+
             $plan = SubscriptionPlan::query()
                 ->sharedLock()
                 ->findOrFail($planId);
@@ -74,6 +89,6 @@ class CreateTenantAction
             ]);
 
             return $tenant->load('subscription');
-        });
+        }, attempts: 5);
     }
 }
