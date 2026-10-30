@@ -34,13 +34,13 @@ class CreateTeamAction
 
             if ($supervisor === null) {
                 throw ValidationException::withMessages([
-                    'supervisor_membership_id' => 'Selecione um membro ativo deste tenant que ainda não pertença a uma equipe.',
+                    'supervisor_membership_id' => 'Selecione um membro ativo deste tenant.',
                 ]);
             }
 
             return $tenant->teams()->create([
                 'name' => $data['name'],
-                'supervisor_membership_id' => $supervisor->getKey()
+                'supervisor_membership_id' => $supervisor->getKey(),
             ]);
         }, attempts: 5);
     }
