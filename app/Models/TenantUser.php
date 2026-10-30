@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TeamRole;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -14,7 +15,9 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
     'user_id',
     'role',
     'status',
-    'joined_at'
+    'joined_at',
+    'team_id',
+    'team_role'
 ])]
 class TenantUser extends Pivot
 {
@@ -30,7 +33,8 @@ class TenantUser extends Pivot
         return [
             'role' => TenantUserRole::class,
             'status' => TenantUserStatus::class,
-            'joined_at' => 'datetime'
+            'joined_at' => 'datetime',
+            'team_role' => TeamRole::class,
         ];
     }
 
@@ -42,5 +46,10 @@ class TenantUser extends Pivot
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
     }
 }
