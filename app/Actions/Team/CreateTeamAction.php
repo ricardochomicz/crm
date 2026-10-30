@@ -2,7 +2,6 @@
 
 namespace App\Actions\Team;
 
-use App\Enums\TeamRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Team;
 use App\Models\Tenant;
