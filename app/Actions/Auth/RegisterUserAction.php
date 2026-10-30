@@ -2,7 +2,6 @@
 
 namespace App\Actions\Auth;
 
-use App\Actions\Tenant\CreateTenantAction;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\ValidationException;
