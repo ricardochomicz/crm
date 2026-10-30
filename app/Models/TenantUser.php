@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
     'status',
     'joined_at',
     'team_id',
-    'team_role'
 ])]
 class TenantUser extends Pivot
 {
