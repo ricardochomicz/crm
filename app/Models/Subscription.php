@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Carbon\CarbonInterface;
 
 #[Fillable([
     'tenant_id',
@@ -47,6 +48,31 @@ class Subscription extends Model
             'cancel_at_period_end' => 'boolean',
             'cancelled_at' => 'datetime',
         ];
+    }
+
+    public function allowsOperationalWrites(
+        ?CarbonInterface $at = null
+    ): bool {
+        $at ??= now();
+
+        [$startsAt, $endsAt] = match ($this->status) {
+            SubscriptionStatus::Trialing => [
+                $this->started_at,
+                $this->trial_ends_at
+            ],
+            SubscriptionStatus::Active => [
+                $this->current_period_starts_at,
+                $this->current_period_ends_at
+            ],
+            default => [null, null],
+        };
+
+        if ($startsAt === null || $endsAt === null) {
+            return false;
+        }
+
+        return $startsAt->lessThanOrEqualTo($at)
+            && $endsAt->greaterThan($at);
     }
 
     public function tenant(): BelongsTo
