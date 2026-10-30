@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::define(
+            'access-platform-admin',
+            fn(User $user): bool => $user->is_platform_admin === true
+        );
+
         RateLimiter::for('login', function (Request $request): array {
             $email = $request->input('email');
 
