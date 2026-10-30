@@ -34,4 +34,13 @@ class TenantPolicy
     {
         return $this->update($user, $tenant);
     }
+
+    public function viewSubscription(User $user, Tenant $tenant): bool
+    {
+        return $user->tenants()
+            ->where('tenants.status', TenantStatus::Active->value)
+            ->wherPivot('status', TenantUserStatus::Active->value)
+            ->wherePivot('role', TenantUserRole::Owner->value)
+            ->exists();
+    }
 }
