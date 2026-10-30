@@ -66,6 +66,24 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->middleware('tenant.active:selected')
             ->name('active-tenant.show');
 
+        Route::prefix('admin')
+            ->name('admin.')
+            ->middleware('can:access-platform-admin')
+            ->group(function (): void {
+                Route::get('/me', function (Request $request): array {
+                    $user = $request->user();
+
+                    return [
+                        'data' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'is_platform_admin' => true,
+                        ],
+                    ];
+                })->name('me');
+            });
+
         Route::prefix('tenants/{tenantId}')
             ->whereUuid('tenantId')
             ->middleware('tenant.active')
