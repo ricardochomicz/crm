@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Team\StoreTeamController;
 use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
@@ -58,3 +59,7 @@ Route::post('/api/v1/tenants', StoreTenantController::class)
 Route::get('/api/v1/tenant-members', ListTenantMembersController::class)
     ->middleware(['auth:web', 'tenant.active'])
     ->name('api.v1.tenant-members.index');
+
+Route::post('/api/v1/teams', StoreTeamController::class)
+    ->middleware(['auth:web', 'tenant.active'])
+    ->name('api.v1.teams.store');
