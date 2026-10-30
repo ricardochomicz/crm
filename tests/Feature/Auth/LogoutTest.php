@@ -59,7 +59,7 @@ class LogoutTest extends TestCase
 
     public function test_returns_401_when_logging_out_without_authentication(): void
     {
-        $response = $this->postJson(route('api.v1.auth.logout'));
+        $response = $this->postJson(route('api.v1.auth.ltest: cobre logout, limpeza da sessão e rejeição de acesso sem autenticaçãoogout'));
 
         $response->assertUnauthorized();
 
