@@ -30,9 +30,7 @@ class StoreTeamController extends Controller
             'data' => [
                 'id' => $team->id,
                 'name' => $team->name,
-                'supervisor_membership_id' => $request->validated(
-                    'supervisor_membership_id',
-                ),
+                'supervisor_membership_id' => $team->supervisor_membership_id
             ],
         ], 201);
     }
