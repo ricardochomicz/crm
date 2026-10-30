@@ -2,8 +2,6 @@
 
 namespace App\Http\Requests\Auth;
 
-use App\Enums\TenantType;
-use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
