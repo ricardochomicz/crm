@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureActiveTenant;
+use App\Http\Middleware\EnsureSubscriptionAllowsWrites;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,7 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
         $middleware->alias([
-            'tenant.active' => EnsureActiveTenant::class
+            'tenant.active' => EnsureActiveTenant::class,
+            'subscription.writable' => EnsureSubscriptionAllowsWrites::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
