@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
+use App\Http\Controllers\Tenant\StoreTenantMemberController;
 use App\Http\Controllers\Tenant\UpdateTenantController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,3 +33,18 @@ Route::get('/api/v1/active-tenant', ShowActiveTenantController::class)
 Route::patch('/api/v1/active-tenant', UpdateTenantController::class)
     ->middleware(['auth:web', 'tenant.active'])
     ->name('api.v1.active-tenant.patch');
+
+Route::post('/api/v1/tenant-members', StoreTenantMemberController::class)
+    ->middleware(['auth:web', 'tenant.active', 'throttle:10,1'])
+    ->name('api.v1.tenant-members.store');
+
+Route::get('/reset-password/{token}', [PasswordController::class, 'show'])
+    ->name('password.reset');
+
+Route::post('/reset-password', [PasswordController::class, 'update'])
+    ->middleware('throttle:10,1')
+    ->name('password.update');
+
+Route::post('/api/v1/auth/password/email', [PasswordController::class, 'sendLink'])
+    ->middleware('throttle:5,1')
+    ->name('api.v1.auth.password.email');
