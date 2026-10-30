@@ -30,7 +30,6 @@ class CreateTeamAction
                 ->where('tenant_id', $tenant->getKey())
                 ->whereKey($data['supervisor_membership_id'])
                 ->where('status', TenantUserStatus::Active->value)
-                ->whereNull('team_id')
                 ->lockForUpdate()
                 ->first();
 
@@ -40,16 +39,10 @@ class CreateTeamAction
                 ]);
             }
 
-            $team = $tenant->teams()->create([
+            return $tenant->teams()->create([
                 'name' => $data['name'],
+                'supervisor_memnership_id' => $supervisor->getKey()
             ]);
-
-            $supervisor->update([
-                'team_id' => $team->getKey(),
-                'team_role' => TeamRole::Supervisor,
-            ]);
-
-            return $team;
         }, attempts: 5);
     }
 }
