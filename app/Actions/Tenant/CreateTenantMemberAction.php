@@ -46,6 +46,12 @@ class CreateTenantMemberAction
                     ]);
                 }
 
+                if (! $subscription->allowsOperationalWrites()) {
+                    throw ValidationException::withMessages([
+                        'subscription' => 'A assinatura não permite cadastrar membros.'
+                    ]);
+                }
+
                 if ($tenant->users()->count() >= $subscription->user_limit) {
                     throw ValidationException::withMessages([
                         'user_limit' => 'O limite de usuários da assinatura foi atingido.',
