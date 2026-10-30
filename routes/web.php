@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
 use App\Http\Controllers\Tenant\StoreTenantController;
@@ -53,3 +54,7 @@ Route::post('/api/v1/auth/password/email', [PasswordController::class, 'sendLink
 Route::post('/api/v1/tenants', StoreTenantController::class)
     ->middleware(['auth:web', 'throttle:5,1'])
     ->name('api.v1.tenants.store');
+
+Route::get('/api/v1/tenant-members', ListTenantMembersController::class)
+    ->middleware(['auth:web', 'tenant.active'])
+    ->name('api.v1.tenant-members.index');
