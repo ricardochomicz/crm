@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Tenant\ListTenantsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -15,4 +16,8 @@ Route::prefix('v1')->group(function (): void {
             ],
         ];
     })->middleware('auth:sanctum')->name('api.v1.me');
+
+    Route::get('/tenants', ListTenantsController::class)
+        ->middleware('auth:sanctum')
+        ->name('api.v1.tenants.index');
 });
