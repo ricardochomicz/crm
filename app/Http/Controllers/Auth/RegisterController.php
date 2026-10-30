@@ -22,13 +22,12 @@ class RegisterController extends Controller
                 'name',
                 'email',
                 'password',
-                'subscription_plan_id',
-                'tenant'
             ])
         );
 
         Auth::guard('web')->login($user);
 
+        $request->session()->forget('active_tenant_id');
         $request->session()->regenerate();
 
         return response('', Response::HTTP_CREATED);
