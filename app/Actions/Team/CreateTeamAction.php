@@ -25,6 +25,19 @@ class CreateTeamAction
 
             Gate::forUser($owner)->authorize('createTeam', $tenant);
 
+            $subscription = $tenant->subscription()
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                $subscription === null
+                || ! $subscription->allowsOperationalWrites()
+            ) {
+                throw ValidationException::withMessages([
+                    'subscription' => 'A assinatura não permite criar equipes.',
+                ]);
+            }
+
             $supervisor = TenantUser::query()
                 ->where('tenant_id', $tenant->getKey())
                 ->whereKey($data['supervisor_membership_id'])
