@@ -18,7 +18,7 @@ class StoreTeamController extends Controller
         $tenant = $request->attributes->get('active_tenant');
 
         $team = $createTeamAction->handle(
-            $request->user('web'),
+            $request->user(),
             $tenant,
             $request->safe()->only([
                 'name',

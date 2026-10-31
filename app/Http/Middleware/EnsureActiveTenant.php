@@ -17,7 +17,7 @@ class EnsureActiveTenant
      */
     public function handle(Request $request, Closure $next, string $source = 'route'): Response
     {
-        $user = $request->user('web');
+        $user = $request->user();
 
         abort_if($user === null, 401, "Não autenticado.");
 

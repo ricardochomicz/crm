@@ -19,7 +19,7 @@ class UpdateTenantMemberRoleController extends Controller
         $tenant = $request->attributes->get('active_tenant');
 
         $updateTenantMemberRoleAction->handle(
-            $request->user('web'),
+            $request->user(),
             $tenant,
             (string) $request->route('membershipId'),
             TenantUserRole::from($request->validated('role')),

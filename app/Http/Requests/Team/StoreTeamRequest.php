@@ -13,7 +13,7 @@ class StoreTeamRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
 
         return $tenant instanceof Tenant
-            && ($this->user('web')?->can('createTeam', $tenant) ?? false);
+            && ($this->user()?->can('createTeam', $tenant) ?? false);
     }
 
     /**

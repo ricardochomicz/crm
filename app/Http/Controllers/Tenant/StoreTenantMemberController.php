@@ -20,7 +20,7 @@ class StoreTenantMemberController extends Controller
         $tenant = $request->attributes->get('active_tenant');
 
         $user = $createTenantMemberAction->handle(
-            $request->user('web'),
+            $request->user(),
             $tenant,
             $request->safe()->only(['name', 'email', 'role']),
         );

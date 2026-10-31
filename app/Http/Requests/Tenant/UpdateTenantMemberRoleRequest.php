@@ -15,7 +15,7 @@ class UpdateTenantMemberRoleRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
 
         return $tenant instanceof Tenant
-            && ($this->user('web')?->can('updateMemberRole', $tenant) ?? false);
+            && ($this->user()?->can('updateMemberRole', $tenant) ?? false);
     }
 
     /**

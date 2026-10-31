@@ -12,7 +12,7 @@ class SelectTenantRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user('web') !== null;
+        return $this->user() !== null;
     }
 
     /**

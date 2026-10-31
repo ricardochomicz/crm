@@ -18,7 +18,7 @@ class ListTenantMembersController extends Controller
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
-        Gate::forUser($request->user('web'))
+        Gate::forUser($request->user())
             ->authorize('viewMembers', $tenant);
 
         return $tenant->users()

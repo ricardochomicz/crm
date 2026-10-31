@@ -16,7 +16,7 @@ class StoreTenantMemberRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
 
         return $tenant instanceof Tenant
-            && ($this->user('web')?->can('addMember', $tenant) ?? false);
+            && ($this->user()?->can('addMember', $tenant) ?? false);
     }
 
     /**

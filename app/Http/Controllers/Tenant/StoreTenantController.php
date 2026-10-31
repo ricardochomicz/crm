@@ -21,7 +21,7 @@ class StoreTenantController extends Controller
         $tenantData['type'] = TenantType::from($tenantData['type']);
 
         $tenant = $createTenantAction->handle(
-            $request->user('web'),
+            $request->user(),
             $request->validated('subscription_plan_id'),
             $tenantData,
         );

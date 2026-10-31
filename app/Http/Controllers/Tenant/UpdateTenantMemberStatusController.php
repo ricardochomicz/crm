@@ -19,7 +19,7 @@ class UpdateTenantMemberStatusController extends Controller
         $tenant = $request->attributes->get('active_tenant');
 
         $updateTenantMemberStatusAction->handle(
-            $request->user('web'),
+            $request->user(),
             $tenant,
             (string) $request->route('membershipId'),
             TenantUserStatus::from($request->validated('status')),

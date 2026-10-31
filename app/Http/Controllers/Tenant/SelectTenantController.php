@@ -16,7 +16,7 @@ class SelectTenantController extends Controller
      */
     public function __invoke(SelectTenantRequest $request): Response
     {
-        $tenant = $request->user('web')
+        $tenant = $request->user()
             ->tenants()
             ->where('tenants.status', TenantStatus::Active->value)
             ->wherePivot('status', TenantUserStatus::Active->value)

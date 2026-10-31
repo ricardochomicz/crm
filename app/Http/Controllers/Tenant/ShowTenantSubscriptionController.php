@@ -17,7 +17,7 @@ class ShowTenantSubscriptionController extends Controller
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
-        Gate::forUser($request->user('web'))
+        Gate::forUser($request->user())
             ->authorize('viewSubscription', $tenant);
 
         $subscription = $tenant->subscription()

@@ -16,7 +16,7 @@ class UpdateTenantRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
 
         return $tenant instanceof Tenant
-            && ($this->user('web')?->can('update', $tenant) ?? false);
+            && ($this->user()?->can('update', $tenant) ?? false);
     }
 
     /**
