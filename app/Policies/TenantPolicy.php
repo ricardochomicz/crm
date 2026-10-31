@@ -44,4 +44,9 @@ class TenantPolicy
             ->wherePivot('role', TenantUserRole::Owner->value)
             ->exists();
     }
+
+    public function updateMemberRole(User $user, Tenant $tenant): bool
+    {
+        return $this->update($user, $tenant);
+    }
 }
