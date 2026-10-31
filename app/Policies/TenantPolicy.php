@@ -49,4 +49,9 @@ class TenantPolicy
     {
         return $this->update($user, $tenant);
     }
+
+    public function updateMemberStatus(User $user, Tenant $tenant): bool
+    {
+        return $this->update($user, $tenant);
+    }
 }
