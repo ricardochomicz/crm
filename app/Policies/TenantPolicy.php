@@ -40,7 +40,7 @@ class TenantPolicy
         return $user->tenants()
             ->whereKey($tenant->getKey())
             ->where('tenants.status', TenantStatus::Active->value)
-            ->wherPivot('status', TenantUserStatus::Active->value)
+            ->wherePivot('status', TenantUserStatus::Active->value)
             ->wherePivot('role', TenantUserRole::Owner->value)
             ->exists();
     }
