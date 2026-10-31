@@ -15,6 +15,7 @@ use App\Http\Controllers\Tenant\ShowPlatformTenantController;
 use App\Http\Controllers\Tenant\ShowTenantSubscriptionController;
 use App\Http\Controllers\Tenant\StoreTenantController;
 use App\Http\Controllers\Tenant\StoreTenantMemberController;
+use App\Http\Controllers\Tenant\UpdatePlatformTenantStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -84,14 +85,22 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                         ],
                     ];
                 })->name('me');
+
+                Route::get('/tenants', ListPlatformTenantsController::class)
+                    ->name('tenants.index');
+
+                Route::get('/tenants/{tenant}', ShowPlatformTenantController::class)
+                    ->whereUuid('tenant')
+                    ->name('tenants.show');
+
+                Route::patch(
+                    '/tenants/{tenant}/status',
+                    UpdatePlatformTenantStatusController::class,
+                )
+                    ->whereUuid('tenant')
+                    ->middleware('throttle:10,1')
+                    ->name('tenants.status.update');
             });
-
-        Route::get('/tenants', ListPlatformTenantsController::class)
-            ->name('tenants.index');
-
-        Route::get('/tenants/{tenant}', ShowPlatformTenantController::class)
-            ->whereUuid('tenant')
-            ->name('tenants.show');
 
         Route::prefix('tenants/{tenantId}')
             ->whereUuid('tenantId')
