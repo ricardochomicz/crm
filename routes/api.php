@@ -5,8 +5,10 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\SubscriptionPlan\ListSubscriptionPlansController;
+use App\Http\Controllers\Team\ListTeamMembersController;
 use App\Http\Controllers\Team\ListTeamsController;
 use App\Http\Controllers\Team\StoreTeamController;
+use App\Http\Controllers\Team\UpdateTeamController;
 use App\Http\Controllers\Team\UpdateTeamSupervisorController;
 use App\Http\Controllers\Tenant\ListPlatformTenantsController;
 use App\Http\Controllers\Tenant\ListTenantMembersController;
@@ -130,6 +132,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/teams', ListTeamsController::class)
                     ->name('teams.index');
 
+                Route::get('/teams/{teamId}/members', ListTeamMembersController::class)
+                    ->whereUuid('teamId')
+                    ->name('teams.members.index');
+
                 Route::middleware('subscription.writable')
                     ->group(function (): void {
                         Route::patch('/', UpdateTenantController::class)
@@ -162,6 +168,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                             ->whereUuid('membershipId')
                             ->middleware('throttle:10,1')
                             ->name('tenant-members.status.update');
+
+                        Route::patch('/teams/{teamId}', UpdateTeamController::class)
+                            ->whereUuid('teamId')
+                            ->middleware('throttle:10,1')
+                            ->name('teams.update');
 
                         Route::post('/teams', StoreTeamController::class)
                             ->name('teams.store');
