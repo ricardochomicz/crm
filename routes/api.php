@@ -6,10 +6,12 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\SubscriptionPlan\ListSubscriptionPlansController;
 use App\Http\Controllers\Team\StoreTeamController;
+use App\Http\Controllers\Tenant\ListPlatformTenantsController;
 use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\ListTenantsController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
+use App\Http\Controllers\Tenant\ShowPlatformTenantController;
 use App\Http\Controllers\Tenant\ShowTenantSubscriptionController;
 use App\Http\Controllers\Tenant\StoreTenantController;
 use App\Http\Controllers\Tenant\StoreTenantMemberController;
@@ -83,6 +85,13 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     ];
                 })->name('me');
             });
+
+        Route::get('/tenants', ListPlatformTenantsController::class)
+            ->name('tenants.index');
+
+        Route::get('/tenants/{tenant}', ShowPlatformTenantController::class)
+            ->whereUuid('tenant')
+            ->name('tenants.show');
 
         Route::prefix('tenants/{tenantId}')
             ->whereUuid('tenantId')
