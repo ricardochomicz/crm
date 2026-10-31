@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->redirectGuestsTo(function (Request $request): ?string {
+            if ($request->is('api/*')) {
+                abort(401, 'Não autenticado.');
+            }
+            return null;
+        });
         $middleware->alias([
             'tenant.active' => EnsureActiveTenant::class,
             'subscription.writable' => EnsureSubscriptionAllowsWrites::class
