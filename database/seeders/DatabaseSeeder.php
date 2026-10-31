@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:254'],
-            'password' => ['required', 'string', 'min:12', 'max:128'],
+            'password' => ['required', 'string', 'min:8', 'max:128'],
         ])->validate();
 
         $existingUser = User::query()
