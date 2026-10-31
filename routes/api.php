@@ -19,6 +19,7 @@ use App\Http\Controllers\Tenant\StoreTenantMemberController;
 use App\Http\Controllers\Tenant\UpdatePlatformTenantStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberRoleController;
+use App\Http\Controllers\Tenant\UpdateTenantMemberStatusController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -133,17 +134,25 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                             ->middleware('throttle:10,1')
                             ->name('tenant-members.store');
 
+                        Route::patch(
+                            '/members/{membershipId}/role',
+                            UpdateTenantMemberRoleController::class,
+                        )
+                            ->whereUuid('membershipId')
+                            ->middleware('throttle:10,1')
+                            ->name('tenant-members.role.update');
+
+                        Route::patch(
+                            '/members/{membershipId}/status',
+                            UpdateTenantMemberStatusController::class,
+                        )
+                            ->whereUuid('membershipId')
+                            ->middleware('throttle:10,1')
+                            ->name('tenant-members.status.update');
+
                         Route::post('/teams', StoreTeamController::class)
                             ->name('teams.store');
                     });
-
-                Route::patch(
-                    '/members/{membershipId}/role',
-                    UpdateTenantMemberRoleController::class,
-                )
-                    ->whereUuid('membershipId')
-                    ->middleware('throttle:10,1')
-                    ->name('tenant-members.role.update');
             });
     });
 });
