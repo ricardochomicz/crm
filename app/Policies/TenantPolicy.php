@@ -54,4 +54,14 @@ class TenantPolicy
     {
         return $this->update($user, $tenant);
     }
+
+    public function viewTeams(User $user, Tenant $tenant): bool
+    {
+        return $this->update($user, $tenant);
+    }
+
+    public function updateTeamSupervisor(User $user, Tenant $tenant): bool
+    {
+        return $this->update($user, $tenant);
+    }
 }
