@@ -9,6 +9,7 @@ use App\Http\Controllers\Team\StoreTeamController;
 use App\Http\Controllers\Tenant\ListPlatformTenantsController;
 use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\ListTenantsController;
+use App\Http\Controllers\Tenant\ListTenantStatusChangesController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
 use App\Http\Controllers\Tenant\ShowPlatformTenantController;
@@ -92,6 +93,13 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/tenants/{tenant}', ShowPlatformTenantController::class)
                     ->whereUuid('tenant')
                     ->name('tenants.show');
+
+                Route::get(
+                    '/tenants/{tenant}/status-changes',
+                    ListTenantStatusChangesController::class,
+                )
+                    ->whereUuid('tenant')
+                    ->name('tenants.status-changes.index');
 
                 Route::patch(
                     '/tenants/{tenant}/status',
