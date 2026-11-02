@@ -47,4 +47,9 @@ class Tenant extends Model
     {
         return $this->hasMany(Team::class);
     }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(TenantInvitation::class);
+    }
 }
