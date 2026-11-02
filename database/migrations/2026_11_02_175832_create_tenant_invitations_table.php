@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('tenant_invitations', function (Blueprint $table): void {
+        Schema::create('tenant_invitations', function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             $table->foreignUuid('tenant_id')
