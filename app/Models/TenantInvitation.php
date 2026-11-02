@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Enums\TenantInvitationStatus;
 use App\Enums\TenantUserRole;
-use Illuminate\Console\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
