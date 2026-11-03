@@ -4,7 +4,6 @@ namespace App\Actions\Tenant;
 
 use App\Enums\TenantInvitationStatus;
 use App\Enums\TenantUserRole;
-use App\Enums\TenantUserStatus;
 use App\Models\Tenant;
 use App\Models\TenantInvitation;
 use App\Models\User;
@@ -28,7 +27,7 @@ class CreateTenantInvitationAction
 
         if ($role === TenantUserRole::Owner) {
             throw ValidationException::withMessages([
-                'role' => 'N�o � permitido convidar outro propriet�rio.',
+                'role' => 'Não é permitido convidar outro proprietário.',
             ]);
         }
 

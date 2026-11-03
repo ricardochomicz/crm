@@ -2,6 +2,7 @@
 
 namespace App\Actions\Tenant;
 
+use App\Enums\TenantInvitationStatus;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Tenant;
@@ -34,11 +35,16 @@ class CreateTenantMemberAction
                 $data,
                 $role,
             ): User {
+
+                $tenant = Tenant::query()
+                    ->lockForUpdate()
+                    ->findOrFail($tenant->getKey());
+
+                Gate::forUser($owner)->authorize('addMember', $tenant);
+
                 $subscription = $tenant->subscription()
                     ->lockForUpdate()
                     ->first();
-
-                Gate::forUser($owner)->authorize('addMember', $tenant);
 
                 if ($subscription === null) {
                     throw ValidationException::withMessages([
@@ -52,9 +58,16 @@ class CreateTenantMemberAction
                     ]);
                 }
 
-                if ($tenant->users()->count() >= $subscription->user_limit) {
+                $membersCount = $tenant->users()->count();
+
+                $reservedSeatsCount = $tenant->invitations()
+                    ->where('status', TenantInvitationStatus::Pending->value)
+                    ->where('expires_at', '>', now())
+                    ->count();
+
+                if ($membersCount + $reservedSeatsCount >= $subscription->user_limit) {
                     throw ValidationException::withMessages([
-                        'user_limit' => 'O limite de usuários da assinatura foi atingido.',
+                        'user_limit' => 'O limite de usu�rios da assinatura foi atingido.',
                     ]);
                 }
 
