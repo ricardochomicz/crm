@@ -19,7 +19,7 @@ class StoreTenantInvitationRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
 
         return $tenant instanceof Tenant
-            && ($this->user()?->can('addMembers', $tenant) ?? false);
+            && ($this->user()?->can('addMember', $tenant) ?? false);
     }
 
     protected function prepareForValidation(): void
