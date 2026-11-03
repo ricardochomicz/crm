@@ -6,8 +6,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 
-class TenantInvitationNotification extends Notification
+class TenantInvitationNotification extends Notification implements ShouldQueue, ShouldBeEncrypted
 {
     use Queueable;
 
