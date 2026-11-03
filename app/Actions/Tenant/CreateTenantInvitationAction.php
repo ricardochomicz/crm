@@ -49,7 +49,7 @@ class CreateTenantInvitationAction
 
             if ($subscription === null || ! $subscription->allowsOperationalWrites()) {
                 throw ValidationException::withMessages([
-                    'subscription' => 'A assinatura n�o permite convidar membros.',
+                    'subscription' => 'A assinatura não permite convidar membros.',
                 ]);
             }
 
@@ -59,7 +59,7 @@ class CreateTenantInvitationAction
 
             if ($alreadyBelongsToTenant) {
                 throw ValidationException::withMessages([
-                    'email' => 'Este usu�rio j� possui v�nculo com a empresa.',
+                    'email' => 'Este usuário já possui vínculo com a empresa.',
                 ]);
             }
 
@@ -71,7 +71,7 @@ class CreateTenantInvitationAction
 
             if ($pendingInvitation) {
                 throw ValidationException::withMessages([
-                    'email' => 'J� existe um convite pendente para este e-mail.',
+                    'email' => 'Já existe um convite pendente para este e-mail.',
                 ]);
             }
 
@@ -84,7 +84,7 @@ class CreateTenantInvitationAction
 
             if ($membersCount + $reservedSeatsCount >= $subscription->user_limit) {
                 throw ValidationException::withMessages([
-                    'user_limit' => 'O limite de usu�rios da assinatura foi atingido.',
+                    'user_limit' => 'O limite de usuários da assinatura foi atingido.',
                 ]);
             }
 

@@ -67,7 +67,7 @@ class CreateTenantMemberAction
 
                 if ($membersCount + $reservedSeatsCount >= $subscription->user_limit) {
                     throw ValidationException::withMessages([
-                        'user_limit' => 'O limite de usu�rios da assinatura foi atingido.',
+                        'user_limit' => 'O limite de usuários da assinatura foi atingido.',
                     ]);
                 }
 
