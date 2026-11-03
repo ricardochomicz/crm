@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Enums\TenantInvitationStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +35,11 @@ class ShowTenantSubscriptionController extends Controller
 
         $usersCount = $tenant->users()->count();
 
+        $reservedSeatsCount = $tenant->invitations()
+            ->where('status', TenantInvitationStatus::Pending->value)
+            ->where('expires_at', '>', now())
+            ->count();
+
         return response()->json([
             'data' => [
                 'id' => $subscription->id,
@@ -51,11 +58,12 @@ class ShowTenantSubscriptionController extends Controller
                 ],
                 'usage' => [
                     'users' => $usersCount,
+                    'reserved_invitations' => $reservedSeatsCount,
                 ],
                 'remaining' => [
                     'users' => max(
                         0,
-                        $subscription->user_limit - $usersCount,
+                        $subscription->user_limit - $usersCount - $reservedSeatsCount,
                     ),
                 ],
                 'started_at' => $subscription->started_at
