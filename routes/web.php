@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Auth\PasswordController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Tenant\ShowTenantInvitationController;
 
 Route::get('/reset-password/{token}', [PasswordController::class, 'show'])
     ->name('password.reset');
