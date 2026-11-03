@@ -27,6 +27,7 @@ use App\Http\Controllers\Tenant\UpdateTenantMemberStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberTeamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Tenant\ShowTenantInvitationController;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
@@ -46,6 +47,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->middleware('auth:sanctum')
             ->name('logout');
     });
+
+    Route::get('/invitations/{token}', ShowTenantInvitationController::class)
+        ->where('token', '[A-Za-z0-9]{64}')
+        ->middleware('throttle:30,1')
+        ->name('tenant-invitations.show');
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/me', function (Request $request): array {

@@ -4,14 +4,11 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\TenantInvitation;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 
 class ShowTenantInvitationController extends Controller
 {
-    /**
-     * Handle the incoming request.
-     */
-    public function __invoke(string $token): Response
+    public function __invoke(string $token): JsonResponse
     {
         $invitation = TenantInvitation::query()
             ->where('token_hash', hash('sha256', $token))
@@ -21,8 +18,10 @@ class ShowTenantInvitationController extends Controller
             && $invitation->isAvailable();
 
         return response()
-            ->view('tenant-invitations.show', [
-                'isAvailable' => $isAvailable,
+            ->json([
+                'data' => [
+                    'is_available' => $isAvailable,
+                ],
             ], $isAvailable ? 200 : 410)
             ->header('Cache-Control', 'no-store, private')
             ->header('Referrer-Policy', 'no-referrer')

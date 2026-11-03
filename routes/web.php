@@ -10,8 +10,3 @@ Route::get('/reset-password/{token}', [PasswordController::class, 'show'])
 Route::post('/reset-password', [PasswordController::class, 'update'])
     ->middleware('throttle:10,1')
     ->name('password.update');
-
-Route::get('/invitations/{token}', ShowTenantInvitationController::class)
-    ->where('token', '[A-Za-z0-9]{64}')
-    ->middleware('throttle:30,1')
-    ->name('tenant-invitations.show');
