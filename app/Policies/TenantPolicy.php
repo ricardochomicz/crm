@@ -74,4 +74,9 @@ class TenantPolicy
     {
         return $this->update($user, $tenant);
     }
+
+    public function viewInvitations(User $user, Tenant $tenant): bool
+    {
+        return $this->viewMembers($user, $tenant);
+    }
 }
