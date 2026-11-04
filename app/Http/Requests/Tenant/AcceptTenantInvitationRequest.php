@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Tenant;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AcceptTenantInvitationRequest extends FormRequest
