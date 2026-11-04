@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -48,6 +49,28 @@ class LoginTest extends TestCase
             'email' => 'E-mail ou senha inválidos.',
         ]);
         $this->assertGuest('web');
+    }
+
+    public function test_loads_session_user_with_origin_only_referer_after_login(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('senha-de-teste')]);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'senha-de-teste',
+        ])->assertNoContent();
+
+        Auth::forgetGuards();
+
+        $this->withCookie(
+            config('session.cookie'),
+            $login->getCookie(config('session.cookie'))->getValue(),
+        )->withHeaders([
+            'Origin' => '',
+            'Referer' => 'http://localhost:5173/',
+        ])->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id);
     }
 
     public function test_rejects_unknown_email_with_same_error_message(): void
