@@ -84,4 +84,9 @@ class TenantPolicy
     {
         return $this->addMember($user, $tenant);
     }
+
+    public function resendInvitation(User $user, Tenant $tenant): bool
+    {
+        return $this->addMember($user, $tenant);
+    }
 }
