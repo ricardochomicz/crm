@@ -29,6 +29,7 @@ use App\Http\Controllers\Tenant\UpdateTenantMemberTeamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Tenant\ShowTenantInvitationController;
+use App\Http\Controllers\Tenant\StoreTenantInvitationController;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
@@ -156,6 +157,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                         Route::post('/members', StoreTenantMemberController::class)
                             ->middleware('throttle:10,1')
                             ->name('tenant-members.store');
+
+                        Route::post('/invitations', StoreTenantInvitationController::class)
+                            ->middleware('throttle:10,1')
+                            ->name('tenant-invitations.store');
 
                         Route::patch(
                             '/teams/{teamId}/supervisor',
