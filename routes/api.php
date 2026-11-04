@@ -16,6 +16,7 @@ use App\Http\Controllers\Tenant\ListTenantInvitationsController;
 use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\ListTenantsController;
 use App\Http\Controllers\Tenant\ListTenantStatusChangesController;
+use App\Http\Controllers\Tenant\ResendTenantInvitationController;
 use App\Http\Controllers\Tenant\RevokeTenantInvitationController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
@@ -174,6 +175,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                         Route::post('/invitations', StoreTenantInvitationController::class)
                             ->middleware('throttle:10,1')
                             ->name('tenant-invitations.store');
+
+                        Route::post(
+                            '/invitations/{invitationId}/resend',
+                            ResendTenantInvitationController::class,
+                        )
+                            ->whereUuid('invitationId')
+                            ->middleware('throttle:10,1')
+                            ->name('tenant-invitations.resend');
 
                         Route::patch(
                             '/teams/{teamId}/supervisor',
