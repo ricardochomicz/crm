@@ -21,6 +21,7 @@ class CreateTenantMemberAction
     public function handle(User $owner, Tenant $tenant, array $data): User
     {
         $role = TenantUserRole::from($data['role']);
+        $data['email'] = Str::lower(trim($data['email']));
 
         if ($role === TenantUserRole::Owner) {
             throw ValidationException::withMessages([
@@ -55,6 +56,19 @@ class CreateTenantMemberAction
                 if (! $subscription->allowsOperationalWrites()) {
                     throw ValidationException::withMessages([
                         'subscription' => 'A assinatura não permite cadastrar membros.'
+                    ]);
+                }
+
+                $hasPendingInvitation = $tenant->invitations()
+                    ->where('email', $data['email'])
+                    ->where('status', TenantInvitationStatus::Pending->value)
+                    ->where('expires_at', '>', now())
+                    ->exists();
+
+                if ($hasPendingInvitation) {
+                    throw ValidationException::withMessages([
+                        'email' => 'Existe um convite pendente para este e-mail. '
+                            . 'O convite deve ser aceito ou revogado antes do cadastro direto.',
                     ]);
                 }
 
