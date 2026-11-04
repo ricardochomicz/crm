@@ -16,6 +16,7 @@ use App\Http\Controllers\Tenant\ListTenantInvitationsController;
 use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\ListTenantsController;
 use App\Http\Controllers\Tenant\ListTenantStatusChangesController;
+use App\Http\Controllers\Tenant\RevokeTenantInvitationController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
 use App\Http\Controllers\Tenant\ShowPlatformTenantController;
@@ -152,6 +153,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                 Route::get('/invitations', ListTenantInvitationsController::class)
                     ->name('tenant-invitations.index');
+
+                Route::post(
+                    '/invitations/{invitationId}/revoke',
+                    RevokeTenantInvitationController::class,
+                )
+                    ->whereUuid('invitationId')
+                    ->middleware('throttle:10,1')
+                    ->name('tenant-invitations.revoke');
 
                 Route::middleware('subscription.writable')
                     ->group(function (): void {
