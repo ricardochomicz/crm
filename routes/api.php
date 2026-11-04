@@ -71,6 +71,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'is_platform_admin' => (bool) $user->is_platform_admin,
                 ],
             ];
         })->name('me');
