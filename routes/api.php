@@ -10,6 +10,7 @@ use App\Http\Controllers\Team\ListTeamsController;
 use App\Http\Controllers\Team\StoreTeamController;
 use App\Http\Controllers\Team\UpdateTeamController;
 use App\Http\Controllers\Team\UpdateTeamSupervisorController;
+use App\Http\Controllers\Tenant\AcceptTenantInvitationController;
 use App\Http\Controllers\Tenant\ListPlatformTenantsController;
 use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\ListTenantsController;
@@ -65,6 +66,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 ],
             ];
         })->name('me');
+
+        Route::post('/invitations/accept', AcceptTenantInvitationController::class)
+            ->middleware('throttle:10,1')
+            ->name('tenant-invitations.accept');
 
         Route::get('/subscription-plans', ListSubscriptionPlansController::class)
             ->name('subscription-plans.index');
