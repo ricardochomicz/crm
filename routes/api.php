@@ -12,6 +12,7 @@ use App\Http\Controllers\Team\UpdateTeamController;
 use App\Http\Controllers\Team\UpdateTeamSupervisorController;
 use App\Http\Controllers\Tenant\AcceptTenantInvitationController;
 use App\Http\Controllers\Tenant\ListPlatformTenantsController;
+use App\Http\Controllers\Tenant\ListTenantInvitationsController;
 use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\ListTenantsController;
 use App\Http\Controllers\Tenant\ListTenantStatusChangesController;
@@ -148,6 +149,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/teams/{teamId}/members', ListTeamMembersController::class)
                     ->whereUuid('teamId')
                     ->name('teams.members.index');
+
+                Route::get('/invitations', ListTenantInvitationsController::class)
+                    ->name('tenant-invitations.index');
 
                 Route::middleware('subscription.writable')
                     ->group(function (): void {
