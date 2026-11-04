@@ -14,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 class ResendTenantInvitationAction
 {
+    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+
     /**
      * @return array{invitation: TenantInvitation, token: string}
      */
@@ -42,6 +44,8 @@ class ResendTenantInvitationAction
                 ->whereKey($invitationId)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            abort_unless($this->permissions->canAssign($actor, $tenant, $invitation->role), 403, 'Você não pode reenviar convites para este cargo.');
 
             $at = now();
 

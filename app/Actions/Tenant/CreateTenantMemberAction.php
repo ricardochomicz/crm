@@ -15,8 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class CreateTenantMemberAction
 {
+    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+
     /**
-     * @param array{name: string, email: string, role: string} $data
+     * @param  array{name: string, email: string, role: string}  $data
      */
     public function handle(User $owner, Tenant $tenant, array $data): User
     {
@@ -43,6 +45,8 @@ class CreateTenantMemberAction
 
                 Gate::forUser($owner)->authorize('addMember', $tenant);
 
+                abort_unless($this->permissions->canAssign($owner, $tenant, $role), 403, 'Você não pode atribuir este cargo.');
+
                 $subscription = $tenant->subscription()
                     ->lockForUpdate()
                     ->first();
@@ -55,7 +59,7 @@ class CreateTenantMemberAction
 
                 if (! $subscription->allowsOperationalWrites()) {
                     throw ValidationException::withMessages([
-                        'subscription' => 'A assinatura não permite cadastrar membros.'
+                        'subscription' => 'A assinatura não permite cadastrar membros.',
                     ]);
                 }
 
@@ -68,7 +72,7 @@ class CreateTenantMemberAction
                 if ($hasPendingInvitation) {
                     throw ValidationException::withMessages([
                         'email' => 'Existe um convite pendente para este e-mail. '
-                            . 'O convite deve ser aceito ou revogado antes do cadastro direto.',
+                            .'O convite deve ser aceito ou revogado antes do cadastro direto.',
                     ]);
                 }
 

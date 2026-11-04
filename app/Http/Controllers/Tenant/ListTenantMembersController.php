@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
@@ -13,13 +15,16 @@ class ListTenantMembersController extends Controller
     /**
      * @return array<string, mixed>
      */
-    public function __invoke(Request $request): array
+    public function __invoke(Request $request, ResolveTenantPermissionsAction $permissions): array
     {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
         Gate::forUser($request->user())
             ->authorize('viewMembers', $tenant);
+
+        $assignableRoles = array_filter(TenantUserRole::cases(),
+            fn (TenantUserRole $role): bool => $permissions->canAssign($request->user(), $tenant, $role));
 
         return $tenant->users()
             ->orderBy('users.name')
@@ -29,9 +34,10 @@ class ListTenantMembersController extends Controller
                 'users.name',
                 'users.email',
             ])
-            ->through(fn(User $user): array => [
+            ->through(fn (User $user): array => [
                 'id' => $user->membership->id,
                 'user_id' => $user->id,
+                'can_manage' => $user->id !== $request->user()->id && in_array($user->membership->role, $assignableRoles, true),
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->membership->role->value,

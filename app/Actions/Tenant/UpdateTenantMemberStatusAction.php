@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class UpdateTenantMemberStatusAction
 {
+    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+
     public function handle(
         User $owner,
         Tenant $tenant,
@@ -59,6 +61,8 @@ class UpdateTenantMemberStatusAction
                 ->whereKey($membershipId)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            abort_unless($this->permissions->canManageMember($owner, $tenant, $membership), 403, 'Você não pode alterar o acesso deste membro.');
 
             if ($membership->role === TenantUserRole::Owner) {
                 throw ValidationException::withMessages([

@@ -14,6 +14,7 @@ use App\Http\Controllers\Tenant\AcceptTenantInvitationController;
 use App\Http\Controllers\Tenant\ListPlatformTenantsController;
 use App\Http\Controllers\Tenant\ListTenantInvitationsController;
 use App\Http\Controllers\Tenant\ListTenantMembersController;
+use App\Http\Controllers\Tenant\ListTenantPermissionChangesController;
 use App\Http\Controllers\Tenant\ListTenantsController;
 use App\Http\Controllers\Tenant\ListTenantStatusChangesController;
 use App\Http\Controllers\Tenant\ResendTenantInvitationController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
 use App\Http\Controllers\Tenant\ShowPlatformTenantController;
 use App\Http\Controllers\Tenant\ShowTenantInvitationController;
+use App\Http\Controllers\Tenant\ShowTenantRolePermissionsController;
 use App\Http\Controllers\Tenant\ShowTenantSubscriptionController;
 use App\Http\Controllers\Tenant\StoreTenantController;
 use App\Http\Controllers\Tenant\StoreTenantInvitationController;
@@ -31,6 +33,7 @@ use App\Http\Controllers\Tenant\UpdateTenantController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberRoleController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberTeamController;
+use App\Http\Controllers\Tenant\UpdateTenantRolePermissionsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -143,6 +146,15 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->group(function (): void {
                 Route::get('/', ShowActiveTenantController::class)
                     ->name('tenants.show');
+
+                Route::get('/role-permissions', ShowTenantRolePermissionsController::class)
+                    ->name('tenant-role-permissions.show');
+                Route::get('/permission-changes', ListTenantPermissionChangesController::class)
+                    ->name('tenant-permission-changes.index');
+                Route::put('/role-permissions/{role}', UpdateTenantRolePermissionsController::class)
+                    ->whereIn('role', ['MANAGER', 'CONSULTANT', 'ASSISTANT'])
+                    ->middleware(['subscription.writable', 'throttle:20,1'])
+                    ->name('tenant-role-permissions.update');
 
                 Route::get('/members', ListTenantMembersController::class)
                     ->name('tenant-members.index');

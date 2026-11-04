@@ -14,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 class CreateTenantInvitationAction
 {
+    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+
     /**
      * @return array{invitation: TenantInvitation, token: string}
      */
@@ -41,7 +43,9 @@ class CreateTenantInvitationAction
                 ->lockForUpdate()
                 ->findOrFail($tenant->getKey());
 
-            Gate::forUser($owner)->authorize('addMember', $tenant);
+            Gate::forUser($owner)->authorize('createInvitation', $tenant);
+
+            abort_unless($this->permissions->canAssign($owner, $tenant, $role), 403, 'Você não pode atribuir este cargo.');
 
             $subscription = $tenant->subscription()
                 ->lockForUpdate()
