@@ -79,4 +79,9 @@ class TenantPolicy
     {
         return $this->viewMembers($user, $tenant);
     }
+
+    public function revokeInvitation(User $user, Tenant $tenant): bool
+    {
+        return $this->addMember($user, $tenant);
+    }
 }
