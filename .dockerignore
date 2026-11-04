@@ -1,3 +1,5 @@
 **
 !Dockerfile
 !docker-php.ini
+!Dockerfile.frontend
+!nginx.frontend.conf

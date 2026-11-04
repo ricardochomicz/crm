@@ -7,6 +7,32 @@ x-logging: &logging
     max-file: "2"
 
 services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      additional_contexts:
+        frontend: "${DOCKER_FRONTEND_PATH:-../crm-web}"
+    image: telecomhub-web:local
+    init: true
+    ports:
+      - "127.0.0.1:${DOCKER_FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      app:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    mem_limit: 64m
+    cpus: 0.5
+    pids_limit: 32
+    logging: *logging
+
   app:
     build:
       context: .
@@ -22,6 +48,7 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       APP_URL: "http://localhost:${DOCKER_APP_PORT:-8085}"
+      FRONTEND_URL: "http://localhost:${DOCKER_FRONTEND_PORT:-8080}"
       # Ignore host-generated config caches and database URLs in development.
       APP_CONFIG_CACHE: /tmp/telecomhub-config.php
       DB_URL: ""
@@ -36,8 +63,7 @@ services:
       SESSION_SECURE_COOKIE: "false"
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
-      PHP_CLI_SERVER_WORKERS: "1"
-      SANCTUM_STATEFUL_DOMAINS: "localhost:${DOCKER_APP_PORT:-8085},127.0.0.1:${DOCKER_APP_PORT:-8085},localhost:5173,127.0.0.1:5173"
+      SANCTUM_STATEFUL_DOMAINS: "localhost:${DOCKER_APP_PORT:-8085},127.0.0.1:${DOCKER_APP_PORT:-8085},localhost:${DOCKER_FRONTEND_PORT:-8080},127.0.0.1:${DOCKER_FRONTEND_PORT:-8080},localhost:5173,127.0.0.1:5173"
       MAIL_MAILER: "${DOCKER_MAIL_MAILER:-log}"
       MAIL_SCHEME: smtp
       MAIL_HOST: mailpit

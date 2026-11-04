@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+FROM node:24-alpine AS build
+ARG PNPM_VERSION=10.33.2
+RUN npm install --global pnpm@${PNPM_VERSION}
+WORKDIR /app
+
+# The named context points to the sibling crm-web repository.
+COPY --from=frontend package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,id=telecomhub-pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --store-dir=/pnpm/store
+
+COPY --from=frontend src ./src
+COPY --from=frontend public ./public
+COPY --from=frontend index.html env.d.ts tsconfig.json tsconfig.app.json tsconfig.node.json tsconfig.vitest.json vite.config.ts vitest.config.ts eslint.config.ts ./
+ENV VITE_API_URL=""
+RUN pnpm build
+
+FROM nginx:stable-alpine AS runtime
+COPY nginx.frontend.conf /etc/nginx/nginx.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+USER nginx
+EXPOSE 8080
+ENTRYPOINT ["nginx"]
+CMD ["-g", "daemon off;"]
