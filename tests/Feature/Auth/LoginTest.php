@@ -4,24 +4,28 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Tests\TestCase;
 use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
 
 class LoginTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withHeader('Origin', 'http://localhost:5173');
+    }
+
     public function test_authenticates_user_with_valid_credentials(): void
     {
         $user = User::factory()->create([
-            'password' => Hash::make('senha-de-teste')
+            'password' => Hash::make('senha-de-teste'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => $user->email,
-            'password' => 'senha-de-teste'
+            'password' => 'senha-de-teste',
         ]);
 
         $response->assertNoContent();
@@ -31,17 +35,17 @@ class LoginTest extends TestCase
     public function test_rejects_wrong_password(): void
     {
         $user = User::factory()->create([
-            'password' => Hash::make('senha-correta')
+            'password' => Hash::make('senha-correta'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => $user->email,
-            'password' => 'senha-incorreta'
+            'password' => 'senha-incorreta',
         ]);
 
         $response->assertUnprocessable();
         $response->assertInvalid([
-            'email' => 'E-mail ou senha inválidos.'
+            'email' => 'E-mail ou senha inválidos.',
         ]);
         $this->assertGuest('web');
     }

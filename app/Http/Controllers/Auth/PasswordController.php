@@ -16,8 +16,20 @@ use Illuminate\Validation\ValidationException;
 
 class PasswordController extends Controller
 {
-    public function show(Request $request, string $token): View
+    public function show(Request $request, string $token): View|RedirectResponse
     {
+        $frontendUrl = config('app.frontend_url');
+
+        if (is_string($frontendUrl) && $frontendUrl !== '' && $token !== 'concluido') {
+            return redirect()->away(
+                rtrim($frontendUrl, '/').'/reset-password/'.rawurlencode($token)
+                .'?'.http_build_query(['email' => (string) $request->string('email')]),
+            )->withHeaders([
+                'Referrer-Policy' => 'no-referrer',
+                'Cache-Control' => 'no-store, private',
+            ]);
+        }
+
         return view('auth.reset-password', [
             'token' => $token,
             'email' => (string) $request->string('email'),
@@ -35,7 +47,7 @@ class PasswordController extends Controller
         return response()->noContent();
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request): RedirectResponse|Response
     {
         $credentials = $request->validate([
             'token' => ['required', 'string'],
@@ -65,6 +77,10 @@ class PasswordController extends Controller
             throw ValidationException::withMessages([
                 'email' => 'O link é inválido ou expirou. Solicite outro link.',
             ]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->noContent();
         }
 
         return redirect()->route('password.reset', [

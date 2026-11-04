@@ -21,8 +21,10 @@ use App\Http\Controllers\Tenant\RevokeTenantInvitationController;
 use App\Http\Controllers\Tenant\SelectTenantController;
 use App\Http\Controllers\Tenant\ShowActiveTenantController;
 use App\Http\Controllers\Tenant\ShowPlatformTenantController;
+use App\Http\Controllers\Tenant\ShowTenantInvitationController;
 use App\Http\Controllers\Tenant\ShowTenantSubscriptionController;
 use App\Http\Controllers\Tenant\StoreTenantController;
+use App\Http\Controllers\Tenant\StoreTenantInvitationController;
 use App\Http\Controllers\Tenant\StoreTenantMemberController;
 use App\Http\Controllers\Tenant\UpdatePlatformTenantStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantController;
@@ -31,8 +33,6 @@ use App\Http\Controllers\Tenant\UpdateTenantMemberStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberTeamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Tenant\ShowTenantInvitationController;
-use App\Http\Controllers\Tenant\StoreTenantInvitationController;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
@@ -47,6 +47,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('/password/email', [PasswordController::class, 'sendLink'])
             ->middleware('throttle:5,1')
             ->name('password.email');
+
+        Route::post('/password/reset', [PasswordController::class, 'update'])
+            ->middleware('throttle:10,1')
+            ->name('password.reset');
 
         Route::post('/logout', LogoutController::class)
             ->middleware('auth:sanctum')
