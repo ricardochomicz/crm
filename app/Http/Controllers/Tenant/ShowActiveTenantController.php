@@ -39,6 +39,7 @@ class ShowActiveTenantController extends Controller
             'email' => $tenant->email,
             'phone' => $tenant->phone,
             'timezone' => $tenant->timezone,
+            'logo_url' => $tenant->logo ? \Illuminate\Support\Facades\Storage::disk('public')->url($tenant->logo) : null,
             'access' => [
                 'permissions' => $grants,
                 'can_manage_permissions' => $tenant->membership->role === TenantUserRole::Owner,
