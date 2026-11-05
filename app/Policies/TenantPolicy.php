@@ -62,6 +62,11 @@ class TenantPolicy
         return $this->permissions->allows($user, $tenant, TenantPermission::UpdateMemberStatus);
     }
 
+    public function removeMember(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::RemoveMember);
+    }
+
     public function viewTeams(User $user, Tenant $tenant): bool
     {
         return $this->permissions->allows($user, $tenant, TenantPermission::ViewTeams);
