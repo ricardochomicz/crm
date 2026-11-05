@@ -95,6 +95,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->middleware('throttle:10,1')
             ->name('tenant-invitations.accept');
 
+        Route::get('/operators', \App\Http\Controllers\Operator\ListAvailableOperatorsController::class)->name('operators.available');
+
         Route::get('/subscription-plans', ListSubscriptionPlansController::class)
             ->name('subscription-plans.index');
 
