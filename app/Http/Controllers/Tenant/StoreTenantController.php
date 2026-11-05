@@ -24,6 +24,7 @@ class StoreTenantController extends Controller
             $request->user(),
             $request->validated('subscription_plan_id'),
             $tenantData,
+            $request->validated('operator_ids'),
         );
 
         $request->session()->put('active_tenant_id', $tenant->getKey());
