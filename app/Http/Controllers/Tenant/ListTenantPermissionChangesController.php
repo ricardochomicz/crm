@@ -17,11 +17,15 @@ class ListTenantPermissionChangesController extends Controller
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
         Gate::forUser($request->user())->authorize('managePermissions', $tenant);
-        $request->validate(['page' => ['sometimes', 'integer', 'min:1']]);
+        $filters = $request->validate([
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'role' => ['sometimes', 'string', \Illuminate\Validation\Rule::in(['OWNER', 'MANAGER', 'CONSULTANT', 'ASSISTANT'])],
+        ]);
 
         return DB::table('tenant_permission_changes as changes')
             ->join('users', 'users.id', '=', 'changes.actor_user_id')
             ->where('changes.tenant_id', $tenant->getKey())
+            ->when(isset($filters['role']), fn ($query) => $query->where('changes.role', $filters['role'])
             ->orderByDesc('changes.created_at')->orderByDesc('changes.id')
             ->paginate(20, ['changes.*', 'users.name as actor_name'])
             ->through(fn (object $change): array => [
