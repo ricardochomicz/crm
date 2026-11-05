@@ -23,6 +23,7 @@ class ListTenantUnitAssignmentsController extends Controller
         $search = trim($filters['q'] ?? '');
         if ($filters['kind'] === 'members') {
             $query = TenantUser::query()->where('tenant_id', $tenant->id)->with('user')
+                ->with(['team:id,name,tenant_unit_id', 'supervisedTeams:id,name,tenant_unit_id'])
                 ->withExists([
                     'team as belongs_to_unit_team' => fn (Builder $teams): Builder => $teams->where('tenant_unit_id', $unitId),
                     'supervisedTeams as supervises_unit_team' => fn (Builder $teams): Builder => $teams->where('tenant_unit_id', $unitId),
@@ -35,12 +36,14 @@ class ListTenantUnitAssignmentsController extends Controller
             return $query->orderBy('id')->paginate(20)->through(fn (TenantUser $member): array => [
                 'id' => $member->id, 'name' => $member->user->name, 'email' => $member->user->email,
                 'status' => $member->status->value,
+                'team_name' => $member->team?->tenant_unit_id === $unitId ? $member->team->name : null,
+                'supervised_team_names' => $member->supervisedTeams->where('tenant_unit_id', $unitId)->pluck('name')->values()->all(),
                 'removal_blocked_reason' => ($member->belongs_to_unit_team || $member->supervises_unit_team)
                     ? 'Este membro integra ou supervisiona uma equipe desta unidade. Atualize a equipe antes de remover o vínculo.' : null,
             ])->toArray();
         }
 
-        $query = $tenant->teams()->with('unit:id,name');
+        $query = $tenant->teams()->with('unit:id,name')->withCount('members');
         if ($linked) {
             $query->where('tenant_unit_id', $unitId);
         } else {
@@ -53,6 +56,7 @@ class ListTenantUnitAssignmentsController extends Controller
         return $query->orderBy('name')->orderBy('id')->paginate(20)->through(fn (Team $team): array => [
             'id' => $team->id, 'name' => $team->name,
             'unit_name' => $team->unit?->name,
+            'members_count' => $team->members_count,
             'removal_blocked_reason' => $unit->is_headquarters && $linked ? 'Para retirar uma equipe da matriz, transfira-a para uma filial.' : null,
         ])->toArray();
     }
