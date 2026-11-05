@@ -17,7 +17,8 @@ class ListTenantOperatorsController extends Controller
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
         $membership = $tenant->users()->where('users.id', $request->user()->id)->first();
-        abort_unless($membership && $membership->membership->role === TenantUserRole::Owner, 403);
+        $isOwner = $membership && $membership->membership->role === TenantUserRole::Owner;
+        abort_unless($isOwner || $request->user()->can('viewProducts', $tenant), 403);
 
         $selected = $tenant->operators()->pluck('operators.id')->all();
 
@@ -31,7 +32,7 @@ class ListTenantOperatorsController extends Controller
                 'is_active' => $operator->is_active,
                 'selected' => in_array($operator->id, $selected, true),
             ]),
-            'meta' => ['can_manage' => true],
+            'meta' => ['can_manage' => $isOwner],
         ]);
     }
 }
