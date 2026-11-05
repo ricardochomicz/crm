@@ -12,7 +12,7 @@ class SaveProductRequest extends FormRequest
     public function authorize(): bool
     {
         $tenant = $this->attributes->get('active_tenant');
-        return $tenant instanceof Tenant && $this->user()->can('manageProducts', $tenant);
+        return $tenant instanceof Tenant && $this->user()->can($this->isMethod('POST') ? 'createProducts' : 'updateProducts', $tenant);
     }
     public function rules(): array
     {
