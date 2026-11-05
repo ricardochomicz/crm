@@ -1,0 +1,28 @@
+# Desenvolvimento com Vite HMR. Execute junto com compose.yaml.
+# O código do repositório irmão crm-web é montado diretamente no container.
+services:
+  frontend:
+    image: node:24-alpine
+    build: !reset null
+    working_dir: /app
+    user: root
+    read_only: false
+    volumes:
+      - "${DOCKER_FRONTEND_PATH:-../crm-web}:/app"
+      - frontend-node-modules:/app/node_modules
+    environment:
+      API_PROXY_TARGET: http://app:8000
+      VITE_API_URL: ""
+      VITE_USE_POLLING: "true"
+    command:
+      - sh
+      - -c
+      - "corepack enable && corepack prepare pnpm@10.33.2 --activate && pnpm install --frozen-lockfile && pnpm dev --host 0.0.0.0 --port 8080"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+
+volumes:
+  frontend-node-modules:
