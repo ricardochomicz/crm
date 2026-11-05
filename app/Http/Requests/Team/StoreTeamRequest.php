@@ -23,6 +23,7 @@ class StoreTeamRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'],
+            'tenant_unit_id' => ['sometimes', 'required', 'uuid'],
             'supervisor_membership_id' => ['sometimes', 'nullable', 'uuid'],
         ];
     }
