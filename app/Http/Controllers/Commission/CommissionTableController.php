@@ -1,3 +1,14 @@
 <?php
 namespace App\Http\Controllers\Commission;
-class CommissionTableController {}
+use App\Http\Controllers\Controller;
+use App\Models\CommissionTable;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+class CommissionTableController extends Controller {
+ public function __invoke(Request $request, string $tenantId, ?string $commissionId = null) {
+  $tenant = $request->attributes->get('active_tenant');
+  $write = $request->isMethod('POST') || $request->isMethod('PATCH');
+  abort_unless($request->user()->can($write ? 'manageCommissions' : 'viewCommissions', $tenant), 403);
+  $query = CommissionTable::query()->where('tenant_id', $tenant->id);
+ }
+}
