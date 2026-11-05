@@ -22,6 +22,7 @@ class StoreTeamController extends Controller
             $tenant,
             $request->safe()->only([
                 'name',
+                'tenant_unit_id',
                 'supervisor_membership_id',
             ]),
         );

@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 class CreateTeamAction
 {
     /**
-     * @param  array{name: string, supervisor_membership_id: string}  $data
+     * @param  array{name: string, supervisor_membership_id?: string|null, tenant_unit_id?: string}  $data
      */
     public function handle(User $owner, Tenant $tenant, array $data): Team
     {
@@ -38,26 +38,30 @@ class CreateTeamAction
                 ]);
             }
 
-            $supervisor = TenantUser::query()
+            $supervisor = isset($data['supervisor_membership_id']) ? TenantUser::query()
                 ->where('tenant_id', $tenant->getKey())
                 ->whereKey($data['supervisor_membership_id'])
                 ->where('status', TenantUserStatus::Active->value)
                 ->lockForUpdate()
-                ->first();
+                ->first() : null;
 
-            if ($supervisor === null) {
+            if (isset($data['supervisor_membership_id']) && $supervisor === null) {
                 throw ValidationException::withMessages([
                     'supervisor_membership_id' => 'Selecione um membro ativo deste tenant.',
                 ]);
             }
 
-            $headquarters = $tenant->units()->where('is_headquarters', true)->first();
-            $headquarters?->members()->syncWithoutDetaching([$supervisor->id => ['tenant_id' => $tenant->id]]);
+            $headquarters = isset($data['tenant_unit_id'])
+                ? $tenant->units()->whereKey($data['tenant_unit_id'])->firstOrFail()
+                : $tenant->units()->where('is_headquarters', true)->first();
+            if ($supervisor !== null) {
+                $headquarters?->members()->syncWithoutDetaching([$supervisor->id => ['tenant_id' => $tenant->id]]);
+            }
 
             return $tenant->teams()->create([
                 'name' => $data['name'],
                 'tenant_unit_id' => $headquarters?->id,
-                'supervisor_membership_id' => $supervisor->getKey(),
+                'supervisor_membership_id' => $supervisor?->getKey(),
             ]);
         }, attempts: 5);
     }
