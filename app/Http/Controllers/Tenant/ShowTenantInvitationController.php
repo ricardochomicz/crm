@@ -21,6 +21,7 @@ class ShowTenantInvitationController extends Controller
             ->json([
                 'data' => [
                     'is_available' => $isAvailable,
+                    'email' => $isAvailable ? $invitation->email : null,
                 ],
             ], $isAvailable ? 200 : 410)
             ->header('Cache-Control', 'no-store, private')
