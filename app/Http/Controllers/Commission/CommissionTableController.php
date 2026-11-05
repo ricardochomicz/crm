@@ -13,6 +13,9 @@ class CommissionTableController extends Controller {
   if ($commissionId === 'settings' && $request->isMethod('GET')) {
    return ['data' => ['default_deduction_percentage' => DB::table('tenant_commission_settings')->where('tenant_id', $tenant->id)->value('default_deduction_percentage') ?? '0.00']];
   }
+  if ($commissionId === 'settings' && $request->isMethod('PUT')) {
+   $input = $request->validate(['default_deduction_percentage' => 'required|numeric|min:0|max:100']);
+  }
   $query = CommissionTable::query()->where('tenant_id', $tenant->id);
   if (!$write) return ['data' => $query->with('operator:id,name')->orderBy('name')->get(), 'meta' => ['can_manage' => $request->user()->can('manageCommissions', $tenant)]];
   $data = $request->validate(['name' => 'required|string|max:180',
