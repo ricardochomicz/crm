@@ -17,5 +17,6 @@ class CommissionTableController extends Controller {
    'deduction_percentage' => 'nullable|numeric|min:0|max:100|decimal:0,2',
    'is_active' => 'sometimes|boolean']);
   if ($request->isMethod('POST')) return ['data' => $tenant->commissionTables()->create($data)];
+  $record = $query->findOrFail($commissionId);
  }
 }
