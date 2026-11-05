@@ -4,10 +4,11 @@ use App\Http\Controllers\Controller;
 use App\Models\CommissionTable;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 class CommissionTableController extends Controller {
  public function __invoke(Request $request, string $tenantId, ?string $commissionId = null) {
   $tenant = $request->attributes->get('active_tenant');
-  $write = $request->isMethod('POST') || $request->isMethod('PATCH');
+  $write = !$request->isMethod('GET');
   abort_unless($request->user()->can($write ? 'manageCommissions' : 'viewCommissions', $tenant), 403);
   $query = CommissionTable::query()->where('tenant_id', $tenant->id);
   if (!$write) return ['data' => $query->with('operator:id,name')->orderBy('name')->get(), 'meta' => ['can_manage' => $request->user()->can('manageCommissions', $tenant)]];
