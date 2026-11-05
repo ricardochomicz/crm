@@ -17,6 +17,21 @@ class TenantPolicy
         return $this->permissions->allows($user, $tenant, TenantPermission::ViewProducts);
     }
 
+    public function createProducts(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::CreateProducts) || $this->manageProducts($user, $tenant);
+    }
+
+    public function updateProducts(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::UpdateProducts) || $this->manageProducts($user, $tenant);
+    }
+
+    public function managePromotions(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ManagePromotions) || $this->manageProducts($user, $tenant);
+    }
+
     public function manageProducts(User $user, Tenant $tenant): bool
     {
         return $this->permissions->allows($user, $tenant, TenantPermission::ManageProducts);
