@@ -24,7 +24,7 @@ class ListTenantUnitsController extends Controller
         return [
             'data' => $query->orderByDesc('is_headquarters')->orderBy('name')->orderBy('id')->get()->map(fn (TenantUnit $unit): array => [
                 'id' => $unit->id, 'name' => $unit->name, 'is_headquarters' => (bool) $unit->is_headquarters,
-                'email' => $unit->email, 'phone' => $unit->phone, 'address' => $unit->address,
+                'email' => $unit->email, 'phone' => $unit->phone, 'address' => $unit->address, 'city' => $unit->city, 'state' => $unit->state,
                 'members_count' => $unit->members_count, 'teams_count' => $unit->teams_count,
             ])->all(),
             'meta' => [
