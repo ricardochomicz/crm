@@ -38,6 +38,11 @@ class Tenant extends Model
             ->withTimestamps();
     }
 
+    public function operators(): BelongsToMany
+    {
+        return $this->belongsToMany(Operator::class, 'tenant_operators')->withTimestamps();
+    }
+
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class);
