@@ -23,7 +23,7 @@ class UpdateTenantMemberTeamRequest extends FormRequest
     {
         return [
             'team_id' => ['present', 'nullable', 'uuid'],
-            'reason' => ['required', 'string', 'min:10', 'max:2000'],
+            'reason' => ['sometimes', 'nullable', 'string', 'max:2000'],
         ];
     }
 }

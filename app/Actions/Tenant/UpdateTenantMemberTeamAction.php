@@ -18,13 +18,13 @@ class UpdateTenantMemberTeamAction
         Tenant $tenant,
         string $membershipId,
         ?string $teamId,
-        string $reason,
+        ?string $reason,
     ): void {
-        $reason = trim($reason);
+        $reason = trim($reason ?? '');
 
-        if (mb_strlen($reason) < 10 || mb_strlen($reason) > 2000) {
+        if (mb_strlen($reason) > 2000) {
             throw ValidationException::withMessages([
-                'reason' => 'Informe um motivo entre 10 e 2000 caracteres.',
+                'reason' => 'O motivo deve ter no máximo 2000 caracteres.',
             ]);
         }
 
@@ -105,7 +105,7 @@ class UpdateTenantMemberTeamAction
                 'previous_team_id' => $previousTeamId,
                 'new_team_id' => $newTeamId,
                 'actor_user_id' => $owner->getKey(),
-                'reason' => $reason,
+                'reason' => $reason !== '' ? $reason : null,
                 'created_at' => now(),
             ]);
         }, attempts: 5);

@@ -22,7 +22,7 @@ class UpdateTenantMemberTeamController extends Controller
             $tenant,
             (string) $request->route('membershipId'),
             $request->validated('team_id'),
-            $request->validated('reason'),
+            $request->validated('reason', null),
         );
 
         return response()->noContent();
