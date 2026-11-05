@@ -9,7 +9,7 @@ use Illuminate\Http\JsonResponse;
 
 class StorePromotionController extends Controller
 {
-    public function __invoke(SavePromotionRequest $request, string $productId): JsonResponse
+    public function __invoke(SavePromotionRequest $request, string $tenantId, string $productId): JsonResponse
     {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
