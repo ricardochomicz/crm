@@ -64,12 +64,14 @@ services:
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
       SANCTUM_STATEFUL_DOMAINS: "localhost:${DOCKER_APP_PORT:-8085},127.0.0.1:${DOCKER_APP_PORT:-8085},localhost:${DOCKER_FRONTEND_PORT:-8080},127.0.0.1:${DOCKER_FRONTEND_PORT:-8080},localhost:5173,127.0.0.1:5173"
-      MAIL_MAILER: "${DOCKER_MAIL_MAILER:-log}"
-      MAIL_SCHEME: smtp
-      MAIL_HOST: mailpit
-      MAIL_PORT: "1025"
-      MAIL_USERNAME: ""
-      MAIL_PASSWORD: ""
+      MAIL_MAILER: "${MAIL_MAILER:-${DOCKER_MAIL_MAILER:-log}}"
+      MAIL_SCHEME: "${MAIL_SCHEME:-smtp}"
+      MAIL_HOST: "${MAIL_HOST:-mailpit}"
+      MAIL_PORT: "${MAIL_PORT:-1025}"
+      MAIL_USERNAME: "${MAIL_USERNAME:-}"
+      MAIL_PASSWORD: "${MAIL_PASSWORD:-}"
+      MAIL_FROM_ADDRESS: "${MAIL_FROM_ADDRESS:-hello@example.com}"
+      MAIL_FROM_NAME: "${MAIL_FROM_NAME:-TelecomHub}"
     depends_on:
       mysql:
         condition: service_healthy
