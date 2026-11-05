@@ -34,6 +34,11 @@ class ShowActiveTenantController extends Controller
         return ['data' => [
             'id' => $tenant->id, 'name' => $tenant->name, 'type' => $tenant->type->value,
             'role' => $tenant->membership->role->value,
+            'document' => $tenant->document,
+            'trade_name' => $tenant->trade_name,
+            'email' => $tenant->email,
+            'phone' => $tenant->phone,
+            'timezone' => $tenant->timezone,
             'access' => [
                 'permissions' => $grants,
                 'can_manage_permissions' => $tenant->membership->role === TenantUserRole::Owner,
