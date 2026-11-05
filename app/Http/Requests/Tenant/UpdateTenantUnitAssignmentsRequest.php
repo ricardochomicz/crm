@@ -21,10 +21,10 @@ class UpdateTenantUnitAssignmentsRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
 
         return [
-            'membership_ids' => ['present', 'array', 'max:1000'],
-            'membership_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('tenant_users', 'id')->where('tenant_id', $tenant->id)],
-            'team_ids' => ['present', 'array', 'max:1000'],
-            'team_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('teams', 'id')->where('tenant_id', $tenant->id)],
+            'kind' => ['required', Rule::in(['members', 'teams'])],
+            'operation' => ['required', Rule::in(['add', 'remove'])],
+            'ids' => ['required', 'array', 'min:1', 'max:1000'],
+            'ids.*' => ['required', 'uuid', 'distinct', Rule::exists($this->input('kind') === 'teams' ? 'teams' : 'tenant_users', 'id')->where('tenant_id', $tenant->id)],
         ];
     }
 }

@@ -16,6 +16,11 @@ class Team extends Model
     /** @use HasFactory<TeamFactory> */
     use HasFactory, HasUuids;
 
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(TenantUnit::class, 'tenant_unit_id');
+    }
+
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

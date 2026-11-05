@@ -17,6 +17,7 @@ use App\Http\Controllers\Tenant\ListTenantMembersController;
 use App\Http\Controllers\Tenant\ListTenantPermissionChangesController;
 use App\Http\Controllers\Tenant\ListTenantsController;
 use App\Http\Controllers\Tenant\ListTenantStatusChangesController;
+use App\Http\Controllers\Tenant\ListTenantUnitAssignmentsController;
 use App\Http\Controllers\Tenant\ListTenantUnitsController;
 use App\Http\Controllers\Tenant\ResendTenantInvitationController;
 use App\Http\Controllers\Tenant\RevokeTenantInvitationController;
@@ -151,11 +152,12 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/', ShowActiveTenantController::class)
                     ->name('tenants.show');
 
+                Route::get('/units/{unitId}/assignments', ListTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.index');
                 Route::get('/units', ListTenantUnitsController::class)->name('tenant-units.index');
                 Route::middleware('subscription.writable')->group(function (): void {
                     Route::post('/units', StoreTenantUnitController::class)->middleware('throttle:20,1')->name('tenant-units.store');
                     Route::patch('/units/{unitId}', UpdateTenantUnitController::class)->whereUuid('unitId')->name('tenant-units.update');
-                    Route::put('/units/{unitId}/assignments', UpdateTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.update');
+                    Route::patch('/units/{unitId}/assignments', UpdateTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.update');
                 });
 
                 Route::get('/role-permissions', ShowTenantRolePermissionsController::class)
