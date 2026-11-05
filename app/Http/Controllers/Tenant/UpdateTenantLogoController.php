@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Http\Controllers\Tenant;
+
+use App\Http\Controllers\Controller;
+use App\Models\Tenant;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+
+class UpdateTenantLogoController extends Controller
+{
+    /** @return array<string, mixed> */
+    public function __invoke(Request $request): array
+    {
+        /** @var Tenant $tenant */
+        $tenant = $request->attributes->get('active_tenant');
+        abort_unless($request->user()?->can('update', $tenant), 403);
+
+        $request->validate([
+            'logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        $path = $request->file('logo')->store('tenant-logos/'.$tenant->id, 'public');
+        if (! $path) {
+            throw ValidationException::withMessages(['logo' => 'Não foi possível armazenar a imagem.']);
+        }
+
+        $old = $tenant->logo;
+        $tenant->update(['logo' => $path]);
+        if ($old && $old !== $path) {
+            Storage::disk('public')->delete($old);
+        }
+
+        return ['data' => ['logo_url' => Storage::disk('public')->url($path)]];
+    }
+}
