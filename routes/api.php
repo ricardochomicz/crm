@@ -172,6 +172,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
+                    Route::patch('/commissions/{commissionId}', \App\Http\Controllers\Commission\CommissionTableController::class)->whereUuid('commissionId');
                     Route::post('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.store');
                     Route::post('/products', \App\Http\Controllers\Product\StoreProductController::class)->name('products.store');
                     Route::patch('/products/{productId}', \App\Http\Controllers\Product\UpdateProductController::class)->whereUuid('productId')->name('products.update');
