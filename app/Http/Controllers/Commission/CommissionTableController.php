@@ -10,6 +10,6 @@ class CommissionTableController extends Controller {
   $write = $request->isMethod('POST') || $request->isMethod('PATCH');
   abort_unless($request->user()->can($write ? 'manageCommissions' : 'viewCommissions', $tenant), 403);
   $query = CommissionTable::query()->where('tenant_id', $tenant->id);
-  if (!$write) return ['data' => $query->with('operator:id,name')->get()];
+  if (!$write) return ['data' => $query->with('operator:id,name')->orderBy('name')->get(), 'meta' => ['can_manage' => $request->user()->can('manageCommissions', $tenant)]];
  }
 }
