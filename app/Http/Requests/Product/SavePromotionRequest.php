@@ -10,7 +10,7 @@ class SavePromotionRequest extends FormRequest
     public function authorize(): bool
     {
         $tenant = $this->attributes->get('active_tenant');
-        return $tenant instanceof Tenant && $this->user()->can('manageProducts', $tenant);
+        return $tenant instanceof Tenant && $this->user()->can('managePromotions', $tenant);
     }
 
     public function rules(): array
