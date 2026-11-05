@@ -10,6 +10,7 @@ enum TenantPermission: string
     case CreateMembers = 'members.create';
     case UpdateMemberRole = 'members.role';
     case UpdateMemberStatus = 'members.status';
+    case RemoveMember = 'members.remove';
     case UpdateMemberTeam = 'members.team';
     case ViewInvitations = 'invitations.view';
     case CreateInvitations = 'invitations.create';
@@ -31,6 +32,7 @@ enum TenantPermission: string
             ['key' => self::CreateMembers->value, 'group' => 'Membros', 'label' => 'Cadastrar membros diretamente', 'requires' => ['members.view']],
             ['key' => self::UpdateMemberRole->value, 'group' => 'Membros', 'label' => 'Alterar cargo dos membros', 'requires' => ['members.view']],
             ['key' => self::UpdateMemberStatus->value, 'group' => 'Membros', 'label' => 'Suspender e reativar membros', 'requires' => ['members.view']],
+            ['key' => self::RemoveMember->value, 'group' => 'Membros', 'label' => 'Desvincular membros da empresa', 'requires' => ['members.view']],
             ['key' => self::UpdateMemberTeam->value, 'group' => 'Membros', 'label' => 'Vincular membros às equipes', 'requires' => ['members.view']],
             ['key' => self::ViewInvitations->value, 'group' => 'Convites', 'label' => 'Visualizar convites', 'requires' => []],
             ['key' => self::CreateInvitations->value, 'group' => 'Convites', 'label' => 'Convidar pessoas', 'requires' => ['invitations.view']],
