@@ -18,7 +18,8 @@ class ListTenantOperatorsController extends Controller
         $tenant = $request->attributes->get('active_tenant');
         $membership = $tenant->users()->where('users.id', $request->user()->id)->first();
         $isOwner = $membership && $membership->membership->role === TenantUserRole::Owner;
-        abort_unless($isOwner || $request->user()->can('viewProducts', $tenant), 403);
+        $canViewCommissions = $request->user()->can('viewCommissions', $tenant);
+        abort_unless($isOwner || $request->user()->can('viewProducts', $tenant) || $canViewCommissions, 403);
 
         $selected = $tenant->operators()->pluck('operators.id')->all();
 
