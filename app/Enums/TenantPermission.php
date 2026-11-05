@@ -4,6 +4,8 @@ namespace App\Enums;
 
 enum TenantPermission: string
 {
+    case ViewProducts = 'products.view';
+    case ManageProducts = 'products.manage';
     case ManageUnits = 'units.manage';
     case UpdateCompany = 'company.update';
     case ViewMembers = 'members.view';
@@ -26,6 +28,8 @@ enum TenantPermission: string
     public static function catalog(): array
     {
         return [
+            ['key' => self::ViewProducts->value, 'group' => 'Produtos', 'label' => 'Visualizar produtos e promoções', 'requires' => []],
+            ['key' => self::ManageProducts->value, 'group' => 'Produtos', 'label' => 'Gerenciar produtos e promoções', 'requires' => ['products.view']],
             ['key' => self::ManageUnits->value, 'group' => 'Empresa', 'label' => 'Gerenciar matriz, filiais e vínculos nas unidades', 'requires' => []],
             ['key' => self::UpdateCompany->value, 'group' => 'Empresa', 'label' => 'Editar dados da empresa', 'requires' => []],
             ['key' => self::ViewMembers->value, 'group' => 'Membros', 'label' => 'Visualizar membros', 'requires' => []],
