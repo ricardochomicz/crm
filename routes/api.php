@@ -167,8 +167,13 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                 Route::get('/units/{unitId}/assignments', ListTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.index');
                 Route::get('/units', ListTenantUnitsController::class)->name('tenant-units.index');
+                Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
+                    Route::post('/products', \App\Http\Controllers\Product\StoreProductController::class)->name('products.store');
+                    Route::patch('/products/{productId}', \App\Http\Controllers\Product\UpdateProductController::class)->whereUuid('productId')->name('products.update');
+                    Route::post('/products/{productId}/promotions', \App\Http\Controllers\Product\StorePromotionController::class)->whereUuid('productId')->name('promotions.store');
+                    Route::patch('/products/{productId}/promotions/{promotionId}', \App\Http\Controllers\Product\UpdatePromotionController::class)->whereUuid('productId')->whereUuid('promotionId')->name('promotions.update');
                     Route::put('/operators', SyncTenantOperatorsController::class)->middleware('throttle:20,1')->name('tenant-operators.update');
                     Route::post('/units', StoreTenantUnitController::class)->middleware('throttle:20,1')->name('tenant-units.store');
                     Route::patch('/units/{unitId}', UpdateTenantUnitController::class)->whereUuid('unitId')->name('tenant-units.update');
