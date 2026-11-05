@@ -22,6 +22,16 @@ class TenantUser extends Pivot
 {
     use HasUuids;
 
+    protected static function booted(): void
+    {
+        static::created(function (TenantUser $membership): void {
+            $headquarters = $membership->tenant->units()->where('is_headquarters', true)->first();
+            $headquarters?->members()->syncWithoutDetaching([
+                $membership->id => ['tenant_id' => $membership->tenant_id],
+            ]);
+        });
+    }
+
     protected $table = 'tenant_users';
 
     /**

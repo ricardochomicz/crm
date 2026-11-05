@@ -68,6 +68,11 @@ class UpdateTeamSupervisorAction
 
             $team->supervisor_membership_id = $supervisor->getKey();
             $team->save();
+            if ($team->tenant_unit_id !== null) {
+                $tenant->units()->findOrFail($team->tenant_unit_id)->members()->syncWithoutDetaching([
+                    $supervisor->id => ['tenant_id' => $tenant->id],
+                ]);
+            }
         }, attempts: 5);
     }
 }

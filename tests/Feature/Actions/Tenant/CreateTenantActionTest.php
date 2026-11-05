@@ -10,7 +10,6 @@ use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -35,7 +34,7 @@ class CreateTenantActionTest extends TestCase
             'storage_limit_mb' => 2048,
         ]);
 
-        $tenant = (new CreateTenantAction())->handle(
+        $tenant = (new CreateTenantAction)->handle(
             $owner,
             $plan->id,
             $this->tenantData(),
@@ -80,6 +79,8 @@ class CreateTenantActionTest extends TestCase
         );
         $this->assertFalse($subscription->cancel_at_period_end);
 
+        $this->assertDatabaseHas('tenant_units', ['tenant_id' => $tenant->id, 'is_headquarters' => true]);
+        $this->assertDatabaseHas('tenant_unit_memberships', ['tenant_unit_id' => $tenant->units()->sole()->id, 'membership_id' => $member->membership->id]);
         $this->assertDatabaseCount('tenants', 1);
         $this->assertDatabaseCount('tenant_users', 1);
         $this->assertDatabaseCount('subscriptions', 1);
@@ -91,7 +92,7 @@ class CreateTenantActionTest extends TestCase
         $plan = SubscriptionPlan::factory()->inactive()->create();
 
         try {
-            (new CreateTenantAction())->handle(
+            (new CreateTenantAction)->handle(
                 $owner,
                 $plan->id,
                 $this->tenantData(),
@@ -115,7 +116,7 @@ class CreateTenantActionTest extends TestCase
         $owner = User::factory()->create();
 
         try {
-            (new CreateTenantAction())->handle(
+            (new CreateTenantAction)->handle(
                 $owner,
                 (string) Str::uuid(),
                 $this->tenantData(),
@@ -146,7 +147,7 @@ class CreateTenantActionTest extends TestCase
             });
 
             try {
-                (new CreateTenantAction())->handle(
+                (new CreateTenantAction)->handle(
                     $owner,
                     $plan->id,
                     $this->tenantData(),

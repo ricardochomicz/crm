@@ -70,6 +70,8 @@ class CreateTenantAction
                 'status' => TenantStatus::Active,
             ]);
 
+            $tenant->units()->create(['name' => 'Matriz', 'is_headquarters' => true, 'email' => $tenant->email, 'phone' => $tenant->phone]);
+
             $tenant->users()->attach($owner->getKey(), [
                 'role' => TenantUserRole::Owner->value,
                 'status' => TenantUserStatus::Active->value,

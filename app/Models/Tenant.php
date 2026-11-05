@@ -43,6 +43,11 @@ class Tenant extends Model
         return $this->hasOne(Subscription::class);
     }
 
+    public function units(): HasMany
+    {
+        return $this->hasMany(TenantUnit::class);
+    }
+
     public function teams(): HasMany
     {
         return $this->hasMany(Team::class);

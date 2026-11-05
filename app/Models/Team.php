@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['tenant_id', 'name', 'supervisor_membership_id'])]
+#[Fillable(['tenant_id', 'name', 'supervisor_membership_id', 'tenant_unit_id'])]
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */

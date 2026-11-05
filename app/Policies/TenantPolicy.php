@@ -17,6 +17,11 @@ class TenantPolicy
         return $this->permissions->membership($user, $tenant)?->role === TenantUserRole::Owner;
     }
 
+    public function manageUnits(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ManageUnits);
+    }
+
     public function update(User $user, Tenant $tenant): bool
     {
         return $this->permissions->allows($user, $tenant, TenantPermission::UpdateCompany);

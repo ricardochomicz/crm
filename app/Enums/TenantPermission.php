@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum TenantPermission: string
 {
+    case ManageUnits = 'units.manage';
     case UpdateCompany = 'company.update';
     case ViewMembers = 'members.view';
     case CreateMembers = 'members.create';
@@ -24,6 +25,7 @@ enum TenantPermission: string
     public static function catalog(): array
     {
         return [
+            ['key' => self::ManageUnits->value, 'group' => 'Empresa', 'label' => 'Gerenciar matriz, filiais e vínculos nas unidades', 'requires' => []],
             ['key' => self::UpdateCompany->value, 'group' => 'Empresa', 'label' => 'Editar dados da empresa', 'requires' => []],
             ['key' => self::ViewMembers->value, 'group' => 'Membros', 'label' => 'Visualizar membros', 'requires' => []],
             ['key' => self::CreateMembers->value, 'group' => 'Membros', 'label' => 'Cadastrar membros diretamente', 'requires' => ['members.view']],

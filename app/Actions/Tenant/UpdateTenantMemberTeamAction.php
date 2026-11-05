@@ -92,6 +92,11 @@ class UpdateTenantMemberTeamAction
 
             $membership->team_id = $newTeamId;
             $membership->save();
+            if ($newTeamId !== null && $team->tenant_unit_id !== null) {
+                $tenant->units()->findOrFail($team->tenant_unit_id)->members()->syncWithoutDetaching([
+                    $membership->id => ['tenant_id' => $tenant->id],
+                ]);
+            }
 
             DB::table('tenant_member_team_changes')->insert([
                 'id' => (string) Str::uuid(),
