@@ -26,6 +26,8 @@ class StoreTenantRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'operator_ids' => ['required', 'array', 'min:1'],
+            'operator_ids.*' => ['required', 'integer', 'distinct', Rule::exists('operators', 'id')->where('is_active', true)],
             'subscription_plan_id' => [
                 'required',
                 'uuid',
