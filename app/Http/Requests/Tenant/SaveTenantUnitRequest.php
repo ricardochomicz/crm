@@ -22,6 +22,8 @@ class SaveTenantUnitRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:254'],
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
+            'city' => ['nullable', 'string', 'max:120'],
+            'state' => ['nullable', 'string', 'size:2', \Illuminate\Validation\Rule::in(['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'])],
         ];
     }
 }
