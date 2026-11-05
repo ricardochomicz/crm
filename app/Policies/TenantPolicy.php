@@ -12,6 +12,16 @@ class TenantPolicy
 {
     public function __construct(private ResolveTenantPermissionsAction $permissions) {}
 
+    public function viewCommissions(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewCommissions);
+    }
+
+    public function manageCommissions(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ManageCommissions);
+    }
+
     public function viewProducts(User $user, Tenant $tenant): bool
     {
         return $this->permissions->allows($user, $tenant, TenantPermission::ViewProducts);
