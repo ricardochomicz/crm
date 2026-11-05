@@ -10,6 +10,18 @@ return new class extends Migration {
    $t->timestamps();
    $t->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
   });
+  Schema::create('commission_tables', function (Blueprint $t) {
+   $t->uuid('id')->primary();
+   $t->foreignUuid('tenant_id')->constrained('tenants')->cascadeOnDelete();
+   $t->foreignId('operator_id')->constrained('operators')->restrictOnDelete();
+   $t->string('name',180);
+   $t->decimal('percentage',8,2);
+   $t->decimal('deduction_percentage',5,2)->nullable();
+   $t->boolean('is_active')->default(true);
+   $t->text('description')->nullable();
+   $t->timestamps();
+   $t->index(['tenant_id','operator_id']);
+  });
  }
- public function down(): void { Schema::dropIfExists('tenant_commission_settings'); }
+ public function down(): void { Schema::dropIfExists('commission_tables'); Schema::dropIfExists('tenant_commission_settings'); }
 };
