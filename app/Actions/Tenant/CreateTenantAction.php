@@ -30,8 +30,9 @@ class CreateTenantAction
         User $owner,
         string $planId,
         array $data,
+        array $operatorIds,
     ): Tenant {
-        return DB::transaction(function () use ($owner, $planId, $data): Tenant {
+        return DB::transaction(function () use ($owner, $planId, $data, $operatorIds): Tenant {
 
             $owner = User::query()
                 ->lockForUpdate()
@@ -89,6 +90,8 @@ class CreateTenantAction
                 'trial_ends_at' => $startedAt->copy()->addDays(14),
                 'cancel_at_period_end' => false,
             ]);
+
+            $tenant->operators()->sync($operatorIds);
 
             return $tenant->load('subscription');
         }, attempts: 5);
