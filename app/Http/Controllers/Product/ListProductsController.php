@@ -12,6 +12,6 @@ class ListProductsController extends Controller
         $query = $tenant->products()->with(['operator:id,name', 'promotions'])->orderBy('name');
         if (isset($filters['operator_id'])) $query->where('operator_id', $filters['operator_id']);
         if (isset($filters['category'])) $query->where('category', $filters['category']);
-        return ['data' => $query->get(), 'meta' => ['can_manage' => $request->user()->can('manageProducts', $tenant)]];
+        return ['data' => $query->get(), 'meta' => ['can_manage' => $request->user()->can('createProducts', $tenant) || $request->user()->can('updateProducts', $tenant) || $request->user()->can('managePromotions', $tenant), 'can_create' => $request->user()->can('createProducts', $tenant), 'can_update' => $request->user()->can('updateProducts', $tenant), 'can_manage_promotions' => $request->user()->can('managePromotions', $tenant)]];
     }
 }
