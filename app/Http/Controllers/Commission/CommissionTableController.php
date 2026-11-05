@@ -13,6 +13,7 @@ class CommissionTableController extends Controller {
   if (!$write) return ['data' => $query->with('operator:id,name')->orderBy('name')->get(), 'meta' => ['can_manage' => $request->user()->can('manageCommissions', $tenant)]];
   $data = $request->validate(['name' => 'required|string|max:180',
    'operator_id' => ['required','integer',Rule::exists('tenant_operators','operator_id')->where('tenant_id',$tenant->id)],
-   'percentage' => 'required|numeric|min:0|max:9999.99|decimal:0,2']);
+   'percentage' => 'required|numeric|min:0|max:9999.99|decimal:0,2',
+   'deduction_percentage' => 'nullable|numeric|min:0|max:100|decimal:0,2']);
  }
 }
