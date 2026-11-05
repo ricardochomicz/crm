@@ -34,6 +34,7 @@ use App\Http\Controllers\Tenant\StoreTenantUnitController;
 use App\Http\Controllers\Tenant\UpdatePlatformTenantStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantController;
 use App\Http\Controllers\Tenant\UpdateTenantLogoController;
+use App\Http\Controllers\Tenant\RemoveTenantMemberController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberRoleController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberTeamController;
@@ -224,6 +225,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                             ->whereUuid('teamId')
                             ->middleware('throttle:10,1')
                             ->name('teams.supervisor.update');
+
+                        Route::delete('/members/{membershipId}', RemoveTenantMemberController::class)
+                            ->whereUuid('membershipId')
+                            ->middleware('throttle:10,1')
+                            ->name('tenant-members.destroy');
 
                         Route::patch(
                             '/members/{membershipId}/role',
