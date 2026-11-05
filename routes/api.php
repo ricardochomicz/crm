@@ -33,6 +33,7 @@ use App\Http\Controllers\Tenant\StoreTenantMemberController;
 use App\Http\Controllers\Tenant\StoreTenantUnitController;
 use App\Http\Controllers\Tenant\UpdatePlatformTenantStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantController;
+use App\Http\Controllers\Tenant\UpdateTenantLogoController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberRoleController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberStatusController;
 use App\Http\Controllers\Tenant\UpdateTenantMemberTeamController;
@@ -195,6 +196,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                 Route::middleware('subscription.writable')
                     ->group(function (): void {
+                        Route::post('/logo', UpdateTenantLogoController::class)->name('tenants.logo.update');
+
                         Route::patch('/', UpdateTenantController::class)
                             ->name('tenants.update');
 
