@@ -11,5 +11,6 @@ class CommissionTableController extends Controller {
   abort_unless($request->user()->can($write ? 'manageCommissions' : 'viewCommissions', $tenant), 403);
   $query = CommissionTable::query()->where('tenant_id', $tenant->id);
   if (!$write) return ['data' => $query->with('operator:id,name')->orderBy('name')->get(), 'meta' => ['can_manage' => $request->user()->can('manageCommissions', $tenant)]];
+  $data = $request->validate(['name' => 'required|string|max:180']);
  }
 }
