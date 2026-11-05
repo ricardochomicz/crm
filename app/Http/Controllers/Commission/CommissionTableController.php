@@ -18,5 +18,7 @@ class CommissionTableController extends Controller {
    'is_active' => 'sometimes|boolean']);
   if ($request->isMethod('POST')) return ['data' => $tenant->commissionTables()->create($data)];
   $record = $query->findOrFail($commissionId);
+  $record->update($data);
+  return ['data' => $record->fresh()];
  }
 }
