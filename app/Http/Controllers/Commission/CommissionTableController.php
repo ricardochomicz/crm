@@ -14,6 +14,7 @@ class CommissionTableController extends Controller {
   $data = $request->validate(['name' => 'required|string|max:180',
    'operator_id' => ['required','integer',Rule::exists('tenant_operators','operator_id')->where('tenant_id',$tenant->id)],
    'percentage' => 'required|numeric|min:0|max:9999.99|decimal:0,2',
-   'deduction_percentage' => 'nullable|numeric|min:0|max:100|decimal:0,2']);
+   'deduction_percentage' => 'nullable|numeric|min:0|max:100|decimal:0,2',
+   'is_active' => 'sometimes|boolean']);
  }
 }
