@@ -25,7 +25,7 @@ class ListTenantPermissionChangesController extends Controller
         return DB::table('tenant_permission_changes as changes')
             ->join('users', 'users.id', '=', 'changes.actor_user_id')
             ->where('changes.tenant_id', $tenant->getKey())
-            ->when(isset($filters['role']), fn ($query) => $query->where('changes.role', $filters['role'])
+            ->when(isset($filters['role']), fn ($query) => $query->where('changes.role', $filters['role']))
             ->orderByDesc('changes.created_at')->orderByDesc('changes.id')
             ->paginate(20, ['changes.*', 'users.name as actor_name'])
             ->through(fn (object $change): array => [
