@@ -9,7 +9,7 @@ use Illuminate\Http\JsonResponse;
 
 class UpdatePromotionController extends Controller
 {
-    public function __invoke(SavePromotionRequest $request, string $productId, string $promotionId): JsonResponse
+    public function __invoke(SavePromotionRequest $request, string $tenantId, string $productId, string $promotionId): JsonResponse
     {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
