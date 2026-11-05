@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 class CreateTeamAction
 {
     /**
-     * @param  array{name: string, supervisor_membership_id?: string|null}  $data
+     * @param  array{name: string, supervisor_membership_id?: string|null, tenant_unit_id?: string}  $data
      */
     public function handle(User $owner, Tenant $tenant, array $data): Team
     {
@@ -51,7 +51,9 @@ class CreateTeamAction
                 ]);
             }
 
-            $headquarters = $tenant->units()->where('is_headquarters', true)->first();
+            $headquarters = isset($data['tenant_unit_id'])
+                ? $tenant->units()->whereKey($data['tenant_unit_id'])->firstOrFail()
+                : $tenant->units()->where('is_headquarters', true)->first();
             if ($supervisor !== null) {
                 $headquarters?->members()->syncWithoutDetaching([$supervisor->id => ['tenant_id' => $tenant->id]]);
             }
