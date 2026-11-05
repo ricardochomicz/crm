@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Operator\ListOperatorsController;
+use App\Http\Controllers\Operator\StoreOperatorController;
+use App\Http\Controllers\Operator\UpdateOperatorController;
+use App\Http\Controllers\Operator\ListTenantOperatorsController;
+use App\Http\Controllers\Operator\SyncTenantOperatorsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\PasswordController;
@@ -124,6 +129,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     ];
                 })->name('me');
 
+                Route::get('/operators', ListOperatorsController::class)->name('operators.index');
+                Route::post('/operators', StoreOperatorController::class)->middleware('throttle:20,1')->name('operators.store');
+                Route::patch('/operators/{operator}', UpdateOperatorController::class)->whereNumber('operator')->middleware('throttle:20,1')->name('operators.update');
+
                 Route::get('/tenants', ListPlatformTenantsController::class)
                     ->name('tenants.index');
 
@@ -156,7 +165,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                 Route::get('/units/{unitId}/assignments', ListTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.index');
                 Route::get('/units', ListTenantUnitsController::class)->name('tenant-units.index');
+                Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
+                    Route::put('/operators', SyncTenantOperatorsController::class)->middleware('throttle:20,1')->name('tenant-operators.update');
                     Route::post('/units', StoreTenantUnitController::class)->middleware('throttle:20,1')->name('tenant-units.store');
                     Route::patch('/units/{unitId}', UpdateTenantUnitController::class)->whereUuid('unitId')->name('tenant-units.update');
                     Route::patch('/units/{unitId}/assignments', UpdateTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.update');
