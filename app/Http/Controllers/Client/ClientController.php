@@ -20,14 +20,15 @@ use Illuminate\Support\Facades\DB;
 class ClientController extends Controller {
  private function tenant(Request $request,bool $write=false) {
   $tenant=$request->attributes->get('active_tenant');
-  abort_unless($request->user()->can($write?'manageCommissions':'viewCommissions',$tenant),403);
+  abort_unless($request->user()->can($write?'updateClients':'viewClients',$tenant),403);
   return $tenant;
  }
  public function index(IndexClientRequest $request,string $tenantId,ClientIndexQuery $query) {
   $tenant=$request->attributes->get('active_tenant');
+  abort_unless($request->user()->can('viewClients',$tenant),403);
   $filters=$request->validated();
   $clients=isset($filters['per_page'])?$query->paginate($tenant->id,$filters):$query->get($tenant->id,$filters);
-  return ClientResource::collection($clients)->additional(['meta'=>['can_manage'=>$request->user()->can('manageCommissions',$tenant)]]);
+  return ClientResource::collection($clients)->additional(['meta'=>['can_manage'=>$request->user()->can('updateClients',$tenant),'can_create'=>$request->user()->can('createClients',$tenant),'can_delete'=>$request->user()->can('deleteClients',$tenant)]]);
  }
  public function show(Request $request,string $tenantId,string $clientId):ClientResource {
   $tenant=$this->tenant($request);
@@ -41,6 +42,12 @@ class ClientController extends Controller {
   return ['data'=>['sellers'=>TenantUser::where('tenant_id',$tenant->id)->where('status','ACTIVE')->with('user:id,name,email')->get()->map(fn($m)=>['id'=>$m->id,'name'=>$m->user?->name??$m->user?->email??$m->id])->values(),'current_seller_id'=>$membership?->id,'can_assign_seller'=>(bool)$canAssign]];
  }
 
+ public function destroy(Request $request,string $tenantId,string $clientId): \Illuminate\Http\Response {
+  $tenant=$request->attributes->get('active_tenant');
+  abort_unless($request->user()->can('deleteClients',$tenant),403);
+  Client::where('tenant_id',$tenant->id)->findOrFail($clientId)->delete();
+  return response()->noContent();
+ }
  public function store(SaveClientRequest $request,string $tenantId,SaveClientAction $action):ClientResource {
   return new ClientResource($action->execute($request->attributes->get('active_tenant')->id,$request->user()->id,$request->validatedClient()));
  }
