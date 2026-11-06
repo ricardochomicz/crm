@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Client;
 
 use App\Actions\Client\SaveClientAction;
+use App\Actions\Client\SaveClientContactAction;
+use App\Http\Requests\Client\SaveClientContactRequest;
+use App\Http\Resources\Client\ClientContactResource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\IndexClientRequest;
 use App\Http\Requests\Client\SaveClientRequest;
@@ -44,13 +47,8 @@ class ClientController extends Controller {
  public function update(SaveClientRequest $request,string $tenantId,string $clientId,SaveClientAction $action):ClientResource {
   return new ClientResource($action->execute($request->attributes->get('active_tenant')->id,$request->user()->id,$request->validatedClient(),$clientId));
  }
- public function saveContact(Request $request,string $tenantId,string $clientId,?string $contactId=null): array {
-  $tenant=$this->tenant($request,true);$client=Client::where('tenant_id',$tenant->id)->findOrFail($clientId);
-  $data=$request->validate(['name'=>['required','string','max:200'],'position'=>['nullable','string','max:100'],'phone'=>['nullable','string','max:20'],'email'=>['nullable','email','max:255'],'is_primary'=>['required','boolean'],'is_active'=>['required','boolean'],'notes'=>['nullable','string','max:5000']]);
-  return DB::transaction(function()use($tenant,$client,$contactId,$data){
-   if($data['is_primary'])ClientContact::where('tenant_id',$tenant->id)->where('client_id',$client->id)->update(['is_primary'=>false]);
-   $contact=$contactId?ClientContact::where('tenant_id',$tenant->id)->where('client_id',$client->id)->findOrFail($contactId):new ClientContact(['tenant_id'=>$tenant->id,'client_id'=>$client->id]);
-   $contact->fill($data);$contact->save();return ['data'=>$contact];
-  });
+ public function saveContact(SaveClientContactRequest $request,string $tenantId,string $clientId,SaveClientContactAction $action,?string $contactId=null):ClientContactResource {
+  $tenant=$request->attributes->get('active_tenant');
+  return new ClientContactResource($action->execute($tenant->id,$clientId,$request->validated(),$contactId));
  }
 }
