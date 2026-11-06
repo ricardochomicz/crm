@@ -134,6 +134,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalIndex']);
                 Route::post('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalStore']);
                 Route::patch('/operator-classifications/{classificationId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalUpdate'])->whereNumber('classificationId');
+                Route::patch('/operator-classifications/{classificationId}/renewal-rules/{ruleId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalUpdateRule'])->whereNumber('classificationId')->whereUuid('ruleId');
                 Route::post('/operator-classifications/{classificationId}/renewal-rules', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalSaveRule'])->whereNumber('classificationId');
                 Route::get('/operators', ListOperatorsController::class)->name('operators.index');
                 Route::post('/operators', StoreOperatorController::class)->middleware('throttle:20,1')->name('operators.store');
@@ -206,6 +207,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::patch('/clients/{clientId}/contacts/{contactId}', [\App\Http\Controllers\Client\ClientController::class, 'saveContact'])->whereUuid('clientId')->whereUuid('contactId');
                     Route::post('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'store']);
                     Route::patch('/operator-classifications/{classificationId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'update'])->whereNumber('classificationId');
+                    Route::patch('/operator-classifications/{classificationId}/renewal-rules/{ruleId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'updateRule'])->whereNumber('classificationId')->whereUuid('ruleId');
                     Route::post('/operator-classifications/{classificationId}/renewal-rules', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'saveRule'])->whereNumber('classificationId');
                     Route::post('/commercial-orders', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'store']);
                     Route::patch('/commercial-orders/{orderId}', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'update'])->whereUuid('orderId');
