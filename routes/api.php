@@ -175,6 +175,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.index');
                 Route::get('/commissions/order-types', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'order-types');
                 Route::get('/commissions/settings', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'settings')->name('commissions.settings.show');
+                Route::get('/commercial-orders', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'index']);
+                Route::get('/commercial-orders/options', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'options']);
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
@@ -190,6 +192,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::patch('/commissions/{commissionId}', \App\Http\Controllers\Commission\CommissionTableController::class)->whereUuid('commissionId');
                     Route::put('/commissions/settings', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'settings');
                     Route::post('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.store');
+                    Route::post('/commercial-orders', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'store']);
+                    Route::patch('/commercial-orders/{orderId}', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'update'])->whereUuid('orderId');
                     Route::post('/products', \App\Http\Controllers\Product\StoreProductController::class)->name('products.store');
                     Route::patch('/products/{productId}', \App\Http\Controllers\Product\UpdateProductController::class)->whereUuid('productId')->name('products.update');
                     Route::post('/products/{productId}/promotions', \App\Http\Controllers\Product\StorePromotionController::class)->whereUuid('productId')->name('promotions.store');
