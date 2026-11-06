@@ -45,7 +45,7 @@ class StoreTenantInvitationRequest extends FormRequest
                 'email',
                 'max:254',
             ],
-            'tenant_role_id' => ['nullable', 'uuid', Rule::exists('tenant_roles', 'id')->where('tenant_id', $this->attributes->get('active_tenant')?->id)->where('is_active', true)->where('code', '!=', 'OWNER')],
+            'tenant_role_id' => ['nullable', 'uuid', Rule::exists('tenant_roles', 'id')->where('tenant_id', $this->attributes->get('active_tenant')?->id)->where('is_active', true)],
             'role' => [
                 'required',
                 Rule::enum(TenantUserRole::class)->only([
