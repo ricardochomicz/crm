@@ -24,7 +24,8 @@ return new class extends Migration {
   Schema::create('commercial_participant_commissions', function (Blueprint $table) {
    $table->uuid('id')->primary();
    $table->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();
-   $table->foreignUuid('commercial_participant_id')->constrained('commercial_participants')->cascadeOnDelete();
+   $table->foreignUuid('commercial_participant_id');
+   $table->foreign('commercial_participant_id', 'participant_commissions_participant_fk')->references('id')->on('commercial_participants')->cascadeOnDelete();
    $table->foreignId('operator_id')->constrained('operators');
    $table->string('order_type', 64);
    $table->decimal('percentage', 7, 2);
