@@ -22,6 +22,7 @@ class ListTeamsRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'name' => ['sometimes', 'nullable', 'string', 'max:100'],
             'supervisor_membership_id' => [
                 'sometimes',
                 'nullable',
