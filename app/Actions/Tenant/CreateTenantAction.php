@@ -71,10 +71,13 @@ class CreateTenantAction
                 'status' => TenantStatus::Active,
             ]);
 
+            app(SeedTenantRolesAction::class)->execute($tenant);
+
             $tenant->units()->create(['name' => 'Matriz', 'is_headquarters' => true, 'email' => $tenant->email, 'phone' => $tenant->phone]);
 
             $tenant->users()->attach($owner->getKey(), [
                 'role' => TenantUserRole::Owner->value,
+                'tenant_role_id' => $tenant->roles()->where('code', 'OWNER')->value('id'),
                 'status' => TenantUserStatus::Active->value,
                 'joined_at' => $startedAt,
             ]);
