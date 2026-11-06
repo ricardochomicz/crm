@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'email',
     'role',
+    'tenant_role_id',
     'status',
     'token_hash',
     'expires_at',
@@ -35,6 +36,11 @@ class TenantInvitation extends Model
             'accepted_at' => 'datetime',
             'revoked_at' => 'datetime',
         ];
+    }
+
+    public function tenantRole(): BelongsTo
+    {
+        return $this->belongsTo(TenantRole::class, 'tenant_role_id');
     }
 
     public function tenant(): BelongsTo
