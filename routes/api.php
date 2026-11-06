@@ -168,6 +168,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/units/{unitId}/assignments', ListTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.index');
                 Route::get('/units', ListTenantUnitsController::class)->name('tenant-units.index');
                 Route::get('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.index');
+                Route::get('/commissions/order-types', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'order-types');
                 Route::get('/commissions/settings', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'settings')->name('commissions.settings.show');
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
