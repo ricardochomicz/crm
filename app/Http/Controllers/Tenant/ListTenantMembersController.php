@@ -41,6 +41,8 @@ class ListTenantMembersController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->membership->role->value,
+                'tenant_role_id' => $user->membership->tenant_role_id,
+                'role_name' => $user->membership->tenantRole?->name,
                 'status' => $user->membership->status->value,
                 'joined_at' => $user->membership->joined_at?->toIso8601String(),
             ])
