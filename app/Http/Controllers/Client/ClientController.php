@@ -34,7 +34,9 @@ class ClientController extends Controller {
  }
  public function options(Request $request,string $tenantId): array {
   $tenant=$this->tenant($request);
-  return ['data'=>['sellers'=>TenantUser::where('tenant_id',$tenant->id)->where('status','ACTIVE')->with('user:id,name,email')->get()->map(fn($m)=>['id'=>$m->id,'name'=>$m->user?->name??$m->user?->email??$m->id])->values()]];
+  $membership=TenantUser::where('tenant_id',$tenant->id)->where('user_id',$request->user()->id)->where('status','ACTIVE')->first();
+  $canAssign=$membership && (in_array($membership->role->value,['OWNER','MANAGER'],true) || $membership->supervisedTeams()->exists());
+  return ['data'=>['sellers'=>TenantUser::where('tenant_id',$tenant->id)->where('status','ACTIVE')->with('user:id,name,email')->get()->map(fn($m)=>['id'=>$m->id,'name'=>$m->user?->name??$m->user?->email??$m->id])->values(),'current_seller_id'=>$membership?->id,'can_assign_seller'=>(bool)$canAssign]];
  }
  public function store(Request $request,string $tenantId): array {return $this->save($request);}
  public function update(Request $request,string $tenantId,string $clientId): array {return $this->save($request,$clientId);}
@@ -63,7 +65,17 @@ class ClientController extends Controller {
     ->where(fn($q)=>$q->whereNull('tenant_id')->orWhere('tenant_id',$tenant->id))->exists();
    if(!$valid)throw ValidationException::withMessages(['classification_id'=>'Classificação não pertence à operadora ou à empresa.']);
   }
+  $membership=TenantUser::where('tenant_id',$tenant->id)->where('user_id',$request->user()->id)->where('status','ACTIVE')->first();
+  $canAssign=$membership && (in_array($membership->role->value,['OWNER','MANAGER'],true) || $membership->supervisedTeams()->exists());
   $sellerId=$data['seller_membership_id']??null; $reason=$data['seller_reason']??null;
+  if(!$canAssign){
+   abort_unless($membership,403,'Usuário sem vínculo ativo com a empresa.');
+   if($clientId){
+    $currentSeller=ClientSeller::where('tenant_id',$tenant->id)->where('client_id',$clientId)->whereNull('ended_at')->value('tenant_user_id');
+    $sellerId=$currentSeller;
+   }else{$sellerId=$membership->id;}
+   $reason=null;
+  }
   unset($data['seller_membership_id'],$data['seller_reason']);
   if($sellerId&&!TenantUser::where('tenant_id',$tenant->id)->where('status','ACTIVE')->whereKey($sellerId)->exists())
    throw ValidationException::withMessages(['seller_membership_id'=>'Vendedor não está ativo nesta empresa.']);
