@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
     'tenant_id',
     'user_id',
     'role',
+    'tenant_role_id',
     'status',
     'joined_at',
     'team_id',
@@ -44,6 +45,11 @@ class TenantUser extends Pivot
             'status' => TenantUserStatus::class,
             'joined_at' => 'datetime',
         ];
+    }
+
+    public function tenantRole(): BelongsTo
+    {
+        return $this->belongsTo(TenantRole::class, 'tenant_role_id');
     }
 
     public function tenant(): BelongsTo
