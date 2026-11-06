@@ -167,12 +167,16 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                 Route::get('/units/{unitId}/assignments', ListTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.index');
                 Route::get('/units', ListTenantUnitsController::class)->name('tenant-units.index');
+                Route::get('/team-commissions', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'index']);
+                Route::get('/team-commissions/options', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'options']);
                 Route::get('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.index');
                 Route::get('/commissions/order-types', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'order-types');
                 Route::get('/commissions/settings', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'settings')->name('commissions.settings.show');
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
+                    Route::post('/team-commissions', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'store']);
+                    Route::patch('/team-commissions/{ruleId}', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'update'])->whereUuid('ruleId');
                     Route::patch('/commissions/{commissionId}', \App\Http\Controllers\Commission\CommissionTableController::class)->whereUuid('commissionId');
                     Route::put('/commissions/settings', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'settings');
                     Route::post('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.store');
