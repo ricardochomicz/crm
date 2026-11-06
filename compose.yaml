@@ -56,7 +56,7 @@ services:
             APP_ENV: local
             APP_DEBUG: "true"
             APP_URL: "http://localhost:${DOCKER_APP_PORT:-8085}"
-            FRONTEND_URL: "http://localhost:${DOCKER_FRONTEND_PORT:-8080}"
+            FRONTEND_URL: "http://localhost:${DOCKER_FRONTEND_PORT:-8081}"
             # Ignore host-generated config caches and database URLs in development.
             APP_CONFIG_CACHE: /tmp/telecomhub-config.php
             DB_URL: ""
@@ -71,7 +71,7 @@ services:
             SESSION_SECURE_COOKIE: "false"
             CACHE_STORE: file
             QUEUE_CONNECTION: sync
-            SANCTUM_STATEFUL_DOMAINS: "localhost:${DOCKER_APP_PORT:-8085},127.0.0.1:${DOCKER_APP_PORT:-8085},localhost:${DOCKER_FRONTEND_PORT:-8080},127.0.0.1:${DOCKER_FRONTEND_PORT:-8080},localhost:5173,127.0.0.1:5173"
+            SANCTUM_STATEFUL_DOMAINS: "localhost:${DOCKER_APP_PORT:-8085},127.0.0.1:${DOCKER_APP_PORT:-8085},localhost:${DOCKER_FRONTEND_PORT:-8081},127.0.0.1:${DOCKER_FRONTEND_PORT:-8081},localhost:5173,127.0.0.1:5173"
             MAIL_MAILER: "${MAIL_MAILER:-${DOCKER_MAIL_MAILER:-log}}"
             MAIL_SCHEME: "${MAIL_SCHEME:-smtp}"
             MAIL_HOST: "${MAIL_HOST:-mailpit}"
