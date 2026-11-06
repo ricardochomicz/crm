@@ -12,7 +12,6 @@ services:
         image: node:24-alpine
         init: true
         working_dir: /workspace
-        user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
         volumes:
             - "${DOCKER_FRONTEND_PATH:-../crm-web}:/workspace"
             - frontend-node-modules:/workspace/node_modules
@@ -20,8 +19,14 @@ services:
             API_PROXY_TARGET: http://app:8000
             VITE_USE_POLLING: "true"
             npm_config_cache: /tmp/npm-cache
-        command: >-
-            sh -c "if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-package-lock --no-audit --no-fund; fi && npm run dev -- --host 0.0.0.0 --port 5173"
+            DEV_UID: "${LOCAL_UID:-1000}"
+            DEV_GID: "${LOCAL_GID:-1000}"
+        command:
+            - sh
+            - -c
+            - |
+                chown -R "$DEV_UID:$DEV_GID" /workspace/node_modules
+                exec su node -s /bin/sh -c 'cd /workspace && if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-package-lock --no-audit --no-fund; fi && npm run dev -- --host 0.0.0.0 --port 5173'
         ports:
             - "127.0.0.1:${DOCKER_FRONTEND_PORT:-8081}:5173"
         depends_on:
