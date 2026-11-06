@@ -221,6 +221,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::patch('/units/{unitId}/assignments', UpdateTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.update');
                 });
 
+                Route::get('/roles', [\App\Http\Controllers\Tenant\TenantRoleController::class, 'index'])->name('tenant-roles.index');
+                Route::post('/roles', [\App\Http\Controllers\Tenant\TenantRoleController::class, 'store'])->middleware('subscription.writable')->name('tenant-roles.store');
+                Route::patch('/roles/{roleId}', [\App\Http\Controllers\Tenant\TenantRoleController::class, 'update'])->whereUuid('roleId')->middleware('subscription.writable')->name('tenant-roles.update');
+
                 Route::get('/role-permissions', ShowTenantRolePermissionsController::class)
                     ->name('tenant-role-permissions.show');
                 Route::get('/permission-changes', ListTenantPermissionChangesController::class)
