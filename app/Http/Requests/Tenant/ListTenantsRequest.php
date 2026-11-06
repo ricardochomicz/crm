@@ -20,3 +20,4 @@ class ListTenantsRequest extends FormRequest
         ];
     }
 }
+
