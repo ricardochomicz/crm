@@ -48,6 +48,7 @@ class StoreTenantInvitationController extends Controller
             $tenant,
             $data['email'],
             TenantUserRole::from($data['role']),
+            $data['tenant_role_id'] ?? null,
         );
 
         $invitation = $result['invitation'];
@@ -82,6 +83,7 @@ class StoreTenantInvitationController extends Controller
                 'id' => $invitation->getKey(),
                 'email' => $invitation->email,
                 'role' => $invitation->role->value,
+                'tenant_role_id' => $invitation->tenant_role_id,
                 'status' => $invitation->status->value,
                 'expires_at' => $invitation->expires_at->toISOString(),
             ],
