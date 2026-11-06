@@ -8,6 +8,7 @@ use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Tenant;
 use App\Models\TenantUser;
+use App\Models\TenantRole;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -48,7 +49,10 @@ class ResolveTenantPermissionsAction
     {
         $membership = $this->membership($user, $tenant);
 
-        return $membership === null ? [] : $this->forRole($tenant, $membership->role)['permissions'];
+        if ($membership === null) return [];
+        if ($membership->role === TenantUserRole::Owner) return TenantPermission::keys();
+        $customRole = $membership->tenantRole;
+        return $customRole !== null ? $customRole->effectivePermissions() : $this->forRole($tenant, $membership->role)['permissions'];
     }
 
     public function allows(User $user, Tenant $tenant, TenantPermission $permission): bool
