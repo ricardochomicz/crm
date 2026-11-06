@@ -25,7 +25,6 @@ class OperatorClassificationController extends Controller {
  public function index(Request $request,string $tenantId): array {
   [$tenant]=$this->context($request);
   $records=OperatorClassification::where(fn($q)=>$q->whereNull('tenant_id')->orWhere('tenant_id',$tenant->id))
-   ->whereIn('operator_id',DB::table('tenant_operators')->where('tenant_id',$tenant->id)->select('operator_id'))
    ->with(['operator:id,name','rules'=>fn($q)=>$q->where(fn($x)=>$x->whereNull('tenant_id')->orWhere('tenant_id',$tenant->id))->orderByDesc('valid_from')])->orderBy('operator_id')->orderBy('sort_order')->orderBy('code')->get();
   return ['data'=>$records,'meta'=>['can_manage'=>$tenant->users()->where('users.id',$request->user()->id)->wherePivot('role','OWNER')->exists()]];
  }
