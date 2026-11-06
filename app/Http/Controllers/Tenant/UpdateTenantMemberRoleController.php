@@ -23,6 +23,7 @@ class UpdateTenantMemberRoleController extends Controller
             $tenant,
             (string) $request->route('membershipId'),
             TenantUserRole::from($request->validated('role')),
+            $request->validated('tenant_role_id'),
         );
 
         return response()->noContent();
