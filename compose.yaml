@@ -19,13 +19,11 @@ services:
             API_PROXY_TARGET: http://app:8000
             VITE_USE_POLLING: "true"
             npm_config_cache: /tmp/npm-cache
-            DEV_UID: "${LOCAL_UID:-1000}"
-            DEV_GID: "${LOCAL_GID:-1000}"
         command:
             - sh
             - -c
             - |
-                chown -R "$DEV_UID:$DEV_GID" /workspace/node_modules
+                chown -R node:node /workspace/node_modules
                 exec su node -s /bin/sh -c 'cd /workspace && if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-package-lock --no-audit --no-fund; fi && npm run dev -- --host 0.0.0.0 --port 5173'
         ports:
             - "127.0.0.1:${DOCKER_FRONTEND_PORT:-8081}:5173"
