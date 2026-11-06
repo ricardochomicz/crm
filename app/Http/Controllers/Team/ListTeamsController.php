@@ -23,6 +23,10 @@ class ListTeamsController extends Controller
             ->with('supervisorMembership.user')
             ->withCount('members');
 
+        if (filled($filters['name'] ?? null)) {
+            $query->where('name', 'like', '%' . addcslashes(trim($filters['name']), '%_\\\\') . '%');
+        }
+
         if (isset($filters['supervisor_membership_id'])) {
             $query->where(
                 'supervisor_membership_id',
