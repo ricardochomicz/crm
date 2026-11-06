@@ -29,7 +29,7 @@ class CommissionTableController extends Controller {
    'is_active' => 'sometimes|boolean', 'description' => 'nullable|string|max:10000']);
   $type = OrderType::from($data['order_type']);
   $data['name'] = $type->label();
-  $duplicate = $query->where('operator_id', $data['operator_id'])->where('order_type', $data['order_type']);
+  $duplicate = (clone $query)->where('operator_id', $data['operator_id'])->where('order_type', $data['order_type']);
   if ($commissionId) $duplicate->where('id', '!=', $commissionId);
   if ($duplicate->exists()) throw \Illuminate\Validation\ValidationException::withMessages(['order_type' => 'Já existe comissão para esta operadora e tipo de pedido.']);
   if ($request->isMethod('POST')) return ['data' => $tenant->commissionTables()->create($data)];
