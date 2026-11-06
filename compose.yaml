@@ -21,7 +21,7 @@ services:
             VITE_USE_POLLING: "true"
             npm_config_cache: /tmp/npm-cache
         command: >-
-            sh -c "npm ci --no-audit --no-fund && npm run dev -- --host 0.0.0.0 --port 5173"
+            sh -c "if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-package-lock --no-audit --no-fund; fi && npm run dev -- --host 0.0.0.0 --port 5173"
         ports:
             - "127.0.0.1:${DOCKER_FRONTEND_PORT:-8081}:5173"
         depends_on:
