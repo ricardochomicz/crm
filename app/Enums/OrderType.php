@@ -34,4 +34,12 @@ enum OrderType: string
             self::BROADBAND => 'Banda Larga',
         };
     }
+
+    public static function options(): array
+    {
+        return array_map(
+            fn (self $type): array => ['value' => $type->value, 'label' => $type->label()],
+            self::cases(),
+        );
+    }
 }
