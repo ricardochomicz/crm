@@ -51,7 +51,7 @@ class ClientController extends Controller {
    'address'=>['nullable','string','max:255'],'address_number'=>['nullable','string','max:20'],
    'address_complement'=>['nullable','string','max:255'],'neighborhood'=>['nullable','string','max:150'],
    'city'=>['nullable','string','max:150'],'state'=>['nullable','string','size:2'],
-   'operator_id'=>['nullable','integer',Rule::exists('tenant_operators','operator_id')->where('tenant_id',$tenant->id)],
+   'operator_id'=>['nullable','integer',Rule::exists('operators','id')],
    'classification_id'=>['nullable','integer'],
    'contract_started_on'=>['nullable','date_format:Y-m-d'],
    'contract_ends_on'=>['nullable','date_format:Y-m-d','after_or_equal:contract_started_on'],
