@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Team;
 
 use App\Http\Controllers\Controller;
+use App\Actions\Team\FilterTeamAction;
+use App\Http\Resources\Team\TeamResource;
 use App\Http\Requests\Team\ListTeamsRequest;
 use App\Models\Team;
 use App\Models\Tenant;
@@ -19,41 +21,8 @@ class ListTeamsController extends Controller
 
         $filters = $request->validated();
 
-        $query = $tenant->teams()
-            ->with('supervisorMembership.user')
-            ->withCount('members');
-
-        if (filled($filters['name'] ?? null)) {
-            $query->where('name', 'like', '%' . addcslashes(trim($filters['name']), '%_\\\\') . '%');
-        }
-
-        if (isset($filters['supervisor_membership_id'])) {
-            $query->where(
-                'supervisor_membership_id',
-                $filters['supervisor_membership_id'],
-            );
-        }
-
-        return $query
-            ->orderBy('name')
-            ->orderBy('id')
-            ->paginate((int) ($filters['per_page'] ?? 20))
-            ->appends($filters)
-            ->through(function (Team $team): array {
-                $supervisor = $team->supervisorMembership;
-
-                return [
-                    'id' => $team->id,
-                    'name' => $team->name,
-                    'members_count' => $team->members_count,
-                    'supervisor' => $supervisor === null ? null : [
-                        'membership_id' => $supervisor->id,
-                        'user_id' => $supervisor->user_id,
-                        'name' => $supervisor->user?->name,
-                        'status' => $supervisor->status->value,
-                    ],
-                ];
-            })
+        return (new FilterTeamAction)->execute($tenant, $filters)
+            ->through(fn (Team $team): array => (new TeamResource($team))->resolve($request))
             ->toArray();
     }
 }

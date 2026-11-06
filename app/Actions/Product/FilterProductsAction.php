@@ -1,19 +1,19 @@
 <?php
 
-namespace App\Queries\Product;
+namespace App\Actions\Product;
 
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class ProductIndexQuery
+class FilterProductsAction
 {
-    public function get(string $tenantId, array $filters): LengthAwarePaginator
+    public function execute(string $tenantId, array $filters): LengthAwarePaginator
     {
         return Product::query()
             ->where('tenant_id', $tenantId)
             ->filter($filters)
             ->with(['operator:id,name', 'promotions'])
-            ->orderBy('name')
-            ->paginate(15);
+            ->orderBy('name')->orderBy('id')
+            ->paginate($filters['per_page'] ?? 15);
     }
 }

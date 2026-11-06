@@ -13,7 +13,7 @@ use App\Http\Resources\Client\ClientResource;
 use App\Models\Client;
 use App\Models\ClientContact;
 use App\Models\TenantUser;
-use App\Queries\Client\ClientIndexQuery;
+use App\Actions\Client\FilterClientsAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -23,11 +23,11 @@ class ClientController extends Controller {
   abort_unless($request->user()->can($write?'updateClients':'viewClients',$tenant),403);
   return $tenant;
  }
- public function index(IndexClientRequest $request,string $tenantId,ClientIndexQuery $query) {
+ public function index(IndexClientRequest $request,string $tenantId,FilterClientsAction $query) {
   $tenant=$request->attributes->get('active_tenant');
   abort_unless($request->user()->can('viewClients',$tenant),403);
   $filters=$request->validated();
-  $clients=isset($filters['per_page'])?$query->paginate($tenant->id,$filters):$query->get($tenant->id,$filters);
+  $clients=isset($filters['per_page'])?$query->paginate($tenant->id,$filters):$query->execute($tenant->id,$filters);
   return ClientResource::collection($clients)->additional(['meta'=>['can_manage'=>$request->user()->can('updateClients',$tenant),'can_create'=>$request->user()->can('createClients',$tenant),'can_delete'=>$request->user()->can('deleteClients',$tenant)]]);
  }
  public function show(Request $request,string $tenantId,string $clientId):ClientResource {

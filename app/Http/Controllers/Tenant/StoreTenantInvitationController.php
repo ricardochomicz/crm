@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Actions\Tenant\CreateTenantInvitationAction;
 use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Tenant\CreatedTenantInvitationResource;
 use App\Http\Requests\Tenant\StoreTenantInvitationRequest;
 use App\Models\Tenant;
 use App\Notifications\TenantInvitationNotification;
@@ -79,14 +80,7 @@ class StoreTenantInvitationController extends Controller
         }
 
         return response()->json([
-            'data' => [
-                'id' => $invitation->getKey(),
-                'email' => $invitation->email,
-                'role' => $invitation->role->value,
-                'tenant_role_id' => $invitation->tenant_role_id,
-                'status' => $invitation->status->value,
-                'expires_at' => $invitation->expires_at->toISOString(),
-            ],
+            'data' => new CreatedTenantInvitationResource($invitation),
             'meta' => [
                 'notification_dispatched' => $notificationDispatched,
             ],

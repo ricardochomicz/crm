@@ -7,8 +7,9 @@ use App\Http\Requests\Client\SaveOperatorClassificationRequest;
 use App\Http\Requests\Client\SaveRenewalRuleRequest;
 use App\Http\Resources\Client\OperatorClassificationResource;
 use App\Http\Resources\Client\ClassificationRenewalRuleResource;
-use App\Queries\Client\OperatorClassificationIndexQuery;
+use App\Actions\Client\FilterOperatorClassificationsAction;
 use Illuminate\Http\Request;
+use App\Http\Requests\Client\IndexOperatorClassificationRequest;
 class OperatorClassificationController extends Controller {
  private function context(Request $request,bool $write=false,bool $global=false) {
   if($global){abort_unless((bool)$request->user()->is_platform_admin,403);return null;}
@@ -17,13 +18,13 @@ class OperatorClassificationController extends Controller {
   else abort_unless($request->user()->can('viewCommissions',$tenant),403);
   return $tenant;
  }
- public function index(Request $request,string $tenantId,OperatorClassificationIndexQuery $query) {
+ public function index(IndexOperatorClassificationRequest $request,string $tenantId,FilterOperatorClassificationsAction $query) {
   $tenant=$this->context($request);
-  return OperatorClassificationResource::collection($query->get($tenant->id))->additional(['meta'=>['can_manage'=>$tenant->users()->where('users.id',$request->user()->id)->wherePivot('role','OWNER')->exists()]]);
+  return OperatorClassificationResource::collection($query->execute($tenant->id,$request->validated()))->additional(['meta'=>['can_manage'=>$tenant->users()->where('users.id',$request->user()->id)->wherePivot('role','OWNER')->exists()]]);
  }
- public function globalIndex(Request $request,OperatorClassificationIndexQuery $query) {
+ public function globalIndex(IndexOperatorClassificationRequest $request,FilterOperatorClassificationsAction $query) {
   $this->context($request,false,true);
-  return OperatorClassificationResource::collection($query->get(null));
+  return OperatorClassificationResource::collection($query->execute(null,$request->validated()));
  }
  public function store(SaveOperatorClassificationRequest $request,string $tenantId,SaveOperatorClassificationAction $action):OperatorClassificationResource {
   $tenant=$this->context($request,true);return new OperatorClassificationResource($action->execute($tenant->id,$request->validated()));

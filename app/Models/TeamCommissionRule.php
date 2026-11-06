@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TeamCommissionRule extends Model
 {
@@ -24,8 +26,27 @@ class TeamCommissionRule extends Model
         ];
     }
 
-    public function operator()
+    public function operator(): BelongsTo
     {
         return $this->belongsTo(Operator::class);
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        if (isset($filters['operator_id'])) {
+            $query->where('operator_id', $filters['operator_id']);
+        }
+        if (isset($filters['order_type'])) {
+            $query->where('order_type', $filters['order_type']);
+        }
+        if (isset($filters['commercial_role'])) {
+            $query->where('commercial_role', $filters['commercial_role']);
+        }
+        if (isset($filters['is_active'])) {
+            $query->where('is_active', $filters['is_active']);
+        }
+
+        return $query;
     }
 }

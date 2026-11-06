@@ -13,4 +13,16 @@ class ProductPromotion extends Model
     {
         return ['promotional_price' => 'decimal:2', 'starts_at' => 'date:Y-m-d', 'ends_at' => 'date:Y-m-d', 'is_active' => 'boolean'];
     }
+
+    /** @param array<string, mixed> $filters */
+    public function scopeFilter(\Illuminate\Database\Eloquent\Builder $query, array $filters): \Illuminate\Database\Eloquent\Builder
+    {
+        if (isset($filters['product_id'])) {
+            $query->where('product_id', $filters['product_id']);
+        }
+        if (isset($filters['is_active'])) {
+            $query->where('is_active', $filters['is_active']);
+        }
+        return $query;
+    }
 }

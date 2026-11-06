@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Actions\Tenant\CreateTenantMemberAction;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Tenant\CreatedTenantMemberResource;
 use App\Http\Requests\Tenant\StoreTenantMemberRequest;
 use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -36,11 +37,7 @@ class StoreTenantMemberController extends Controller
         }
 
         return response()->json([
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
+            'data' => new CreatedTenantMemberResource($user),
             'meta' => [
                 'password_link_sent' => $linkSent,
             ],

@@ -14,9 +14,9 @@ class ClientResource extends JsonResource {
    'contract_ends_on'=>$this->contract_ends_on?->format('Y-m-d'),'is_active'=>$this->is_active,
    'operator'=>$this->whenLoaded('operator',fn()=> $this->operator?->only(['id','name'])),
    'classification'=>$this->whenLoaded('classification',fn()=> $this->classification?->only(['id','code','name'])),
-   'contacts'=>$this->whenLoaded('contacts'),
-   'sellers'=>$this->whenLoaded('sellers'),
-   'operator_history'=>$this->whenLoaded('operatorHistory'),
+   'contacts'=>ClientContactResource::collection($this->whenLoaded('contacts')),
+   'sellers'=>ClientSellerResource::collection($this->whenLoaded('sellers')),
+   'operator_history'=>ClientOperatorHistoryResource::collection($this->whenLoaded('operatorHistory')),
    'created_at'=>$this->created_at?->toISOString(),'updated_at'=>$this->updated_at?->toISOString(),
   ];
  }

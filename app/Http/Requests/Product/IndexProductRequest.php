@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Product;
 
+use App\Enums\ProductCategory;
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class IndexProductRequest extends FormRequest
@@ -16,9 +18,10 @@ class IndexProductRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'operator_id' => ['sometimes', 'integer'],
-            'category' => ['sometimes', 'string'],
+            'category' => ['sometimes', Rule::enum(ProductCategory::class)],
             'search' => ['sometimes', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
         ];

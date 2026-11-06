@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\TenantUnit;
+use App\Http\Resources\Tenant\TenantUnitResource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -22,11 +23,7 @@ class ListTenantUnitsController extends Controller
         }
 
         return [
-            'data' => $query->orderByDesc('is_headquarters')->orderBy('name')->orderBy('id')->get()->map(fn (TenantUnit $unit): array => [
-                'id' => $unit->id, 'name' => $unit->name, 'is_headquarters' => (bool) $unit->is_headquarters,
-                'email' => $unit->email, 'phone' => $unit->phone, 'address' => $unit->address, 'city' => $unit->city, 'state' => $unit->state,
-                'members_count' => $unit->members_count, 'teams_count' => $unit->teams_count,
-            ])->all(),
+            'data' => $query->orderByDesc('is_headquarters')->orderBy('name')->orderBy('id')->get()->map(fn (TenantUnit $unit): array => (new TenantUnitResource($unit))->resolve($request))->all(),
             'meta' => [
                 'can_manage' => $canManage,
             ],

@@ -3,22 +3,20 @@
 namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Operator\UpdateOperatorRequest;
 use App\Models\Operator;
+use App\Http\Resources\Operator\OperatorResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class UpdateOperatorController extends Controller
 {
-    public function __invoke(Request $request, Operator $operator): JsonResponse
+    public function __invoke(UpdateOperatorRequest $request, Operator $operator): JsonResponse
     {
-        $data = $request->validate([
-            'name' => ['sometimes', 'required', 'string', 'max:160'],
-            'slug' => ['sometimes', 'required', 'alpha_dash', 'max:160', Rule::unique('operators', 'slug')->ignore($operator->id)],
-            'is_active' => ['sometimes', 'boolean'],
-        ]);
+        $data = $request->validated();
         $operator->update($data);
 
-        return response()->json(['data' => $operator->fresh()]);
+        return response()->json(['data' => new OperatorResource($operator->fresh())]);
     }
 }

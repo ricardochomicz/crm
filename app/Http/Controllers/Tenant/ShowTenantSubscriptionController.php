@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Enums\TenantInvitationStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Tenant\SubscriptionResource;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -41,45 +42,7 @@ class ShowTenantSubscriptionController extends Controller
             ->count();
 
         return response()->json([
-            'data' => [
-                'id' => $subscription->id,
-                'tenant_id' => $tenant->id,
-                'status' => $subscription->status->value,
-                'plan' => [
-                    'id' => $subscription->subscription_plan_id,
-                    'code' => $subscription->plan?->code,
-                    'name' => $subscription->plan?->name,
-                ],
-                'monthly_price' => $subscription->monthly_price,
-                'currency' => $subscription->currency,
-                'limits' => [
-                    'users' => $subscription->user_limit,
-                    'storage_mb' => $subscription->storage_limit_mb,
-                ],
-                'usage' => [
-                    'users' => $usersCount,
-                    'reserved_invitations' => $reservedSeatsCount,
-                ],
-                'remaining' => [
-                    'users' => max(
-                        0,
-                        $subscription->user_limit - $usersCount - $reservedSeatsCount,
-                    ),
-                ],
-                'started_at' => $subscription->started_at
-                    ?->toIso8601String(),
-                'trial_ends_at' => $subscription->trial_ends_at
-                    ?->toIso8601String(),
-                'current_period_starts_at' => $subscription
-                    ->current_period_starts_at?->toIso8601String(),
-                'current_period_ends_at' => $subscription
-                    ->current_period_ends_at?->toIso8601String(),
-                'cancel_at_period_end' => $subscription->cancel_at_period_end,
-                'cancelled_at' => $subscription->cancelled_at
-                    ?->toIso8601String(),
-                'allows_operational_writes' => $subscription
-                    ->allowsOperationalWrites(),
-            ],
+            'data' => new SubscriptionResource($subscription, ['usersCount' => $usersCount, 'reservedSeatsCount' => $reservedSeatsCount]),
         ]);
     }
 }

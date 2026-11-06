@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -34,5 +36,21 @@ class Team extends Model
     public function members(): HasMany
     {
         return $this->hasMany(TenantUser::class);
+    }
+    /** @param array<string, mixed> $filters */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        if (filled($filters['name'] ?? null)) {
+            $query->where('name', 'like', '%' . addcslashes(trim($filters['name']), '%_\\\\') . '%');
+        }
+
+        if (isset($filters['supervisor_membership_id'])) {
+            $query->where(
+                'supervisor_membership_id',
+                $filters['supervisor_membership_id'],
+            );
+        }
+
+        return $query;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\ListTenantPermissionChangesRequest;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -12,15 +13,12 @@ use Illuminate\Support\Facades\Gate;
 class ListTenantPermissionChangesController extends Controller
 {
     /** @return array<string, mixed> */
-    public function __invoke(Request $request): array
+    public function __invoke(ListTenantPermissionChangesRequest $request): array
     {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
         Gate::forUser($request->user())->authorize('managePermissions', $tenant);
-        $filters = $request->validate([
-            'page' => ['sometimes', 'integer', 'min:1'],
-            'role' => ['sometimes', 'string', \Illuminate\Validation\Rule::in(['OWNER', 'MANAGER', 'CONSULTANT', 'ASSISTANT'])],
-        ]);
+        $filters = $request->validated();
 
         return DB::table('tenant_permission_changes as changes')
             ->join('users', 'users.id', '=', 'changes.actor_user_id')

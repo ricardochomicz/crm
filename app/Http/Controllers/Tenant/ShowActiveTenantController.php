@@ -6,6 +6,7 @@ use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantInvitationStatus;
 use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Tenant\ActiveTenantResource;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 
@@ -31,16 +32,7 @@ class ShowActiveTenantController extends Controller
             ];
         }
 
-        return ['data' => [
-            'id' => $tenant->id, 'name' => $tenant->name, 'type' => $tenant->type->value,
-            'role' => $tenant->membership->role->value,
-            'document' => $tenant->document,
-            'trade_name' => $tenant->trade_name,
-            'email' => $tenant->email,
-            'phone' => $tenant->phone,
-            'timezone' => $tenant->timezone,
-            'logo_url' => $tenant->logo ? \Illuminate\Support\Facades\Storage::disk('public')->url($tenant->logo) : null,
-            'access' => [
+        $access = [
                 'permissions' => $grants,
                 'tenant_role_id' => $tenant->membership->tenant_role_id,
                 'role_name' => $tenant->membership->tenantRole?->name,
@@ -49,7 +41,8 @@ class ShowActiveTenantController extends Controller
                 'assignable_roles' => array_values(array_map(fn (TenantUserRole $role): string => $role->value,
                     array_filter(TenantUserRole::cases(), fn (TenantUserRole $role): bool => $permissions->canAssign($request->user(), $tenant, $role)))),
                 'capacity' => $capacity,
-            ],
-        ]];
+            ];
+
+        return ['data' => (new ActiveTenantResource($tenant, $access))->resolve($request)];
     }
 }

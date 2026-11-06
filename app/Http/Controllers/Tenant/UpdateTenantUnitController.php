@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Tenant\TenantUnitDetailsResource;
 use App\Http\Requests\Tenant\SaveTenantUnitRequest;
 use App\Models\Tenant;
 use Illuminate\Http\Response;

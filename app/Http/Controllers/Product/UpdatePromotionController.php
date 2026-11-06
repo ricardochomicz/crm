@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\SavePromotionRequest;
 use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
+use App\Http\Resources\Product\ProductPromotionResource;
 
 class UpdatePromotionController extends Controller
 {
@@ -19,6 +20,6 @@ class UpdatePromotionController extends Controller
         abort_if((float) $data['promotional_price'] > (float) $product->price, 422, 'O preço promocional deve ser menor ou igual ao preço base.');
         $promotion->update($data);
 
-        return response()->json(['data' => $promotion->fresh()]);
+        return (new ProductPromotionResource($promotion->fresh()))->response();
     }
 }

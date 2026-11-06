@@ -19,7 +19,7 @@ class ProductResource extends JsonResource
             'price' => $this->price,
             'is_active' => $this->is_active,
             'operator' => $this->whenLoaded('operator'),
-            'promotions' => $this->whenLoaded('promotions'),
+            'promotions' => ProductPromotionResource::collection($this->whenLoaded('promotions')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

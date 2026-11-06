@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operator;
 
 use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Operator\SyncTenantOperatorsRequest;
 use App\Models\Operator;
 use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -13,12 +14,9 @@ use Illuminate\Validation\ValidationException;
 
 class SyncTenantOperatorsController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(SyncTenantOperatorsRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'operator_ids' => ['required', 'array'],
-            'operator_ids.*' => ['required', 'integer', 'distinct', 'exists:operators,id'],
-        ]);
+        $data = $request->validated();
 
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');

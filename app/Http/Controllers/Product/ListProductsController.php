@@ -5,16 +5,16 @@ namespace App\Http\Controllers\Product;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\IndexProductRequest;
 use App\Http\Resources\Product\ProductResource;
-use App\Queries\Product\ProductIndexQuery;
+use App\Actions\Product\FilterProductsAction;
 
 class ListProductsController extends Controller
 {
-    public function __invoke(IndexProductRequest $request, ProductIndexQuery $query)
+    public function __invoke(IndexProductRequest $request, FilterProductsAction $query)
     {
         $tenant = $request->attributes->get('active_tenant');
         $user = $request->user();
 
-        return ProductResource::collection($query->get($tenant->id, $request->validated()))
+        return ProductResource::collection($query->execute($tenant->id, $request->validated()))
             ->additional(['meta' => [
                 'can_manage' => $user->can('createProducts', $tenant) || $user->can('updateProducts', $tenant) || $user->can('managePromotions', $tenant),
                 'can_create' => $user->can('createProducts', $tenant),

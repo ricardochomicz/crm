@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Tenant\TenantMemberResource;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -34,18 +35,7 @@ class ListTenantMembersController extends Controller
                 'users.name',
                 'users.email',
             ])
-            ->through(fn (User $user): array => [
-                'id' => $user->membership->id,
-                'user_id' => $user->id,
-                'can_manage' => $user->id !== $request->user()->id && in_array($user->membership->role, $assignableRoles, true),
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->membership->role->value,
-                'tenant_role_id' => $user->membership->tenant_role_id,
-                'role_name' => $user->membership->tenantRole?->name,
-                'status' => $user->membership->status->value,
-                'joined_at' => $user->membership->joined_at?->toIso8601String(),
-            ])
+            ->through(fn (User $user): array => (new TenantMemberResource($user, $assignableRoles))->resolve($request))
             ->toArray();
     }
 }

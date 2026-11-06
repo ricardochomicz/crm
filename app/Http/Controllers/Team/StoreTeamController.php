@@ -6,6 +6,7 @@ use App\Actions\Team\CreateTeamAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Team\StoreTeamRequest;
 use App\Models\Tenant;
+use App\Http\Resources\Team\TeamResource;
 use Illuminate\Http\JsonResponse;
 
 class StoreTeamController extends Controller
@@ -28,11 +29,7 @@ class StoreTeamController extends Controller
         );
 
         return response()->json([
-            'data' => [
-                'id' => $team->id,
-                'name' => $team->name,
-                'supervisor_membership_id' => $team->supervisor_membership_id
-            ],
+            'data' => new TeamResource($team),
         ], 201);
     }
 }

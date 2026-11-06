@@ -2,16 +2,54 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CommercialOrder extends Model
 {
     use HasUuids;
 
     protected $fillable = ['tenant_id', 'operator_id', 'product_id', 'order_type', 'customer_name', 'customer_document', 'monthly_amount', 'line_quantity', 'status', 'sold_on', 'notes'];
+
     protected $casts = ['monthly_amount' => 'decimal:2', 'line_quantity' => 'integer', 'sold_on' => 'date:Y-m-d'];
-    public function operator() { return $this->belongsTo(Operator::class); }
-    public function product() { return $this->belongsTo(Product::class); }
-    public function participants() { return $this->hasMany(CommercialOrderParticipant::class); }
+
+    public function operator(): BelongsTo
+    {
+        return $this->belongsTo(Operator::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function participants(): HasMany
+    {
+        return $this->hasMany(CommercialOrderParticipant::class);
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        if (filled($filters['search'] ?? null)) {
+            $query->where('customer_name', 'like', '%'.addcslashes(trim($filters['search']), '%_\\').'%');
+        }
+        if (isset($filters['operator_id'])) {
+            $query->where('operator_id', $filters['operator_id']);
+        }
+        if (isset($filters['product_id'])) {
+            $query->where('product_id', $filters['product_id']);
+        }
+        if (isset($filters['order_type'])) {
+            $query->where('order_type', $filters['order_type']);
+        }
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query;
+    }
 }

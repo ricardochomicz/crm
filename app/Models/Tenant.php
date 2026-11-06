@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+
 use App\Enums\TenantStatus;
 use App\Enums\TenantType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -76,5 +78,22 @@ class Tenant extends Model
     public function invitations(): HasMany
     {
         return $this->hasMany(TenantInvitation::class);
+    }
+    /** @param array<string, mixed> $filters */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        if (isset($filters['name'])) {
+            $query->where('name', 'like', '%' . $filters['name'] . '%');
+        }
+
+        if (isset($filters['document'])) {
+            $query->where('document', $filters['document']);
+        }
+
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query;
     }
 }

@@ -13,6 +13,7 @@ class Client extends Model {
  public function scopeFilter(Builder $query,array $filters):Builder {
   return $query->when($filters['search']??null,fn(Builder $q,$search)=>$q->whereAny(['company_name','document','email'],'LIKE','%'.$search.'%'))
    ->when($filters['operator_id']??null,fn(Builder $q,$id)=>$q->where('operator_id',$id))
+   ->when(isset($filters['is_active']), fn(Builder $q)=>$q->where('is_active',$filters['is_active']))
    ->when($filters['classification_id']??null,fn(Builder $q,$id)=>$q->where('classification_id',$id));
  }
  public function operator(){return $this->belongsTo(Operator::class);}

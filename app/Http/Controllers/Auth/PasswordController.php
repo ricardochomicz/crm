@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Requests\Auth\SendPasswordResetLinkRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\View\View;
@@ -36,30 +38,18 @@ class PasswordController extends Controller
         ]);
     }
 
-    public function sendLink(Request $request): Response
+    public function sendLink(SendPasswordResetLinkRequest $request): Response
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'string', 'email', 'max:254'],
-        ]);
+        $credentials = $request->validated();
 
         Password::broker('users')->sendResetLink($credentials);
 
         return response()->noContent();
     }
 
-    public function update(Request $request): RedirectResponse|Response
+    public function update(ResetPasswordRequest $request): RedirectResponse|Response
     {
-        $credentials = $request->validate([
-            'token' => ['required', 'string'],
-            'email' => ['required', 'string', 'email', 'max:254'],
-            'password' => [
-                'required',
-                'string',
-                'confirmed',
-                'max:128',
-                PasswordRule::min(8),
-            ],
-        ]);
+        $credentials = $request->validated();
 
         $status = Password::broker('users')->reset(
             $credentials,

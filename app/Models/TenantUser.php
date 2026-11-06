@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -70,5 +72,10 @@ class TenantUser extends Pivot
     public function supervisedTeams(): HasMany
     {
         return $this->hasMany(Team::class, 'supervisor_membership_id');
+    }
+    /** @param array<string, mixed> $filters */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query->when(isset($filters['status']), fn (Builder $query): Builder => $query->where('status', $filters['status']));
     }
 }

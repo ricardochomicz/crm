@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,12 +16,14 @@ class Operator extends Model
         return ['is_active' => 'boolean'];
     }
 
+    /** @param array<string, mixed> $filters */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
-            ->when($filters['search'] ?? null, fn (Builder $q, string $search) => $q->whereAny(['name', 'slug'], 'LIKE', '%'.$search.'%'))
-            ->when(array_key_exists('is_active', $filters), fn (Builder $q) => $q->where('is_active', $filters['is_active']));
+            ->when($filters['search'] ?? null, fn (Builder $query, string $search): Builder => $query->whereAny(['name', 'slug'], 'LIKE', '%'.$search.'%'))
+            ->when(array_key_exists('is_active', $filters), fn (Builder $query): Builder => $query->where('is_active', $filters['is_active']));
     }
+
 
     public function tenants(): BelongsToMany
     {

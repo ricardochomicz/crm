@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tenant_member_team_changes', function (Blueprint $table): void {
-            $table->dropForeign('member_team_changes_membership_foreign');
+            $table->dropForeign(Schema::getConnection()->getDriverName() === 'sqlite'
+                ? ['tenant_id', 'membership_id']
+                : 'member_team_changes_membership_foreign');
         });
 
         Schema::create('tenant_member_departures', function (Blueprint $table): void {

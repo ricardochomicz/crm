@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+
 use App\Enums\TenantInvitationStatus;
 use App\Enums\TenantUserRole;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -57,5 +59,14 @@ class TenantInvitation extends Model
     {
         return $this->status === TenantInvitationStatus::Pending
             && $this->expires_at->isFuture();
+    }
+    /** @param array<string, mixed> $filters */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query;
     }
 }
