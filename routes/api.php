@@ -131,6 +131,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     ];
                 })->name('me');
 
+                Route::get('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalIndex']);
+                Route::post('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalStore']);
+                Route::patch('/operator-classifications/{classificationId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalUpdate'])->whereNumber('classificationId');
+                Route::post('/operator-classifications/{classificationId}/renewal-rules', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalSaveRule'])->whereNumber('classificationId');
                 Route::get('/operators', ListOperatorsController::class)->name('operators.index');
                 Route::post('/operators', StoreOperatorController::class)->middleware('throttle:20,1')->name('operators.store');
                 Route::patch('/operators/{operator}', UpdateOperatorController::class)->whereNumber('operator')->middleware('throttle:20,1')->name('operators.update');
@@ -175,6 +179,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.index');
                 Route::get('/commissions/order-types', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'order-types');
                 Route::get('/commissions/settings', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'settings')->name('commissions.settings.show');
+                Route::get('/clients', [\App\Http\Controllers\Client\ClientController::class, 'index']);
+                Route::get('/clients/options', [\App\Http\Controllers\Client\ClientController::class, 'options']);
+                Route::get('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'show'])->whereUuid('clientId');
+                Route::get('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'index']);
                 Route::get('/commercial-orders', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'index']);
                 Route::get('/commercial-orders/options', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'options']);
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
@@ -192,6 +200,13 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::patch('/commissions/{commissionId}', \App\Http\Controllers\Commission\CommissionTableController::class)->whereUuid('commissionId');
                     Route::put('/commissions/settings', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'settings');
                     Route::post('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.store');
+                    Route::post('/clients', [\App\Http\Controllers\Client\ClientController::class, 'store']);
+                    Route::patch('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'update'])->whereUuid('clientId');
+                    Route::post('/clients/{clientId}/contacts', [\App\Http\Controllers\Client\ClientController::class, 'saveContact'])->whereUuid('clientId');
+                    Route::patch('/clients/{clientId}/contacts/{contactId}', [\App\Http\Controllers\Client\ClientController::class, 'saveContact'])->whereUuid('clientId')->whereUuid('contactId');
+                    Route::post('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'store']);
+                    Route::patch('/operator-classifications/{classificationId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'update'])->whereNumber('classificationId');
+                    Route::post('/operator-classifications/{classificationId}/renewal-rules', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'saveRule'])->whereNumber('classificationId');
                     Route::post('/commercial-orders', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'store']);
                     Route::patch('/commercial-orders/{orderId}', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'update'])->whereUuid('orderId');
                     Route::post('/products', \App\Http\Controllers\Product\StoreProductController::class)->name('products.store');
