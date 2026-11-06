@@ -24,8 +24,12 @@ class CommercialParticipantController extends Controller
  public function index(Request $request, string $tenantId): array
  {
   $tenant = $this->tenant($request);
-  return ['data' => CommercialParticipant::where('tenant_id', $tenant->id)->orderBy('name')->get(),
-   'meta' => ['can_manage' => $request->user()->can('manageCommissions', $tenant)]];
+  $filters = $request->validate(['search' => ['nullable','string','max:200'], 'role' => ['nullable',Rule::in(['PARTNER','REFERRER'])], 'page' => ['sometimes','integer','min:1']]);
+  $query = CommercialParticipant::where('tenant_id', $tenant->id);
+  if (filled($filters['search'] ?? null)) $query->where('name', 'like', '%'.addcslashes(trim($filters['search']), '%_\\\\').'%');
+  if (filled($filters['role'] ?? null)) $query->where('role', $filters['role']);
+  $page = $query->orderBy('name')->paginate(15);
+  return ['data' => $page->items(), 'meta' => ['can_manage' => $request->user()->can('manageCommissions', $tenant), 'current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()]];
  }
 
  public function store(Request $request, string $tenantId): array { return $this->save($request); }
