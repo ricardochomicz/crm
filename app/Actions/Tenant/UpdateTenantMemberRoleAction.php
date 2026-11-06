@@ -5,6 +5,7 @@ namespace App\Actions\Tenant;
 use App\Enums\TenantUserRole;
 use App\Models\Tenant;
 use App\Models\TenantUser;
+use App\Models\TenantRole;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -19,6 +20,7 @@ class UpdateTenantMemberRoleAction
         Tenant $tenant,
         string $membershipId,
         TenantUserRole $role,
+        ?string $tenantRoleId = null,
     ): void {
         if (! in_array($role, [
             TenantUserRole::Manager,
@@ -35,6 +37,7 @@ class UpdateTenantMemberRoleAction
             $tenant,
             $membershipId,
             $role,
+            $tenantRoleId,
         ): void {
             $tenant = Tenant::query()
                 ->lockForUpdate()
@@ -72,10 +75,20 @@ class UpdateTenantMemberRoleAction
                 ]);
             }
 
-            if ($membership->role === $role) {
-                return;
+            if ($tenantRoleId !== null) {
+                $selectedRole = TenantRole::where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($tenantRoleId);
+                abort_unless($selectedRole->code !== 'OWNER' && $selectedRole->legacy_role === $role->value, 422, 'Cargo incompatível com o papel informado.');
+                abort_unless($this->permissions->membership($owner, $tenant)?->role === TenantUserRole::Owner, 403, 'Somente o proprietário pode atribuir cargos personalizados.');
             }
+            $resolvedRoleId = $tenantRoleId ?? TenantRole::where('tenant_id', $tenant->id)->where('code', match ($role) {
+                TenantUserRole::Manager => 'MANAGER',
+                TenantUserRole::Consultant => 'TELEMARKETING',
+                TenantUserRole::Assistant => 'BACKOFFICE',
+                default => 'OWNER',
+            })->value('id');
+            if ($membership->role === $role && $membership->tenant_role_id === $resolvedRoleId) return;
 
+            $membership->tenant_role_id = $resolvedRoleId;
             $membership->role = $role;
             $membership->save();
         }, attempts: 5);
