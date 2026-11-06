@@ -167,6 +167,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                 Route::get('/units/{unitId}/assignments', ListTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.index');
                 Route::get('/units', ListTenantUnitsController::class)->name('tenant-units.index');
+                Route::get('/commercial-participants', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'index']);
+                Route::get('/commercial-participants/{participantId}/commissions', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'commissions'])->whereUuid('participantId');
                 Route::get('/team-commissions', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'index']);
                 Route::get('/team-commissions/options', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'options']);
                 Route::get('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.index');
@@ -175,6 +177,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
+                    Route::post('/commercial-participants', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'store']);
+                    Route::patch('/commercial-participants/{participantId}', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'update'])->whereUuid('participantId');
+                    Route::post('/commercial-participants/{participantId}/commissions', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'saveCommission'])->whereUuid('participantId');
+                    Route::patch('/commercial-participants/{participantId}/commissions/{overrideId}', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'saveCommission'])->whereUuid('participantId')->whereUuid('overrideId');
+                    Route::delete('/commercial-participants/{participantId}/commissions/{overrideId}', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'deleteCommission'])->whereUuid('participantId')->whereUuid('overrideId');
                     Route::post('/team-commissions', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'store']);
                     Route::patch('/team-commissions/{ruleId}', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'update'])->whereUuid('ruleId');
                     Route::patch('/commissions/{commissionId}', \App\Http\Controllers\Commission\CommissionTableController::class)->whereUuid('commissionId');
