@@ -53,6 +53,8 @@ class ListTenantInvitationsController extends Controller
                     'id' => $invitation->getKey(),
                     'email' => $invitation->email,
                     'role' => $invitation->role->value,
+                    'tenant_role_id' => $invitation->tenant_role_id,
+                    'role_name' => $invitation->tenantRole?->name,
                     'status' => $invitation->status->value,
                     'is_expired' => $isPending
                         && $invitation->expires_at->lessThanOrEqualTo($at),
