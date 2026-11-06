@@ -57,7 +57,9 @@ class OperatorClassificationController extends Controller {
  }
  public function saveRule(Request $request,string $tenantId,int $classificationId): array {return $this->rule($request,false,$classificationId);}
  public function globalSaveRule(Request $request,int $classificationId): array {return $this->rule($request,true,$classificationId);}
- private function rule(Request $request,bool $global,int $classificationId): array {
+ public function updateRule(Request $request,string $tenantId,int $classificationId,string $ruleId): array {return $this->rule($request,false,$classificationId,$ruleId);}
+ public function globalUpdateRule(Request $request,int $classificationId,string $ruleId): array {return $this->rule($request,true,$classificationId,$ruleId);}
+ private function rule(Request $request,bool $global,int $classificationId,?string $ruleId=null): array {
   [$tenant]=$this->context($request,true,$global);
   $classification=OperatorClassification::where(fn($q)=>$q->whereNull('tenant_id')->orWhere('tenant_id',$tenant?->id))->findOrFail($classificationId);
   if($global&&$classification->tenant_id!==null)abort(403);
@@ -66,11 +68,13 @@ class OperatorClassificationController extends Controller {
    'minimum_months'=>['required','integer','min:0','max:1200'],'valid_from'=>['required','date_format:Y-m-d'],
    'valid_until'=>['nullable','date_format:Y-m-d','after_or_equal:valid_from'],'is_active'=>['required','boolean'],'notes'=>['nullable','string','max:500'],
   ]);
-  return DB::transaction(function()use($tenant,$classification,$data){
+  return DB::transaction(function()use($tenant,$classification,$data,$ruleId){
    $scope=ClassificationRenewalRule::where('classification_id',$classification->id)->where('tenant_id',$tenant?->id);
-   if($data['is_active']&&(clone $scope)->where('is_active',true)->where('valid_from','<=',$data['valid_until']??'9999-12-31')
+   $existing=$ruleId?(clone $scope)->lockForUpdate()->findOrFail($ruleId):null;
+   if($data['is_active']&&(clone $scope)->when($existing,fn($q)=>$q->where('id','!=',$existing->id))->where('is_active',true)->where('valid_from','<=',$data['valid_until']??'9999-12-31')
      ->where(fn($q)=>$q->whereNull('valid_until')->orWhere('valid_until','>=',$data['valid_from']))->exists())
     throw ValidationException::withMessages(['valid_from'=>'Já existe uma regra ativa com vigência sobreposta. Encerre a regra anterior primeiro.']);
+   if($existing){$existing->update($data);return ['data'=>$existing];}
    return ['data'=>ClassificationRenewalRule::create(['classification_id'=>$classification->id,'tenant_id'=>$tenant?->id,...$data])];
   });
  }
