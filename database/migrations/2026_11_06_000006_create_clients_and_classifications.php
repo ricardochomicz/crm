@@ -35,14 +35,14 @@ return new class extends Migration {
   Schema::create('client_sellers',function(Blueprint $t){
    $t->uuid('id')->primary(); $t->foreignUuid('tenant_id')->constrained()->cascadeOnDelete(); $t->foreignUuid('client_id')->constrained()->cascadeOnDelete();
    $t->foreignUuid('tenant_user_id'); $t->foreign('tenant_user_id','client_sellers_membership_fk')->references('id')->on('tenant_users')->restrictOnDelete();
-   $t->foreignUuid('assigned_by')->nullable(); $t->foreign('assigned_by','client_sellers_assigned_by_fk')->references('id')->on('users')->nullOnDelete();
+   $t->foreignId('assigned_by')->nullable(); $t->foreign('assigned_by','client_sellers_assigned_by_fk')->references('id')->on('users')->nullOnDelete();
    $t->timestamp('started_at'); $t->timestamp('ended_at')->nullable(); $t->string('reason')->nullable(); $t->timestamps();
    $t->index(['tenant_id','client_id','ended_at']);
   });
   Schema::create('client_operator_history',function(Blueprint $t){
    $t->uuid('id')->primary(); $t->foreignUuid('tenant_id')->constrained()->cascadeOnDelete(); $t->foreignUuid('client_id')->constrained()->cascadeOnDelete();
    $t->foreignId('operator_id')->nullable()->constrained()->nullOnDelete(); $t->foreignId('classification_id')->nullable()->constrained('operator_classifications')->nullOnDelete();
-   $t->timestamp('changed_at'); $t->foreignUuid('changed_by')->nullable(); $t->foreign('changed_by','client_operator_changed_by_fk')->references('id')->on('users')->nullOnDelete();
+   $t->timestamp('changed_at'); $t->foreignId('changed_by')->nullable(); $t->foreign('changed_by','client_operator_changed_by_fk')->references('id')->on('users')->nullOnDelete();
    $t->timestamps();
   });
  }
