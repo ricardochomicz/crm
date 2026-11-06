@@ -12,6 +12,26 @@ class TenantPolicy
 {
     public function __construct(private ResolveTenantPermissionsAction $permissions) {}
 
+    public function viewClients(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewClients);
+    }
+
+    public function createClients(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::CreateClients);
+    }
+
+    public function updateClients(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::UpdateClients);
+    }
+
+    public function deleteClients(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::DeleteClients);
+    }
+
     public function viewCommissions(User $user, Tenant $tenant): bool
     {
         return $this->permissions->allows($user, $tenant, TenantPermission::ViewCommissions);
