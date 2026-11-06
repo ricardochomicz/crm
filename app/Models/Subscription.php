@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Enums\SubscriptionStatus;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\CarbonInterface;
 
 #[Fillable([
     'tenant_id',
@@ -50,6 +51,13 @@ class Subscription extends Model
         ];
     }
 
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when($filters['status'] ?? null, fn (Builder $q, mixed $status) => $q->where('status', $status))
+            ->when($filters['subscription_plan_id'] ?? null, fn (Builder $q, string $planId) => $q->where('subscription_plan_id', $planId));
+    }
+
     public function allowsOperationalWrites(
         ?CarbonInterface $at = null
     ): bool {
@@ -58,11 +66,11 @@ class Subscription extends Model
         [$startsAt, $endsAt] = match ($this->status) {
             SubscriptionStatus::Trialing => [
                 $this->started_at,
-                $this->trial_ends_at
+                $this->trial_ends_at,
             ],
             SubscriptionStatus::Active => [
                 $this->current_period_starts_at,
-                $this->current_period_ends_at
+                $this->current_period_ends_at,
             ],
             default => [null, null],
         };

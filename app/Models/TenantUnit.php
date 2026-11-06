@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,19 @@ class TenantUnit extends Model
     protected function casts(): array
     {
         return ['is_headquarters' => 'boolean'];
+    }
+
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when($filters['search'] ?? null, fn (Builder $q, string $search) => $q->where(function (Builder $sub) use ($search) {
+                $sub->where('name', 'LIKE', '%'.$search.'%')
+                    ->orWhere('city', 'LIKE', '%'.$search.'%')
+                    ->orWhere('state', 'LIKE', '%'.$search.'%')
+                    ->orWhere('email', 'LIKE', '%'.$search.'%')
+                    ->orWhere('phone', 'LIKE', '%'.$search.'%');
+            }))
+            ->when(array_key_exists('is_headquarters', $filters), fn (Builder $q) => $q->where('is_headquarters', $filters['is_headquarters']));
     }
 
     public function tenant(): BelongsTo

@@ -2,31 +2,32 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Actions\Tenant\FilterTenantUnitAction;
 use App\Http\Controllers\Controller;
-use App\Models\Tenant;
-use App\Models\TenantUnit;
+use App\Http\Requests\Tenant\IndexTenantUnitRequest;
 use App\Http\Resources\Tenant\TenantUnitResource;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
+use App\Models\Tenant;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ListTenantUnitsController extends Controller
 {
-    /** @return array<string, mixed> */
-    public function __invoke(Request $request): array
+    public function __invoke(IndexTenantUnitRequest $request, FilterTenantUnitAction $action): AnonymousResourceCollection
     {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
         $canManage = $request->user()->can('manageUnits', $tenant);
-        $query = $tenant->units()->withCount(['members', 'teams']);
-        if (! $canManage) {
-            $query->whereHas('members', fn (Builder $members): Builder => $members->where('user_id', $request->user()->id));
-        }
 
-        return [
-            'data' => $query->orderByDesc('is_headquarters')->orderBy('name')->orderBy('id')->get()->map(fn (TenantUnit $unit): array => (new TenantUnitResource($unit))->resolve($request))->all(),
+        $units = $action->execute(
+            $tenant,
+            $request->validated(),
+            $request->user(),
+            $canManage,
+        );
+
+        return TenantUnitResource::collection($units)->additional([
             'meta' => [
                 'can_manage' => $canManage,
             ],
-        ];
+        ]);
     }
 }

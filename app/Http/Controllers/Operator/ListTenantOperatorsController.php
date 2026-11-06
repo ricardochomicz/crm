@@ -2,37 +2,26 @@
 
 namespace App\Http\Controllers\Operator;
 
+use App\Actions\Operator\FilterTenantOperatorsAction;
 use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
-use App\Models\Operator;
+use App\Http\Requests\Operator\ListTenantOperatorsRequest;
+use App\Http\Resources\Operator\TenantOperatorResource;
 use App\Models\Tenant;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ListTenantOperatorsController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(ListTenantOperatorsRequest $request, FilterTenantOperatorsAction $action): AnonymousResourceCollection
     {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
         $membership = $tenant->users()->where('users.id', $request->user()->id)->first();
         $isOwner = $membership && $membership->membership->role === TenantUserRole::Owner;
-        $canViewCommissions = $request->user()->can('viewCommissions', $tenant);
-        abort_unless($isOwner || $request->user()->can('viewProducts', $tenant) || $canViewCommissions, 403);
 
-        $selected = $tenant->operators()->pluck('operators.id')->all();
+        $operators = $action->execute($tenant, $request->validated());
 
-        return response()->json([
-            'data' => Operator::query()->where(function ($query) use ($selected): void {
-                $query->where('is_active', true)->orWhereIn('id', $selected);
-            })->orderBy('name')->get(['id', 'name', 'slug', 'is_active'])->map(fn (Operator $operator) => [
-                'id' => $operator->id,
-                'name' => $operator->name,
-                'slug' => $operator->slug,
-                'is_active' => $operator->is_active,
-                'selected' => in_array($operator->id, $selected, true),
-            ]),
+        return TenantOperatorResource::collection($operators)->additional([
             'meta' => ['can_manage' => $isOwner],
         ]);
     }
