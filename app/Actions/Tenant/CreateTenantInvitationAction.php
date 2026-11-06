@@ -100,12 +100,19 @@ class CreateTenantInvitationAction
                 ]);
             }
 
+            $resolvedRoleId = $tenantRoleId ?? TenantRole::where('tenant_id', $tenant->id)->where('code', match ($role) {
+                TenantUserRole::Manager => 'MANAGER',
+                TenantUserRole::Consultant => 'TELEMARKETING',
+                TenantUserRole::Assistant => 'BACKOFFICE',
+                default => 'OWNER',
+            })->value('id');
+
             $token = Str::random(64);
 
             $invitation = new TenantInvitation([
                 'email' => $email,
                 'role' => $role,
-                'tenant_role_id' => $tenantRoleId,
+                'tenant_role_id' => $resolvedRoleId,
                 'status' => TenantInvitationStatus::Pending,
                 'token_hash' => hash('sha256', $token),
                 'expires_at' => now()->addDays(7),
