@@ -131,6 +131,7 @@ class AcceptTenantInvitationAction
                 'tenant_id' => $tenant->getKey(),
                 'user_id' => $authenticatedUser->getKey(),
                 'role' => $invitation->role,
+                'tenant_role_id' => $invitation->tenant_role_id,
                 'status' => TenantUserStatus::Active,
                 'joined_at' => $at,
             ]);
