@@ -1,17 +1,25 @@
 <?php
+
 namespace App\Http\Controllers\Product;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Product\IndexProductRequest;
+use App\Http\Resources\Product\ProductResource;
+use App\Queries\Product\ProductIndexQuery;
+
 class ListProductsController extends Controller
 {
-    public function __invoke(Request $request): array
+    public function __invoke(IndexProductRequest $request, ProductIndexQuery $query)
     {
         $tenant = $request->attributes->get('active_tenant');
-        abort_unless($request->user()->can('viewProducts', $tenant), 403);
-        $filters = $request->validate(['operator_id' => ['sometimes', 'integer'], 'category' => ['sometimes', 'string']]);
-        $query = $tenant->products()->with(['operator:id,name', 'promotions'])->orderBy('name');
-        if (isset($filters['operator_id'])) $query->where('operator_id', $filters['operator_id']);
-        if (isset($filters['category'])) $query->where('category', $filters['category']);
-        return ['data' => $query->get(), 'meta' => ['can_manage' => $request->user()->can('createProducts', $tenant) || $request->user()->can('updateProducts', $tenant) || $request->user()->can('managePromotions', $tenant), 'can_create' => $request->user()->can('createProducts', $tenant), 'can_update' => $request->user()->can('updateProducts', $tenant), 'can_manage_promotions' => $request->user()->can('managePromotions', $tenant)]];
+        $user = $request->user();
+
+        return ProductResource::collection($query->get($tenant->id, $request->validated()))
+            ->additional(['meta' => [
+                'can_manage' => $user->can('createProducts', $tenant) || $user->can('updateProducts', $tenant) || $user->can('managePromotions', $tenant),
+                'can_create' => $user->can('createProducts', $tenant),
+                'can_update' => $user->can('updateProducts', $tenant),
+                'can_manage_promotions' => $user->can('managePromotions', $tenant),
+            ]]);
     }
 }
