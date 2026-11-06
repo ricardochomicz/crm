@@ -17,7 +17,7 @@ class OperatorClassificationController extends Controller {
    return [null,true];
   }
   $tenant=$request->attributes->get('active_tenant');
-  abort_unless($tenant&&($write?$tenant->role??null: true)!==false,403);
+  abort_unless($tenant,403);
   if($write)abort_unless($tenant->users()->where('users.id',$request->user()->id)->wherePivot('role','OWNER')->exists(),403);
   else abort_unless($request->user()->can('viewCommissions',$tenant),403);
   return [$tenant,$write];
