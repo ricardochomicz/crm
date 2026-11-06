@@ -42,6 +42,8 @@ class ShowActiveTenantController extends Controller
             'logo_url' => $tenant->logo ? \Illuminate\Support\Facades\Storage::disk('public')->url($tenant->logo) : null,
             'access' => [
                 'permissions' => $grants,
+                'tenant_role_id' => $tenant->membership->tenant_role_id,
+                'role_name' => $tenant->membership->tenantRole?->name,
                 'can_manage_permissions' => $tenant->membership->role === TenantUserRole::Owner,
                 'allows_operational_writes' => $subscription?->allowsOperationalWrites() ?? false,
                 'assignable_roles' => array_values(array_map(fn (TenantUserRole $role): string => $role->value,
