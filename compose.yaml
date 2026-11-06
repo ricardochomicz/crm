@@ -9,7 +9,7 @@ x-logging: &logging
 services:
     # Vite development server: source changes appear immediately without image rebuilds.
     frontend:
-        image: node:24-alpine
+        image: node:24-bookworm-slim
         init: true
         working_dir: /workspace
         volumes:
