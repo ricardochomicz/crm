@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class TenantRoleController extends Controller {
     public function index(Request $request,string $tenantId) {
         $tenant=$request->attributes->get('active_tenant');
-        abort_unless($request->user()->can('viewMembers',$tenant)||$request->user()->can('managePermissions',$tenant),403);
+        abort_unless($request->user()->can('viewMembers',$tenant)||$request->user()->can('createInvitation',$tenant)||$request->user()->can('managePermissions',$tenant),403);
         return TenantRoleResource::collection(TenantRole::where('tenant_id',$tenant->id)->orderBy('name')->get());
     }
     public function store(SaveTenantRoleRequest $request,string $tenantId,SaveTenantRoleAction $action):TenantRoleResource {
