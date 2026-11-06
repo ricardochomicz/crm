@@ -66,6 +66,12 @@ class ResolveTenantPermissionsAction
             return true;
         }
 
+        // Managers can assign operational roles, but cannot grant Manager or Owner.
+        // The invitation/member-update policies still control who may perform the action.
+        if ($membership->role === TenantUserRole::Manager) {
+            return in_array($role, [TenantUserRole::Consultant, TenantUserRole::Assistant], true);
+        }
+
         return array_diff($this->forRole($tenant, $role)['permissions'],
             $this->forRole($tenant, $membership->role)['permissions']) === [];
     }
