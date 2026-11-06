@@ -4,6 +4,10 @@ namespace App\Enums;
 
 enum TenantPermission: string
 {
+    case ViewClients = 'clients.view';
+    case CreateClients = 'clients.create';
+    case UpdateClients = 'clients.update';
+    case DeleteClients = 'clients.delete';
     case ViewCommissions = 'commissions.view';
     case ManageCommissions = 'commissions.manage';
     case ViewProducts = 'products.view';
@@ -33,6 +37,10 @@ enum TenantPermission: string
     public static function catalog(): array
     {
         return [
+            ['key' => self::ViewClients->value, 'group' => 'Clientes', 'label' => 'Visualizar clientes', 'requires' => []],
+            ['key' => self::CreateClients->value, 'group' => 'Clientes', 'label' => 'Cadastrar clientes', 'requires' => ['clients.view']],
+            ['key' => self::UpdateClients->value, 'group' => 'Clientes', 'label' => 'Editar clientes e contatos', 'requires' => ['clients.view']],
+            ['key' => self::DeleteClients->value, 'group' => 'Clientes', 'label' => 'Excluir clientes (lixeira)', 'requires' => ['clients.view']],
             ['key' => self::ViewCommissions->value, 'group' => 'Comissões', 'label' => 'Visualizar tabelas de comissões', 'requires' => []],
             ['key' => self::ManageCommissions->value, 'group' => 'Comissões', 'label' => 'Gerenciar tabelas de comissões', 'requires' => ['commissions.view']],
             ['key' => self::ViewProducts->value, 'group' => 'Produtos', 'label' => 'Visualizar produtos e promoções', 'requires' => []],
