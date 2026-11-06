@@ -6,6 +6,7 @@ use App\Enums\TenantInvitationStatus;
 use App\Enums\TenantUserRole;
 use App\Models\Tenant;
 use App\Models\TenantInvitation;
+use App\Models\TenantRole;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -24,6 +25,7 @@ class CreateTenantInvitationAction
         Tenant $tenant,
         string $email,
         TenantUserRole $role,
+        ?string $tenantRoleId = null,
     ): array {
         $email = Str::lower(trim($email));
 
@@ -38,6 +40,7 @@ class CreateTenantInvitationAction
             $tenant,
             $email,
             $role,
+            $tenantRoleId,
         ): array {
             $tenant = Tenant::query()
                 ->lockForUpdate()
@@ -46,6 +49,11 @@ class CreateTenantInvitationAction
             Gate::forUser($owner)->authorize('createInvitation', $tenant);
 
             abort_unless($this->permissions->canAssign($owner, $tenant, $role), 403, 'Você não pode atribuir este cargo.');
+            if ($tenantRoleId !== null) {
+                $selectedRole = TenantRole::where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($tenantRoleId);
+                abort_unless($selectedRole->code !== 'OWNER' && $selectedRole->legacy_role === $role->value, 422, 'Cargo incompatível com o papel informado.');
+                abort_unless($this->permissions->membership($owner, $tenant)?->role === TenantUserRole::Owner, 403, 'Somente o proprietário pode atribuir cargos personalizados.');
+            }
 
             $subscription = $tenant->subscription()
                 ->lockForUpdate()
@@ -97,6 +105,7 @@ class CreateTenantInvitationAction
             $invitation = new TenantInvitation([
                 'email' => $email,
                 'role' => $role,
+                'tenant_role_id' => $tenantRoleId,
                 'status' => TenantInvitationStatus::Pending,
                 'token_hash' => hash('sha256', $token),
                 'expires_at' => now()->addDays(7),
