@@ -5,7 +5,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 class SaveClientRequest extends FormRequest {
- public function authorize():bool {$tenant=$this->attributes->get('active_tenant');return $tenant && $this->user()?->can('manageCommissions',$tenant);}
+ public function authorize():bool {$tenant=$this->attributes->get('active_tenant');return $tenant && $this->user()?->can($this->route('clientId') ? 'updateClients' : 'createClients', $tenant);}
  protected function prepareForValidation():void {
   $clean=[];
   foreach(['document','phone','zip_code'] as $field)if($this->has($field)&&$this->input($field)!==null)$clean[$field]=preg_replace('/\D/','',(string)$this->input($field));
