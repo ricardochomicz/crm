@@ -40,7 +40,7 @@ class UpdateOrderWorkflowAction
             }
 
             $previousStatus = $order->orderStatus?->name ?? 'Sem status';
-            $previousDate = $order->expected_activation_at?->format('d/m/Y');
+            $previousDate = $order->expected_activation_at ? \Carbon\Carbon::parse($order->expected_activation_at)->format('d/m/Y') : null;
             $newDate = isset($data['expected_activation_at']) ? \Carbon\Carbon::parse($data['expected_activation_at'])->format('d/m/Y') : null;
 
             $order->update([
