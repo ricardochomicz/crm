@@ -13,6 +13,13 @@ class CommercialOrderResource extends JsonResource
 
         return [
             'id' => $attributes['id'] ?? null,
+            'code' => $attributes['code'] ?? null,
+            'opportunity_id' => $attributes['opportunity_id'] ?? null,
+            'client_id' => $attributes['client_id'] ?? null,
+            'order_status_id' => $attributes['order_status_id'] ?? null,
+            'order_status' => $this->whenLoaded('orderStatus', fn () => $this->orderStatus?->name),
+            'expected_activation_at' => $attributes['expected_activation_at'] ?? null,
+            'activated_at' => $attributes['activated_at'] ?? null,
             'tenant_id' => $attributes['tenant_id'] ?? null,
             'operator_id' => $attributes['operator_id'] ?? null,
             'product_id' => $attributes['product_id'] ?? null,
@@ -27,6 +34,7 @@ class CommercialOrderResource extends JsonResource
             'updated_at' => $attributes['updated_at'] ?? null,
             'operator' => $this->whenLoaded('operator'),
             'product' => $this->whenLoaded('product'),
+            'items' => $this->whenLoaded('items'),
             'participants' => CommercialOrderParticipantResource::collection($this->whenLoaded('participants')),
         ];
     }

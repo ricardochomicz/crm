@@ -200,10 +200,12 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'index']);
                 Route::get('/order-statuses', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'index']);
                 Route::get('/commercial-orders', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'index']);
+                Route::get('/commercial-orders/{orderId}', [\App\Http\Controllers\Commercial\OrderWorkflowController::class, 'show'])->whereUuid('orderId');
                 Route::get('/commercial-orders/options', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'options']);
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
+                    Route::patch('/commercial-orders/{orderId}/workflow', [\App\Http\Controllers\Commercial\OrderWorkflowController::class, 'update'])->whereUuid('orderId');
                     Route::post('/order-statuses', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'store']);
                     Route::patch('/order-statuses/{statusId}', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'update'])->whereUuid('statusId');
                     Route::patch('/order-statuses/{statusId}/initial', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'initial'])->whereUuid('statusId');
