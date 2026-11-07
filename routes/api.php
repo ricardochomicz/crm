@@ -188,8 +188,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/commissions/order-types', [\App\Http\Controllers\Commission\CommissionTableController::class, 'orderTypes']);
                 Route::get('/commissions/settings', [\App\Http\Controllers\Commission\CommissionTableController::class, 'settings'])->name('commissions.settings.show');
                 Route::get('/opportunity-funnel-stages', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'stages']);
-                Route::get('/timeline/{type}/{id}', [\\App\\Http\\Controllers\\Timeline\\TimelineController::class, 'index'])->whereUuid('id')->whereIn('type', ['opportunity', 'client', 'commercial_order']);
-                Route::get('/timeline/attachments/{id}/download', [\\App\\Http\\Controllers\\Timeline\\TimelineController::class, 'download'])->whereUuid('id');
+                Route::get('/timeline/{type}/{id}', [\App\Http\Controllers\Timeline\TimelineController::class, 'index'])->whereUuid('id')->whereIn('type', ['opportunity', 'client', 'commercial_order']);
+                Route::get('/timeline/attachments/{id}/download', [\App\Http\Controllers\Timeline\TimelineController::class, 'download'])->whereUuid('id');
                 Route::get('/opportunities/overview', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'overview'])->name('opportunities.overview');
                 Route::get('/opportunities', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'index']);
                 Route::get('/opportunities/{opportunityId}', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'show'])->whereUuid('opportunityId');
@@ -215,10 +215,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::patch('/commissions/{commissionId}', [\App\Http\Controllers\Commission\CommissionTableController::class, 'update'])->whereUuid('commissionId');
                     Route::put('/commissions/settings', [\App\Http\Controllers\Commission\CommissionTableController::class, 'updateSettings']);
                     Route::post('/commissions', [\App\Http\Controllers\Commission\CommissionTableController::class, 'store'])->name('commissions.store');
-                    Route::post('/timeline/{type}/{id}', [\\App\\Http\\Controllers\\Timeline\\TimelineController::class, 'store'])->whereUuid('id')->whereIn('type', ['opportunity', 'client', 'commercial_order']);
-                    Route::patch('/timeline/comments/{id}', [\\App\\Http\\Controllers\\Timeline\\TimelineController::class, 'update'])->whereUuid('id');
-                    Route::delete('/timeline/comments/{id}', [\\App\\Http\\Controllers\\Timeline\\TimelineController::class, 'destroy'])->whereUuid('id');
-                    Route::post('/timeline/comments/{id}/attachments', [\\App\\Http\\Controllers\\Timeline\\TimelineController::class, 'upload'])->whereUuid('id');
+                    Route::post('/timeline/{type}/{id}', [\App\Http\Controllers\Timeline\TimelineController::class, 'store'])->whereUuid('id')->whereIn('type', ['opportunity', 'client', 'commercial_order']);
+                    Route::patch('/timeline/comments/{id}', [\App\Http\Controllers\Timeline\TimelineController::class, 'update'])->whereUuid('id');
+                    Route::delete('/timeline/comments/{id}', [\App\Http\Controllers\Timeline\TimelineController::class, 'destroy'])->whereUuid('id');
+                    Route::post('/timeline/comments/{id}/attachments', [\App\Http\Controllers\Timeline\TimelineController::class, 'upload'])->whereUuid('id');
                     Route::post('/opportunities', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'store']);
                     Route::post('/opportunities/{opportunityId}/recover', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'recover'])->whereUuid('opportunityId')->name('opportunities.recover');
                     Route::post('/opportunities/{opportunityId}/mark-lost', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'markLost'])->whereUuid('opportunityId')->name('opportunities.sale.lost');
