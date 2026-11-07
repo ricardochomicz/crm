@@ -35,8 +35,7 @@ class CompleteOrderAction
                 throw ValidationException::withMessages(['items' => 'Todas as linhas precisam estar ativas e possuir data de ativação.']);
             }
 
-            $status = OrderStatus::query()->where('tenant_id', $tenant->id)
-                ->whereRaw('LOWER(name) = ?', ['concluído'])->first();
+            $status = OrderStatus::query()->where('name', 'CONCLUIDO')->first();
 
             if (! $status) {
                 throw ValidationException::withMessages(['order_status' => 'Cadastre o status Concluído antes de finalizar pedidos.']);
