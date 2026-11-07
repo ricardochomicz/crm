@@ -17,8 +17,20 @@ class ListClientOptionsAction
             || $membership->supervisedTeams()->exists()
         );
 
-        $sellers = TenantUser::query()->where('tenant_id', $tenantId)
-            ->where('status', 'ACTIVE')->with('user:id,name,email')->get()
+        $sellersQuery = TenantUser::query()->where('tenant_id', $tenantId)
+            ->where('status', 'ACTIVE')->with('user:id,name,email');
+
+        if (! $membership || ! in_array($membership->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
+            $teamIds = $membership?->supervisedTeams()->where('tenant_id', $tenantId)->select('id');
+            $sellersQuery->where(function ($query) use ($membership, $teamIds): void {
+                $query->where('id', $membership?->getKey());
+                if ($teamIds !== null) {
+                    $query->orWhereIn('team_id', $teamIds);
+                }
+            });
+        }
+
+        $sellers = $sellersQuery->get()
             ->map(fn ($member) => [
                 'id' => $member->id,
                 'name' => $member->user?->name ?? $member->user?->email ?? $member->id,
