@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SubscriptionPlanSeeder::class);
         $this->call(OperatorSeeder::class);
         $this->call(OrderTypeSeeder::class);
+        $this->call(OrderStatusSeeder::class);
 
         $name = config('platform.admin.name');
         $email = config('platform.admin.email');
