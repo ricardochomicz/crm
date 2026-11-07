@@ -23,7 +23,7 @@ class SaveCommercialParticipantRequest extends FormRequest
             'role' => ['required', Rule::in(['PARTNER', 'REFERRER'])],
             'person_type' => ['required', Rule::in(['PF', 'PJ'])],
             'name' => ['required', 'string', 'max:200'],
-            'document' => ['nullable', 'string', 'regex:/^\\d{11}(\\d{3})?$/'],
+            'document' => ['nullable', 'string', 'regex:/^\d{11}(\d{3})?$/', Rule::unique('commercial_participants', 'document')->where('tenant_id', $tenant->id)->ignore($this->route('participantId'))],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'notes' => ['nullable', 'string', 'max:5000'],
