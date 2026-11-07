@@ -25,6 +25,8 @@ enum TenantPermission: string
     case UpdateCompany = 'company.update';
     case ViewMembers = 'members.view';
     case CreateMembers = 'members.create';
+    case ViewMemberProfiles = 'members.profile.view';
+    case UpdateMemberProfiles = 'members.profile.update';
     case UpdateMemberRole = 'members.role';
     case UpdateMemberStatus = 'members.status';
     case RemoveMember = 'members.remove';
@@ -63,6 +65,8 @@ enum TenantPermission: string
             ['key' => self::UpdateCompany->value, 'group' => 'Empresa', 'label' => 'Editar dados da empresa', 'requires' => []],
             ['key' => self::ViewMembers->value, 'group' => 'Membros', 'label' => 'Visualizar membros', 'requires' => []],
             ['key' => self::CreateMembers->value, 'group' => 'Membros', 'label' => 'Cadastrar membros diretamente', 'requires' => ['members.view']],
+            ['key' => self::ViewMemberProfiles->value, 'group' => 'Membros', 'label' => 'Consultar cadastro completo de colaboradores', 'requires' => ['members.view']],
+            ['key' => self::UpdateMemberProfiles->value, 'group' => 'Membros', 'label' => 'Editar cadastro de colaboradores', 'requires' => ['members.profile.view']],
             ['key' => self::UpdateMemberRole->value, 'group' => 'Membros', 'label' => 'Alterar cargo dos membros', 'requires' => ['members.view']],
             ['key' => self::UpdateMemberStatus->value, 'group' => 'Membros', 'label' => 'Suspender e reativar membros', 'requires' => ['members.view']],
             ['key' => self::RemoveMember->value, 'group' => 'Membros', 'label' => 'Desvincular membros da empresa', 'requires' => ['members.view']],

@@ -160,6 +160,16 @@ class TenantPolicy
         return $this->permissions->allows($user, $tenant, TenantPermission::ViewSubscription);
     }
 
+    public function viewMemberProfiles(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewMemberProfiles);
+    }
+
+    public function updateMemberProfiles(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::UpdateMemberProfiles);
+    }
+
     public function updateMemberRole(User $user, Tenant $tenant): bool
     {
         return $this->permissions->allows($user, $tenant, TenantPermission::UpdateMemberRole);

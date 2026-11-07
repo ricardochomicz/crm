@@ -19,6 +19,8 @@ use App\Http\Controllers\Tenant\Invitations\AcceptTenantInvitationController;
 use App\Http\Controllers\Tenant\Platform\ListPlatformTenantsController;
 use App\Http\Controllers\Tenant\Invitations\ListTenantInvitationsController;
 use App\Http\Controllers\Tenant\Members\ListTenantMembersController;
+use App\Http\Controllers\Tenant\Members\ShowTenantMemberProfileController;
+use App\Http\Controllers\Tenant\Members\UpdateTenantMemberProfileController;
 use App\Http\Controllers\Tenant\Audit\ListTenantPermissionChangesController;
 use App\Http\Controllers\Tenant\Management\ListTenantsController;
 use App\Http\Controllers\Tenant\Audit\ListTenantStatusChangesController;
@@ -237,6 +239,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                 Route::get('/members', ListTenantMembersController::class)
                     ->name('tenant-members.index');
+                Route::get('/members/{membershipId}/profile', ShowTenantMemberProfileController::class)
+                    ->whereUuid('membershipId')->name('tenant-members.profile.show');
 
                 Route::get('/subscription', ShowTenantSubscriptionController::class)
                     ->name('tenants.subscription.show');
@@ -265,6 +269,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                         Route::patch('/', UpdateTenantController::class)
                             ->name('tenants.update');
+
+                        Route::patch('/members/{membershipId}/profile', UpdateTenantMemberProfileController::class)
+                            ->whereUuid('membershipId')->name('tenant-members.profile.update');
 
                         Route::post('/members', StoreTenantMemberController::class)
                             ->middleware('throttle:10,1')

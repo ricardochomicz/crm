@@ -20,6 +20,12 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
     'status',
     'joined_at',
     'team_id',
+    'cpf',
+    'birth_date',
+    'mobile_phone',
+    'secondary_phone',
+    'hired_at',
+    'employee_code',
 ])]
 class TenantUser extends Pivot
 {
@@ -46,6 +52,9 @@ class TenantUser extends Pivot
             'role' => TenantUserRole::class,
             'status' => TenantUserStatus::class,
             'joined_at' => 'datetime',
+            'cpf' => 'encrypted',
+            'birth_date' => 'date',
+            'hired_at' => 'date',
         ];
     }
 
