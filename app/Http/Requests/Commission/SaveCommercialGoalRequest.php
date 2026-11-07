@@ -14,7 +14,7 @@ class SaveCommercialGoalRequest extends FormRequest
     {
         $tenant = $this->attributes->get('active_tenant');
 
-        return $tenant !== null && (bool) $this->user()?->can('manageCommissions', $tenant);
+        return $tenant !== null && (bool) $this->user()?->can('manageCommercialGoals', $tenant);
     }
 
     public function rules(): array

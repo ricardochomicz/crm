@@ -42,6 +42,37 @@ class TenantPolicy
         return $this->permissions->allows($user, $tenant, TenantPermission::ManageCommissions);
     }
 
+    public function viewCommercialGoals(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewCommercialGoals)
+            || $this->viewCommissions($user, $tenant);
+    }
+
+    public function manageCommercialGoals(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ManageCommercialGoals)
+            || $this->manageCommissions($user, $tenant);
+    }
+
+    public function viewTeamCommissions(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewTeamCommissions)
+            || $this->viewCommissions($user, $tenant);
+    }
+
+    public function manageTeamCommissions(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ManageTeamCommissions)
+            || $this->manageCommissions($user, $tenant);
+    }
+
+    public function viewOperatorClassifications(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewOperatorClassifications)
+            || $this->viewCommissions($user, $tenant)
+            || $this->viewClients($user, $tenant);
+    }
+
     public function viewProducts(User $user, Tenant $tenant): bool
     {
         return $this->permissions->allows($user, $tenant, TenantPermission::ViewProducts);
@@ -81,7 +112,8 @@ class TenantPolicy
 
     public function manageOperatorClassifications(User $user, Tenant $tenant): bool
     {
-        return $this->permissions->membership($user, $tenant)?->role === TenantUserRole::Owner;
+        return $this->permissions->membership($user, $tenant)?->role === TenantUserRole::Owner
+            || $this->permissions->allows($user, $tenant, TenantPermission::ManageOperatorClassifications);
     }
 
     public function managePermissions(User $user, Tenant $tenant): bool

@@ -13,7 +13,7 @@ class IndexCommercialGoalRequest extends FormRequest
     {
         $tenant = $this->attributes->get('active_tenant');
 
-        return $tenant !== null && (bool) $this->user()?->can('viewCommissions', $tenant);
+        return $tenant !== null && (bool) $this->user()?->can('viewCommercialGoals', $tenant);
     }
 
     public function rules(): array

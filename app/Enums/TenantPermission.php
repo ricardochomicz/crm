@@ -10,6 +10,12 @@ enum TenantPermission: string
     case DeleteClients = 'clients.delete';
     case ViewCommissions = 'commissions.view';
     case ManageCommissions = 'commissions.manage';
+    case ViewCommercialGoals = 'commercial-goals.view';
+    case ManageCommercialGoals = 'commercial-goals.manage';
+    case ViewTeamCommissions = 'team-commissions.view';
+    case ManageTeamCommissions = 'team-commissions.manage';
+    case ViewOperatorClassifications = 'operator-classifications.view';
+    case ManageOperatorClassifications = 'operator-classifications.manage';
     case ViewProducts = 'products.view';
     case CreateProducts = 'products.create';
     case UpdateProducts = 'products.update';
@@ -43,6 +49,12 @@ enum TenantPermission: string
             ['key' => self::DeleteClients->value, 'group' => 'Clientes', 'label' => 'Excluir clientes (lixeira)', 'requires' => ['clients.view']],
             ['key' => self::ViewCommissions->value, 'group' => 'Comissões', 'label' => 'Visualizar tabelas de comissões', 'requires' => []],
             ['key' => self::ManageCommissions->value, 'group' => 'Comissões', 'label' => 'Gerenciar tabelas de comissões', 'requires' => ['commissions.view']],
+            ['key' => self::ViewCommercialGoals->value, 'group' => 'Metas comerciais', 'label' => 'Visualizar metas comerciais', 'requires' => []],
+            ['key' => self::ManageCommercialGoals->value, 'group' => 'Metas comerciais', 'label' => 'Gerenciar metas comerciais', 'requires' => ['commercial-goals.view']],
+            ['key' => self::ViewTeamCommissions->value, 'group' => 'Comissões de equipe', 'label' => 'Visualizar comissões de equipe', 'requires' => []],
+            ['key' => self::ManageTeamCommissions->value, 'group' => 'Comissões de equipe', 'label' => 'Gerenciar comissões de equipe', 'requires' => ['team-commissions.view']],
+            ['key' => self::ViewOperatorClassifications->value, 'group' => 'Classificações de operadoras', 'label' => 'Visualizar classificações de operadoras', 'requires' => []],
+            ['key' => self::ManageOperatorClassifications->value, 'group' => 'Classificações de operadoras', 'label' => 'Gerenciar classificações de operadoras', 'requires' => ['operator-classifications.view']],
             ['key' => self::ViewProducts->value, 'group' => 'Produtos', 'label' => 'Visualizar produtos e promoções', 'requires' => []],
             ['key' => self::CreateProducts->value, 'group' => 'Produtos', 'label' => 'Cadastrar produtos', 'requires' => ['products.view']],
             ['key' => self::UpdateProducts->value, 'group' => 'Produtos', 'label' => 'Editar produtos', 'requires' => ['products.view']],
