@@ -6,7 +6,7 @@ class SaveOperatorClassificationRequest extends FormRequest {
  public function authorize():bool {
   if(str_contains((string)$this->path(),'/admin/'))return (bool)$this->user()?->is_platform_admin;
   $tenant=$this->attributes->get('active_tenant');
-  return $tenant && $tenant->users()->where('users.id',$this->user()->id)->wherePivot('role','OWNER')->exists();
+  return $tenant && (bool) $this->user()?->can('manageOperatorClassifications', $tenant);
  }
  public function rules():array {
   $global=str_contains((string)$this->path(),'/admin/');
