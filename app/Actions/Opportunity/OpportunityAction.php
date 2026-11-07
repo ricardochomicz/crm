@@ -6,6 +6,7 @@ use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Opportunity;
+use App\Models\OrderType;
 use App\Models\Product;
 use App\Models\Tenant;
 use App\Models\TenantUser;
@@ -49,13 +50,13 @@ class OpportunityAction
             $query->where(fn (Builder $q) => $q->where('title', 'like', "%{$term}%")->orWhere('code', 'like', "%{$term}%"));
         }
         if (! empty($filters['funnel_stage_id'])) $query->where('funnel_stage_id', $filters['funnel_stage_id']);
-        return $query->with(['client', 'stage', 'operator', 'items'])->latest()->paginate(20);
+        return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType'])->latest()->paginate(20);
     }
 
     public function find(Tenant $tenant, User $user, string $id): Opportunity
     {
         return $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user))
-            ->with(['items', 'client', 'stage', 'operator'])->findOrFail($id);
+            ->with(['items.orderType', 'client', 'stage', 'operator', 'orderType'])->findOrFail($id);
     }
 
     private function validateRelations(Tenant $tenant, array $data): void
@@ -71,6 +72,13 @@ class OpportunityAction
         }
     }
 
+    private function resolveType(string $id, string $field): OrderType
+    {
+        $type = OrderType::query()->find($id);
+        if (! $type) throw ValidationException::withMessages([$field => 'Tipo de pedido inválido.']);
+        return $type;
+    }
+
     private function validatedItems(Tenant $tenant, array $items): array
     {
         $resolved = [];
@@ -81,8 +89,9 @@ class OpportunityAction
             if (! $product) {
                 throw ValidationException::withMessages(["items.$index.product_id" => 'Selecione um plano ativo da empresa.']);
             }
+            $type = $this->resolveType($item['order_type_id'], "items.$index.order_type_id");
             $number = preg_replace('/\\D/', '', $item['line_number'] ?? '');
-            if (($item['operation_type'] ?? null) === 'portability' && $number === '') {
+            if ($type->requires_number && $number === '') {
                 throw ValidationException::withMessages(["items.$index.line_number" => 'Portabilidade exige número com DDD.']);
             }
             if ($number !== '' && ! in_array(strlen($number), [10, 11], true)) {
@@ -97,7 +106,8 @@ class OpportunityAction
             }
             $resolved[] = [
                 'product_id' => $product->id, 'operator_id' => $product->operator_id,
-                'line_number' => $number ?: null, 'operation_type' => $item['operation_type'], 'description' => $item['description'],
+                'line_number' => $number ?: null, 'order_type_id' => $type->id,
+                'operation_type' => $type->requires_number ? 'portability' : 'new', 'description' => $item['description'],
                 'quantity' => $item['quantity'], 'monthly_unit_amount' => $item['monthly_unit_amount'],
                 'one_time_unit_amount' => $item['one_time_unit_amount'] ?? 0, 'notes' => $item['notes'] ?? null,
             ];
@@ -121,6 +131,8 @@ class OpportunityAction
     {
         $actor = $this->actor($tenant, $user);
         $this->validateRelations($tenant, $data);
+        $type = $this->resolveType($data['order_type_id'], 'order_type_id');
+        $data['order_type'] = mb_substr($type->name, 0, 40);
         $items = $this->validatedItems($tenant, $data['items']);
         unset($data['items']);
         $data = [...$data, ...$this->totals($items)];
@@ -148,6 +160,10 @@ class OpportunityAction
         $this->validateRelations($tenant, $data);
         // Reassignment must go through an explicit, authorized workflow.
         unset($data['tenant_user_id']);
+        if (isset($data['order_type_id'])) {
+            $type = $this->resolveType($data['order_type_id'], 'order_type_id');
+            $data['order_type'] = mb_substr($type->name, 0, 40);
+        }
         $items = array_key_exists('items', $data) ? $this->validatedItems($tenant, $data['items']) : null;
         unset($data['items']);
         if ($items !== null) $data = [...$data, ...$this->totals($items)];

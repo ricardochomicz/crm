@@ -14,7 +14,7 @@ class Opportunity extends Model
 
     protected $fillable = [
         'tenant_id', 'tenant_user_id', 'client_id', 'funnel_stage_id', 'operator_id',
-        'parent_opportunity_id', 'code', 'title', 'external_protocol', 'order_type',
+        'parent_opportunity_id', 'order_type_id', 'code', 'title', 'external_protocol', 'order_type',
         'status', 'description', 'expected_close_at', 'closed_at',
         'estimated_monthly_amount', 'estimated_one_time_amount', 'probability',
         'source', 'lost_reason',
@@ -31,6 +31,7 @@ class Opportunity extends Model
         ];
     }
 
+    public function orderType(): BelongsTo { return $this->belongsTo(OrderType::class); }
     public function assignee(): BelongsTo { return $this->belongsTo(TenantUser::class, 'tenant_user_id'); }
     public function client(): BelongsTo { return $this->belongsTo(Client::class); }
     public function operator(): BelongsTo { return $this->belongsTo(Operator::class); }
