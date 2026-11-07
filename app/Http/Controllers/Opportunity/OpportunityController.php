@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Opportunity;
 
 use App\Actions\Opportunity\OpportunityAction;
+use App\Actions\Opportunity\ConfirmOpportunitySaleAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Opportunity\OpportunityRequest;
 use App\Models\Tenant;
@@ -46,6 +47,11 @@ class OpportunityController extends Controller
     public function store(OpportunityRequest $request, string $tenantId, OpportunityAction $action): JsonResponse
     {
         return response()->json(['data' => $action->create($this->tenant($request), $request->user(), $request->validated())], 201);
+    }
+
+    public function confirmSale(OpportunityRequest $request, string $tenantId, string $opportunityId, ConfirmOpportunitySaleAction $action): JsonResponse
+    {
+        return response()->json(['data' => $action->execute($this->tenant($request), $request->user(), $opportunityId)], 201);
     }
 
     public function update(OpportunityRequest $request, string $tenantId, string $opportunityId, OpportunityAction $action): JsonResponse

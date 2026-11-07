@@ -31,6 +31,11 @@ class Opportunity extends Model
         ];
     }
 
+    public function commercialOrder(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(CommercialOrder::class);
+    }
+
     public function orderType(): BelongsTo { return $this->belongsTo(OrderType::class); }
     public function assignee(): BelongsTo { return $this->belongsTo(TenantUser::class, 'tenant_user_id'); }
     public function client(): BelongsTo { return $this->belongsTo(Client::class); }

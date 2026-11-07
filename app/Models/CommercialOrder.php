@@ -12,7 +12,7 @@ class CommercialOrder extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['tenant_id', 'operator_id', 'product_id', 'order_type', 'customer_name', 'customer_document', 'monthly_amount', 'line_quantity', 'status', 'sold_on', 'notes'];
+    protected $fillable = ['opportunity_id', 'tenant_id', 'operator_id', 'product_id', 'order_type', 'customer_name', 'customer_document', 'monthly_amount', 'line_quantity', 'status', 'sold_on', 'notes'];
 
     protected $casts = ['monthly_amount' => 'decimal:2', 'line_quantity' => 'integer', 'sold_on' => 'date:Y-m-d'];
 
@@ -24,6 +24,16 @@ class CommercialOrder extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(CommercialOrderItem::class);
+    }
+
+    public function opportunity(): BelongsTo
+    {
+        return $this->belongsTo(Opportunity::class);
     }
 
     public function participants(): HasMany
