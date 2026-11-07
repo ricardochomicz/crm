@@ -42,6 +42,7 @@ class CompleteOrderAction
                 throw ValidationException::withMessages(['order_status' => 'Cadastre o status Concluído antes de finalizar pedidos.']);
             }
 
+            $previousStatus = $order->orderStatus?->name ?? 'Sem status';
             $order->update([
                 'order_status_id' => $status->id,
                 'administratively_completed_at' => now(),
@@ -52,7 +53,7 @@ class CompleteOrderAction
                 'tenant_user_id' => $actor->id,
                 'commentable_type' => 'commercial_order',
                 'commentable_id' => $order->id,
-                'content' => 'Pedido concluído administrativamente. Todas as linhas estavam ativadas.',
+                'content' => sprintf('Status do pedido: %s → Concluído. Pedido concluído administrativamente; todas as linhas estão ativadas.', $previousStatus),
             ]);
 
             return $order->load(['orderStatus:id,name', 'items', 'consultant.user:id,name']);
