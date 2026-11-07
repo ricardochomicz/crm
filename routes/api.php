@@ -177,9 +177,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/commercial-goals', [\App\Http\Controllers\Commission\CommercialGoalController::class, 'index']);
                 Route::get('/team-commissions', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'index']);
                 Route::get('/team-commissions/options', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'options']);
-                Route::get('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.index');
-                Route::get('/commissions/order-types', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'order-types');
-                Route::get('/commissions/settings', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'settings')->name('commissions.settings.show');
+                Route::get('/commissions', [\App\Http\Controllers\Commission\CommissionTableController::class, 'index'])->name('commissions.index');
+                Route::get('/commissions/order-types', [\App\Http\Controllers\Commission\CommissionTableController::class, 'orderTypes']);
+                Route::get('/commissions/settings', [\App\Http\Controllers\Commission\CommissionTableController::class, 'settings'])->name('commissions.settings.show');
                 Route::get('/clients', [\App\Http\Controllers\Client\ClientController::class, 'index']);
                 Route::get('/clients/options', [\App\Http\Controllers\Client\ClientController::class, 'options']);
                 Route::get('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'show'])->whereUuid('clientId');
@@ -198,9 +198,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::patch('/commercial-goals/{goalId}', [\App\Http\Controllers\Commission\CommercialGoalController::class, 'update'])->whereUuid('goalId');
                     Route::post('/team-commissions', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'store']);
                     Route::patch('/team-commissions/{ruleId}', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'update'])->whereUuid('ruleId');
-                    Route::patch('/commissions/{commissionId}', \App\Http\Controllers\Commission\CommissionTableController::class)->whereUuid('commissionId');
-                    Route::put('/commissions/settings', \App\Http\Controllers\Commission\CommissionTableController::class)->defaults('commissionId', 'settings');
-                    Route::post('/commissions', \App\Http\Controllers\Commission\CommissionTableController::class)->name('commissions.store');
+                    Route::patch('/commissions/{commissionId}', [\App\Http\Controllers\Commission\CommissionTableController::class, 'update'])->whereUuid('commissionId');
+                    Route::put('/commissions/settings', [\App\Http\Controllers\Commission\CommissionTableController::class, 'updateSettings']);
+                    Route::post('/commissions', [\App\Http\Controllers\Commission\CommissionTableController::class, 'store'])->name('commissions.store');
                     Route::post('/clients', [\App\Http\Controllers\Client\ClientController::class, 'store']);
                     Route::patch('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'update'])->whereUuid('clientId');
                     Route::delete('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'destroy'])->whereUuid('clientId');
