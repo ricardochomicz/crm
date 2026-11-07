@@ -55,7 +55,7 @@ class ActivateOrderItemsAction
                 $item->update(['status' => 'ACTIVE', 'activated_at' => $data['activated_at']]);
             }
 
-            $name = $remaining === 0 ? 'Ativo' : 'Parcialmente ativado';
+            $name = $remaining === 0 ? 'Concluído' : 'Parcialmente ativado';
             $status = OrderStatus::query()->where('tenant_id', $tenant->id)
                 ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
 
@@ -66,6 +66,7 @@ class ActivateOrderItemsAction
             $order->update([
                 'order_status_id' => $status->id,
                 'activated_at' => $remaining === 0 ? $data['activated_at'] : null,
+                'administratively_completed_at' => $remaining === 0 ? now() : null,
             ]);
 
             Comment::create([
