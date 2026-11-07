@@ -19,7 +19,15 @@ class SaveClientAction {
    $reason=null;
   }
   unset($data['seller_membership_id'],$data['seller_reason']);
-  if($sellerId&&!TenantUser::where('tenant_id',$tenantId)->where('status','ACTIVE')->whereKey($sellerId)->exists())throw ValidationException::withMessages(['seller_membership_id'=>'Vendedor não está ativo nesta empresa.']);
+  if($sellerId){
+   $seller=TenantUser::where('tenant_id',$tenantId)->where('status','ACTIVE')->whereKey($sellerId)->first();
+   if(!$seller)throw ValidationException::withMessages(['seller_membership_id'=>'Vendedor não está ativo nesta empresa.']);
+   if($canAssign && !in_array($membership->role->value,['OWNER','MANAGER'],true)
+      && $seller->id!==$membership->id
+      && !$membership->supervisedTeams()->whereKey($seller->team_id)->exists()){
+    throw ValidationException::withMessages(['seller_membership_id'=>'Vendedor fora das equipes supervisionadas.']);
+   }
+  }
   return DB::transaction(function()use($tenantId,$userId,$clientId,$data,$sellerId,$reason){
    $client=$clientId?$this->visibility->execute(Client::query(),$tenantId,$userId)->lockForUpdate()->findOrFail($clientId):new Client(['tenant_id'=>$tenantId]);
    $oldOperator=$client->operator_id;$oldClass=$client->classification_id;$isNew=!$client->exists;
