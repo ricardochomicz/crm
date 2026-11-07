@@ -43,6 +43,7 @@ final class OpportunityFilters
         $period = $filters['period'] ?? 'current';
 
         if ($period === 'closed') {
+            $query->whereIn('status', ['won', 'lost', 'cancelled']);
             if (! empty($filters['date_from'])) $query->whereDate('closed_at', '>=', $filters['date_from']);
             if (! empty($filters['date_to'])) $query->whereDate('closed_at', '<=', $filters['date_to']);
         } elseif ($period === 'current') {
