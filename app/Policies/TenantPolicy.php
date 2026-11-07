@@ -67,6 +67,11 @@ class TenantPolicy
         return $this->permissions->allows($user, $tenant, TenantPermission::ManageProducts);
     }
 
+    public function manageOperatorClassifications(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->membership($user, $tenant)?->role === TenantUserRole::Owner;
+    }
+
     public function managePermissions(User $user, Tenant $tenant): bool
     {
         return $this->permissions->membership($user, $tenant)?->role === TenantUserRole::Owner;
