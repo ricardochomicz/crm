@@ -3,44 +3,36 @@
 namespace App\Http\Controllers\Tenant\Members;
 
 use App\Actions\Tenant\CreateTenantMemberAction;
+use App\Actions\Tenant\SendTenantMemberPasswordLinkAction;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Tenant\CreatedTenantMemberResource;
 use App\Http\Requests\Tenant\StoreTenantMemberRequest;
+use App\Http\Resources\Tenant\CreatedTenantMemberResource;
 use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Password;
-use Throwable;
 
 class StoreTenantMemberController extends Controller
 {
     public function __invoke(
         StoreTenantMemberRequest $request,
-        CreateTenantMemberAction $createTenantMemberAction,
+        CreateTenantMemberAction $action,
+        SendTenantMemberPasswordLinkAction $passwordLink
     ): JsonResponse {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
-        $user = $createTenantMemberAction->handle(
+        $user = $action->handle(
             $request->user(),
             $tenant,
-            $request->safe()->only(['name', 'email', 'role']),
+            $request->safe()->only(['name', 'email', 'role'])
         );
 
-        $linkSent = false;
+        $linkSent = $passwordLink->execute($user);
 
-        try {
-            $linkSent = Password::broker('users')->sendResetLink([
-                'email' => $user->email,
-            ]) === Password::RESET_LINK_SENT;
-        } catch (Throwable $exception) {
-            report($exception);
-        }
-
-        return response()->json([
-            'data' => new CreatedTenantMemberResource($user),
-            'meta' => [
-                'password_link_sent' => $linkSent,
-            ],
-        ], 201);
+        return (new CreatedTenantMemberResource($user))
+            ->additional([
+                'meta' => ['password_link_sent' => $linkSent],
+            ])
+            ->response()
+            ->setStatusCode(201);
     }
 }
