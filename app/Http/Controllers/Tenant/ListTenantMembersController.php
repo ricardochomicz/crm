@@ -10,27 +10,29 @@ use App\Http\Requests\Tenant\ListTenantMembersRequest;
 use App\Http\Resources\Tenant\TenantMemberResource;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ListTenantMembersController extends Controller
 {
-    /**
-     * @return array<string, mixed>
-     */
     public function __invoke(
         ListTenantMembersRequest $request,
         ResolveTenantPermissionsAction $permissions,
-        FilterTenantMemberAction $filter,
-    ): array {
+        FilterTenantMemberAction $filter
+    ): AnonymousResourceCollection {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
-        $assignableRoles = array_filter(
+        $assignableRoles = array_values(array_filter(
             TenantUserRole::cases(),
             fn (TenantUserRole $role): bool => $permissions->canAssign($request->user(), $tenant, $role)
+        ));
+
+        $members = $filter->execute($tenant, $request->validated());
+
+        $members->through(
+            fn (User $user): TenantMemberResource => new TenantMemberResource($user, $assignableRoles)
         );
 
-        return $filter->execute($tenant, $request->validated())
-            ->through(fn (User $user): array => (new TenantMemberResource($user, $assignableRoles))->resolve($request))
-            ->toArray();
+        return TenantMemberResource::collection($members);
     }
 }
