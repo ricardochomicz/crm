@@ -22,6 +22,10 @@ class OpportunityRequest extends FormRequest
 
     public function rules(): array
     {
+        if ($this->routeIs('opportunities.overview')) return [
+            'date_from' => ['required', 'date'],
+            'date_to' => ['required', 'date', 'after_or_equal:date_from'],
+        ];
         if ($this->isMethod('GET')) return [
             'search' => ['sometimes', 'string', 'max:100'],
             'status' => ['sometimes', Rule::in(['open', 'won', 'lost', 'cancelled', 'all'])],

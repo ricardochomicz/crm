@@ -50,6 +50,41 @@ class OpportunityAction
         return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType'])->latest()->paginate(20);
     }
 
+    public function overview(Tenant $tenant, User $user, array $filters): array
+    {
+        $start = $filters['date_from'];
+        $end = $filters['date_to'];
+        $today = now()->toDateString();
+        $base = $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user));
+
+        $open = (clone $base)->where('status', 'open');
+        $inPeriod = (clone $open)->whereBetween('expected_close_at', [$start, $end]);
+        $overdue = (clone $open)->whereDate('expected_close_at', '<', $today);
+        $future = (clone $open)->whereDate('expected_close_at', '>', $end);
+        $unscheduled = (clone $open)->whereNull('expected_close_at');
+        $closed = (clone $base)->whereBetween('closed_at', [$start . ' 00:00:00', $end . ' 23:59:59']);
+
+        $summarize = static function (Builder $query): array {
+            $totals = $query->selectRaw('COUNT(*) as quantity, COALESCE(SUM(estimated_monthly_amount), 0) as monthly')->first();
+            return ['count' => (int) $totals->quantity, 'monthly' => (string) $totals->monthly];
+        };
+
+        $won = $summarize((clone $closed)->where('status', 'won'));
+        $lost = $summarize((clone $closed)->where('status', 'lost'));
+        $decided = $won['count'] + $lost['count'];
+
+        return [
+            'open_period' => $summarize($inPeriod),
+            'overdue' => $summarize($overdue),
+            'future' => $summarize($future),
+            'unscheduled' => $summarize($unscheduled),
+            'won' => $won,
+            'lost' => $lost,
+            'conversion_rate' => $decided ? round($won['count'] * 100 / $decided, 1) : null,
+            'period' => ['from' => $start, 'to' => $end],
+        ];
+    }
+
     public function stages(Tenant $tenant, User $user)
     {
         $this->actor($tenant, $user);
