@@ -10,7 +10,10 @@ class ViewTeamCommissionOptionsRequest extends FormRequest
     {
         $tenant = $this->attributes->get('active_tenant');
 
-        return $tenant !== null && (bool) $this->user()?->can('viewTeamCommissions', $tenant);
+        return $tenant !== null && (
+            (bool) $this->user()?->can('viewTeamCommissions', $tenant)
+            || (bool) $this->user()?->can('viewCommercialGoals', $tenant)
+        );
     }
 
     public function rules(): array
