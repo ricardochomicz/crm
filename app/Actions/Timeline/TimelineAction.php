@@ -38,8 +38,14 @@ class TimelineAction {
 
     public function list(Tenant $tenant, User $user, string $type, string $id): array {
         $this->authorize($tenant, $user, $type, $id);
-        return Comment::where('tenant_id', $tenant->id)->where('commentable_type', $type)
-            ->where('commentable_id', $id)->with(['author', 'attachments'])->latest()->paginate(20)->toArray();
+        $memberId = $this->permissions->membership($user, $tenant)?->id;
+        $page = Comment::where('tenant_id', $tenant->id)->where('commentable_type', $type)
+            ->where('commentable_id', $id)->with(['author', 'attachments'])->latest()->paginate(20);
+        return $page->through(function (Comment $comment) use ($memberId): array {
+            $data = $comment->toArray();
+            $data['can_edit'] = $comment->tenant_user_id === $memberId;
+            return $data;
+        })->toArray();
     }
 
     public function create(Tenant $tenant, User $user, string $type, string $id, string $content): Comment {
