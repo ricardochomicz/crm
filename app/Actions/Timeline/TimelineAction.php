@@ -5,6 +5,9 @@ use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantPermission;
 use App\Enums\TenantUserRole;
 use App\Models\Attachment;
+use App\Models\Opportunity;
+use App\Models\CommercialOrder;
+use Illuminate\Database\Eloquent\Builder;
 use App\Models\Comment;
 use App\Models\Tenant;
 use App\Models\User;
@@ -36,14 +39,77 @@ class TimelineAction {
         return $comment;
     }
 
-    public function list(Tenant $tenant, User $user, string $type, string $id): array {
+    public function list(Tenant $tenant, User $user, string $type, string $id): array
+    {
         $this->authorize($tenant, $user, $type, $id);
-        $memberId = $this->permissions->membership($user, $tenant)?->id;
-        $page = Comment::where('tenant_id', $tenant->id)->where('commentable_type', $type)
-            ->where('commentable_id', $id)->with(['author', 'attachments'])->latest()->paginate(20);
-        return $page->through(function (Comment $comment) use ($memberId): array {
+
+        $member = $this->permissions->membership($user, $tenant);
+        $memberId = $member?->id;
+        $query = Comment::query()->where('tenant_id', $tenant->id);
+
+        if ($type === 'client') {
+            $canViewOpportunities = $this->permissions->allows($user, $tenant, TenantPermission::ViewOpportunities);
+            $canViewAll = $member && in_array($member->role, [TenantUserRole::Owner, TenantUserRole::Manager], true);
+
+            $query->where(function (Builder $query) use ($tenant, $id, $memberId, $canViewOpportunities, $canViewAll): void {
+                $query->where(function (Builder $direct) use ($id): void {
+                    $direct->where('commentable_type', 'client')->where('commentable_id', $id);
+                });
+
+                if ($canViewOpportunities) {
+                    $opportunityIds = Opportunity::query()
+                        ->where('tenant_id', $tenant->id)
+                        ->where('client_id', $id)
+                        ->when(!$canViewAll, fn (Builder $query) => $query->where('tenant_user_id', $memberId))
+                        ->select('id');
+
+                    $query->orWhere(function (Builder $related) use ($opportunityIds): void {
+                        $related->where('commentable_type', 'opportunity')
+                            ->whereIn('commentable_id', $opportunityIds);
+                    });
+
+                    $orderIds = CommercialOrder::query()
+                        ->where('tenant_id', $tenant->id)
+                        ->whereIn('opportunity_id', $opportunityIds)
+                        ->select('id');
+
+                    $query->orWhere(function (Builder $related) use ($orderIds): void {
+                        $related->where('commentable_type', 'commercial_order')
+                            ->whereIn('commentable_id', $orderIds);
+                    });
+                }
+            });
+        } else {
+            $query->where('commentable_type', $type)->where('commentable_id', $id);
+        }
+
+        $page = $query->with(['author', 'attachments'])->latest()->paginate(20);
+        $opportunityIds = $page->getCollection()->where('commentable_type', 'opportunity')->pluck('commentable_id')->unique();
+        $orderIds = $page->getCollection()->where('commentable_type', 'commercial_order')->pluck('commentable_id')->unique();
+
+        $opportunities = Opportunity::query()->where('tenant_id', $tenant->id)
+            ->whereIn('id', $opportunityIds)->get(['id', 'code', 'title'])->keyBy('id');
+        $orders = CommercialOrder::query()->where('tenant_id', $tenant->id)
+            ->whereIn('id', $orderIds)->get(['id', 'opportunity_id'])->keyBy('id');
+
+        return $page->through(function (Comment $comment) use ($memberId, $type, $opportunities, $orders): array {
             $data = $comment->toArray();
             $data['can_edit'] = $comment->tenant_user_id === $memberId;
+            $data['origin'] = ['type' => $comment->commentable_type, 'id' => $comment->commentable_id];
+
+            if ($type === 'client' && $comment->commentable_type === 'opportunity') {
+                $opportunity = $opportunities->get($comment->commentable_id);
+                $data['origin']['code'] = $opportunity?->code;
+                $data['origin']['title'] = $opportunity?->title;
+            }
+
+            if ($type === 'client' && $comment->commentable_type === 'commercial_order') {
+                $order = $orders->get($comment->commentable_id);
+                $opportunity = $order ? $opportunities->get($order->opportunity_id) : null;
+                $data['origin']['code'] = $opportunity?->code;
+                $data['origin']['title'] = $opportunity?->title;
+            }
+
             return $data;
         })->toArray();
     }
