@@ -35,12 +35,12 @@ class DispatchTenantInvitationNotificationAction
                     tenantName: $tenant->name,
                     invitationUrl: $invitationUrl,
                     expiresAtLabel: $invitation->expires_at
-                        ->copy()->utc()->format('d/m/Y H:i \\U\\T\\C'),
+                        ->copy()->utc()->format('d/m/Y H:i \U\T\C'),
                 ));
 
             return true;
         } catch (Throwable $exception) {
-            Log::warning('Falha ao encaminhar reenvio de convite.', [
+            Log::warning('Falha ao encaminhar notificação de convite.', [
                 'tenant_id' => $tenant->getKey(),
                 'invitation_id' => $invitation->getKey(),
                 'exception_class' => $exception::class,
