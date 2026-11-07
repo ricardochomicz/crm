@@ -12,9 +12,9 @@ class CommercialOrder extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['opportunity_id', 'tenant_id', 'order_status_id', 'code', 'tenant_user_id', 'client_id', 'expected_activation_at', 'activated_at', 'operator_id', 'product_id', 'order_type', 'customer_name', 'customer_document', 'monthly_amount', 'line_quantity', 'status', 'sold_on', 'notes'];
+    protected $fillable = ['opportunity_id', 'tenant_id', 'order_status_id', 'code', 'tenant_user_id', 'client_id', 'expected_activation_at', 'activated_at', 'administratively_completed_at', 'operator_id', 'product_id', 'order_type', 'customer_name', 'customer_document', 'monthly_amount', 'line_quantity', 'status', 'sold_on', 'notes'];
 
-    protected $casts = ['monthly_amount' => 'decimal:2', 'line_quantity' => 'integer', 'sold_on' => 'date:Y-m-d'];
+    protected $casts = ['monthly_amount' => 'decimal:2', 'line_quantity' => 'integer', 'sold_on' => 'date:Y-m-d', 'administratively_completed_at' => 'datetime'];
 
     public function consultant(): BelongsTo
     {
