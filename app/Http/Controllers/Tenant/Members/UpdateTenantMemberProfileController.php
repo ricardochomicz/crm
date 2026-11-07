@@ -13,6 +13,7 @@ class UpdateTenantMemberProfileController extends Controller
 {
     public function __invoke(
         UpdateTenantMemberProfileRequest $request,
+        string $tenantId,
         string $membershipId,
         FindTenantMemberProfileAction $finder,
         UpdateTenantMemberProfileAction $action
