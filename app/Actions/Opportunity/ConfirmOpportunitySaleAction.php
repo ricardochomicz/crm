@@ -58,8 +58,7 @@ class ConfirmOpportunitySaleAction
                 }
             }
 
-            $initialStatus = OrderStatus::query()->where('tenant_id', $tenant->id)
-                ->where('is_initial', true)->first();
+            $initialStatus = OrderStatus::query()->where('is_initial', true)->first();
 
             if (! $initialStatus) {
                 throw ValidationException::withMessages(['order_status' => 'Configure o status inicial dos pedidos antes de confirmar a venda.']);
