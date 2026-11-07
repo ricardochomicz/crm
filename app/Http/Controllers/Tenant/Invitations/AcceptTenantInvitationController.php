@@ -5,25 +5,19 @@ namespace App\Http\Controllers\Tenant\Invitations;
 use App\Actions\Tenant\AcceptTenantInvitationAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\AcceptTenantInvitationRequest;
-use Illuminate\Http\JsonResponse;
+use App\Http\Resources\Tenant\AcceptedTenantInvitationResource;
 
 class AcceptTenantInvitationController extends Controller
 {
     public function __invoke(
         AcceptTenantInvitationRequest $request,
-        AcceptTenantInvitationAction $action,
-    ): JsonResponse {
+        AcceptTenantInvitationAction $action
+    ): AcceptedTenantInvitationResource {
         $membership = $action->handle(
             $request->user(),
-            $request->validated('token'),
+            $request->validated('token')
         );
 
-        return response()->json([
-            'data' => [
-                'id' => $membership->getKey(),
-                'tenant_id' => $membership->tenant_id,
-                'role' => $membership->role->value,
-            ],
-        ]);
+        return new AcceptedTenantInvitationResource($membership);
     }
 }
