@@ -55,9 +55,8 @@ class ActivateOrderItemsAction
                 $item->update(['status' => 'ACTIVE', 'activated_at' => $data['activated_at']]);
             }
 
-            $name = $remaining === 0 ? 'Concluído' : 'Parcialmente ativado';
-            $status = OrderStatus::query()->where('tenant_id', $tenant->id)
-                ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+            $name = $remaining === 0 ? 'CONCLUIDO' : 'PARCIALMENTE ATIVADO';
+            $status = OrderStatus::query()->where('name', $name)->first();
 
             if (! $status) {
                 throw ValidationException::withMessages(['order_status' => "Cadastre o status {$name} antes de ativar linhas."]);
