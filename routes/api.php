@@ -214,7 +214,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::put('/commissions/settings', [\App\Http\Controllers\Commission\CommissionTableController::class, 'updateSettings']);
                     Route::post('/commissions', [\App\Http\Controllers\Commission\CommissionTableController::class, 'store'])->name('commissions.store');
                     Route::post('/opportunities', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'store']);
-                    Route::post('/opportunities/{opportunityId}/confirm-sale', [\\App\\Http\\Controllers\\Opportunity\\OpportunityController::class, 'confirmSale'])->whereUuid('opportunityId')->name('opportunities.sale.confirm');
+                    Route::post('/opportunities/{opportunityId}/confirm-sale', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'confirmSale'])->whereUuid('opportunityId')->name('opportunities.sale.confirm');
                     Route::patch('/opportunities/{opportunityId}/stage', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'moveStage'])->whereUuid('opportunityId')->name('opportunities.stage.move');
                     Route::patch('/opportunities/{opportunityId}', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'update'])->whereUuid('opportunityId');
                     Route::post('/calendar/events', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'store']);
