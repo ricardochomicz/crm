@@ -44,6 +44,7 @@ class ActivateOrderItemsAction
                 throw ValidationException::withMessages(['item_ids' => 'Itens com quantidade maior que um precisam ser individualizados antes da ativação parcial.']);
             }
 
+            $previousStatus = $order->orderStatus?->name ?? 'Sem status';
             $remaining = $items->filter(fn ($item) => $item->status === 'PENDING')->count() - $selected->count();
 
             foreach ($selected as $item) {
@@ -69,8 +70,12 @@ class ActivateOrderItemsAction
                 'commentable_type' => 'commercial_order',
                 'commentable_id' => $order->id,
                 'content' => sprintf(
-                    '%s: %d linha(s) ativada(s) em %s. Identificadores: %s.',
-                    $name, $selected->count(), $data['activated_at'], $selected->pluck('id')->implode(', ')
+                    'Status do pedido: %s → %s. %d linha(s) ativada(s) em %s. Linhas: %s.',
+                    $previousStatus,
+                    $name,
+                    $selected->count(),
+                    \Carbon\Carbon::parse($data['activated_at'])->format('d/m/Y'),
+                    $selected->map(fn ($item) => $item->line_number ?: ($item->description ?: 'Linha sem número'))->implode(', ')
                 ),
             ]);
 
