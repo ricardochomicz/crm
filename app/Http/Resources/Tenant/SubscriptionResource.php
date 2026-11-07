@@ -42,14 +42,14 @@ class SubscriptionResource extends JsonResource
                     ?->toIso8601String(),
                 'trial_ends_at' => $this->trial_ends_at
                     ?->toIso8601String(),
-                'current_period_starts_at' => $subscription
+                'current_period_starts_at' => $this->resource
                     ->current_period_starts_at?->toIso8601String(),
-                'current_period_ends_at' => $subscription
+                'current_period_ends_at' => $this->resource
                     ->current_period_ends_at?->toIso8601String(),
                 'cancel_at_period_end' => $this->cancel_at_period_end,
                 'cancelled_at' => $this->cancelled_at
                     ?->toIso8601String(),
-                'allows_operational_writes' => $subscription
+                'allows_operational_writes' => $this->resource
                     ->allowsOperationalWrites(),
             ];
     }
