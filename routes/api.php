@@ -140,6 +140,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::patch('/operator-classifications/{classificationId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalUpdate'])->whereNumber('classificationId');
                 Route::patch('/operator-classifications/{classificationId}/renewal-rules/{ruleId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalUpdateRule'])->whereNumber('classificationId')->whereUuid('ruleId');
                 Route::post('/operator-classifications/{classificationId}/renewal-rules', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalSaveRule'])->whereNumber('classificationId');
+                Route::get('/order-statuses', [\App\Http\Controllers\OrderStatus\PlatformOrderStatusController::class, 'index']);
+                Route::post('/order-statuses', [\App\Http\Controllers\OrderStatus\PlatformOrderStatusController::class, 'store']);
+                Route::patch('/order-statuses/{statusId}', [\App\Http\Controllers\OrderStatus\PlatformOrderStatusController::class, 'update'])->whereUuid('statusId');
+                Route::delete('/order-statuses/{statusId}', [\App\Http\Controllers\OrderStatus\PlatformOrderStatusController::class, 'destroy'])->whereUuid('statusId');
                 Route::get('/order-types', [\App\Http\Controllers\OrderType\OrderTypeController::class, 'index']);
                 Route::post('/order-types', [\App\Http\Controllers\OrderType\OrderTypeController::class, 'store']);
                 Route::patch('/order-types/{orderTypeId}', [\App\Http\Controllers\OrderType\OrderTypeController::class, 'update'])->whereUuid('orderTypeId');
