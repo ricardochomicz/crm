@@ -16,6 +16,7 @@ use App\Http\Requests\Commission\ViewCommercialParticipantCommissionsRequest;
 use App\Http\Resources\Commission\CommercialParticipantCommissionResource;
 use App\Http\Resources\Commission\CommercialParticipantResource;
 use App\Http\Resources\Commission\TeamCommissionRuleResource;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CommercialParticipantController extends Controller
 {
@@ -23,19 +24,16 @@ class CommercialParticipantController extends Controller
         IndexCommercialParticipantRequest $request,
         string $tenantId,
         FilterCommercialParticipantAction $action
-    ): array {
+    ): AnonymousResourceCollection {
         $tenant = $request->attributes->get('active_tenant');
-        $page = $action->execute($tenant->id, $request->validated());
 
-        return [
-            'data' => CommercialParticipantResource::collection($page->getCollection()),
+        return CommercialParticipantResource::collection(
+            $action->execute($tenant->id, $request->validated())
+        )->additional([
             'meta' => [
                 'can_manage' => $request->user()->can('manageCommissions', $tenant),
-                'current_page' => $page->currentPage(),
-                'last_page' => $page->lastPage(),
-                'total' => $page->total(),
             ],
-        ];
+        ]);
     }
 
     public function store(
