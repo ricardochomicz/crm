@@ -14,46 +14,29 @@ class OrderStatusController extends Controller
 {
     public function index(Request $request, string $tenantId, ManageOrderStatusesAction $action)
     {
-        $tenant = $request->attributes->get('active_tenant');
-        $membership = $tenant->users()->where('users.id', $request->user()->id)->first();
-
         return OrderStatusResource::collection(
-            OrderStatus::query()->where('tenant_id', $tenant->id)->orderBy('name')->get()
-        )->additional(['meta' => [
-            'can_manage' => $membership && $membership->membership->role === \App\Enums\TenantUserRole::Owner,
-        ]]);
+            OrderStatus::query()->orderBy('name')->get()
+        )->additional(['meta' => ['can_manage' => false]]);
     }
 
     public function store(SaveOrderStatusRequest $request, string $tenantId, ManageOrderStatusesAction $action): OrderStatusResource
     {
-        $tenant = $request->attributes->get('active_tenant');
-        $action->authorizeManager($tenant, $request->user()->id);
-
-        return new OrderStatusResource($action->save($tenant->id, $request->validated('name')));
+        abort(403, 'Os status dos pedidos são gerenciados pelo administrador do sistema.');
     }
 
     public function update(SaveOrderStatusRequest $request, string $tenantId, string $statusId, ManageOrderStatusesAction $action): OrderStatusResource
     {
-        $tenant = $request->attributes->get('active_tenant');
-        $action->authorizeManager($tenant, $request->user()->id);
-
-        return new OrderStatusResource($action->save($tenant->id, $request->validated('name'), $statusId));
+        abort(403, 'Os status dos pedidos são gerenciados pelo administrador do sistema.');
     }
 
     public function initial(Request $request, string $tenantId, string $statusId, ManageOrderStatusesAction $action): OrderStatusResource
     {
-        $tenant = $request->attributes->get('active_tenant');
-        $action->authorizeManager($tenant, $request->user()->id);
-
-        return new OrderStatusResource($action->setInitial($tenant->id, $statusId));
+        abort(403, 'Os status dos pedidos são gerenciados pelo administrador do sistema.');
     }
 
     public function destroy(Request $request, string $tenantId, string $statusId, ManageOrderStatusesAction $action): JsonResponse
     {
-        $tenant = $request->attributes->get('active_tenant');
-        $action->authorizeManager($tenant, $request->user()->id);
-        $action->delete($tenant->id, $statusId);
-
-        return response()->json(['message' => 'Status excluído.']);
+        abort(403, 'Os status dos pedidos são gerenciados pelo administrador do sistema.');
     }
+
 }
