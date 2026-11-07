@@ -13,11 +13,12 @@ class CommercialOrderItem extends Model
     protected $fillable = [
         'commercial_order_id', 'opportunity_item_id', 'product_id', 'operator_id',
         'order_type_id', 'line_number', 'description', 'quantity',
-        'monthly_unit_amount', 'one_time_unit_amount', 'status', 'notes',
+        'monthly_unit_amount', 'one_time_unit_amount', 'status', 'activated_at', 'notes',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
+        'activated_at' => 'date:Y-m-d',
         'monthly_unit_amount' => 'decimal:2',
         'one_time_unit_amount' => 'decimal:2',
     ];
