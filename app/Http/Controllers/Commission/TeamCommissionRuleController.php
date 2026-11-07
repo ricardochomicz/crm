@@ -26,7 +26,7 @@ class TeamCommissionRuleController extends Controller
             $action->execute($tenant->id, $request->validated())
         )->additional([
             'meta' => [
-                'can_manage' => $request->user()->can('manageCommissions', $tenant),
+                'can_manage' => $request->user()->can('manageTeamCommissions', $tenant),
             ],
         ]);
     }
