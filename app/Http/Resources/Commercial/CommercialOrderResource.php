@@ -21,6 +21,12 @@ class CommercialOrderResource extends JsonResource
             'order_status' => $this->whenLoaded('orderStatus', fn () => $this->orderStatus?->name),
             'expected_activation_at' => $attributes['expected_activation_at'] ?? null,
             'activated_at' => $attributes['activated_at'] ?? null,
+            'administratively_completed_at' => $attributes['administratively_completed_at'] ?? null,
+            'activation_summary' => $this->whenLoaded('items', fn () => [
+                'total' => $this->items->sum('quantity'),
+                'active' => $this->items->where('status', 'ACTIVE')->sum('quantity'),
+                'pending' => $this->items->where('status', 'PENDING')->sum('quantity'),
+            ]),
             'tenant_id' => $attributes['tenant_id'] ?? null,
             'operator_id' => $attributes['operator_id'] ?? null,
             'product_id' => $attributes['product_id'] ?? null,
