@@ -24,7 +24,13 @@ class OpportunityRequest extends FormRequest
     {
         if ($this->isMethod('GET')) return [
             'search' => ['sometimes', 'string', 'max:100'],
-            'status' => ['sometimes', Rule::in(['open', 'won', 'lost', 'cancelled'])],
+            'status' => ['sometimes', Rule::in(['open', 'won', 'lost', 'cancelled', 'all'])],
+            'period' => ['sometimes', Rule::in(['current', 'overdue', 'future', 'all', 'custom'])],
+            'order_type_id' => ['sometimes', 'uuid'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'min_amount' => ['nullable', 'numeric', 'min:0'],
+            'max_amount' => ['nullable', 'numeric', 'min:0', 'gte:min_amount'],
             'funnel_stage_id' => ['sometimes', 'uuid'],
         ];
         if ($this->routeIs('opportunities.stage.move')) return ['funnel_stage_id' => ['required', 'uuid']];

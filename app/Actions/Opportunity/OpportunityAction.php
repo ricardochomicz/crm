@@ -7,6 +7,7 @@ use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Opportunity;
 use App\Models\OpportunityFunnelStage;
+use App\Actions\Opportunity\OpportunityFilters;
 use App\Models\OrderType;
 use App\Models\Product;
 use App\Models\Tenant;
@@ -45,12 +46,7 @@ class OpportunityAction
     public function list(Tenant $tenant, User $user, array $filters)
     {
         $query = $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user));
-        $query->where('status', $filters['status'] ?? 'open');
-        if (! empty($filters['search'])) {
-            $term = addcslashes(trim($filters['search']), '%_\\');
-            $query->where(fn (Builder $q) => $q->where('title', 'like', "%{$term}%")->orWhere('code', 'like', "%{$term}%"));
-        }
-        if (! empty($filters['funnel_stage_id'])) $query->where('funnel_stage_id', $filters['funnel_stage_id']);
+        $query = OpportunityFilters::apply($query, $filters);
         return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType'])->latest()->paginate(20);
     }
 
