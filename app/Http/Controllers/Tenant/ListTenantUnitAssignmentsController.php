@@ -2,62 +2,42 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Actions\Tenant\FilterTenantUnitAssignmentsAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\ListTenantUnitAssignmentsRequest;
+use App\Http\Resources\Tenant\TenantUnitMemberAssignmentResource;
+use App\Http\Resources\Tenant\TenantUnitTeamAssignmentResource;
 use App\Models\Team;
 use App\Models\Tenant;
-use App\Models\TenantUser;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ListTenantUnitAssignmentsController extends Controller
 {
-    /** @return array<string, mixed> */
-    public function __invoke(ListTenantUnitAssignmentsRequest $request, string $tenantId, string $unitId): array
-    {
+    public function __invoke(
+        ListTenantUnitAssignmentsRequest $request,
+        string $tenantId,
+        string $unitId,
+        FilterTenantUnitAssignmentsAction $action
+    ): AnonymousResourceCollection {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
         $unit = $tenant->units()->findOrFail($unitId);
         $filters = $request->validated();
-        $linked = $filters['mode'] === 'linked';
-        $search = trim($filters['q'] ?? '');
+
+        $assignments = $action->execute($tenant, $unitId, $filters);
+
         if ($filters['kind'] === 'members') {
-            $query = TenantUser::query()->where('tenant_id', $tenant->id)->with('user')
-                ->with(['team:id,name,tenant_unit_id', 'supervisedTeams:id,name,tenant_unit_id'])
-                ->withExists([
-                    'team as belongs_to_unit_team' => fn (Builder $teams): Builder => $teams->where('tenant_unit_id', $unitId),
-                    'supervisedTeams as supervises_unit_team' => fn (Builder $teams): Builder => $teams->where('tenant_unit_id', $unitId),
-                ]);
-            $query->whereIn('id', DB::table('tenant_unit_memberships')->select('membership_id')->where('tenant_unit_id', $unitId), not: ! $linked);
-            if ($search !== '') {
-                $query->whereHas('user', fn (Builder $users): Builder => $users->where(fn (Builder $names): Builder => $names->whereLike('name', '%'.$search.'%')->orWhereLike('email', '%'.$search.'%')));
-            }
-
-            return $query->orderBy('id')->paginate(20)->through(fn (TenantUser $member): array => [
-                'id' => $member->id, 'name' => $member->user->name, 'email' => $member->user->email,
-                'status' => $member->status->value,
-                'team_name' => $member->team?->tenant_unit_id === $unitId ? $member->team->name : null,
-                'supervised_team_names' => $member->supervisedTeams->where('tenant_unit_id', $unitId)->pluck('name')->values()->all(),
-                'removal_blocked_reason' => ($member->belongs_to_unit_team || $member->supervises_unit_team)
-                    ? 'Este membro integra ou supervisiona uma equipe desta unidade. Atualize a equipe antes de remover o vínculo.' : null,
-            ])->toArray();
+            return TenantUnitMemberAssignmentResource::collection($assignments);
         }
 
-        $query = $tenant->teams()->with('unit:id,name')->withCount('members');
-        if ($linked) {
-            $query->where('tenant_unit_id', $unitId);
-        } else {
-            $query->where(fn (Builder $teams): Builder => $teams->where('tenant_unit_id', '!=', $unitId)->orWhereNull('tenant_unit_id'));
-        }
-        if ($search !== '') {
-            $query->whereLike('name', '%'.$search.'%');
-        }
+        $assignments->through(function (Team $team) use ($unit, $filters): Team {
+            $team->unitAssignmentRemovalBlockedReason = $unit->is_headquarters && $filters['mode'] === 'linked'
+                ? 'Para retirar uma equipe da matriz, transfira-a para uma filial.'
+                : null;
 
-        return $query->orderBy('name')->orderBy('id')->paginate(20)->through(fn (Team $team): array => [
-            'id' => $team->id, 'name' => $team->name,
-            'unit_name' => $team->unit?->name,
-            'members_count' => $team->members_count,
-            'removal_blocked_reason' => $unit->is_headquarters && $linked ? 'Para retirar uma equipe da matriz, transfira-a para uma filial.' : null,
-        ])->toArray();
+            return $team;
+        });
+
+        return TenantUnitTeamAssignmentResource::collection($assignments);
     }
 }
