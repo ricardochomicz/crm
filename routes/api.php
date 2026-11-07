@@ -205,6 +205,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
+                    Route::post('/commercial-orders/{orderId}/activate-items', [\App\Http\Controllers\Commercial\OrderActivationController::class, 'store'])->whereUuid('orderId');
+                    Route::post('/commercial-orders/{orderId}/complete', [\App\Http\Controllers\Commercial\OrderActivationController::class, 'complete'])->whereUuid('orderId');
                     Route::patch('/commercial-orders/{orderId}/workflow', [\App\Http\Controllers\Commercial\OrderWorkflowController::class, 'update'])->whereUuid('orderId');
                     Route::post('/order-statuses', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'store']);
                     Route::patch('/order-statuses/{statusId}', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'update'])->whereUuid('statusId');

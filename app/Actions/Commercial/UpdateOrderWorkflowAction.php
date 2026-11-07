@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class UpdateOrderWorkflowAction
 {
@@ -22,8 +23,20 @@ class UpdateOrderWorkflowAction
         return DB::transaction(function () use ($tenant, $id, $data): CommercialOrder {
             $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
                 ->lockForUpdate()->findOrFail($id);
-            OrderStatus::query()->where('tenant_id', $tenant->id)
+            $status = OrderStatus::query()->where('tenant_id', $tenant->id)
                 ->findOrFail($data['order_status_id']);
+
+            if ($order->administratively_completed_at) {
+                throw ValidationException::withMessages(['order' => 'Pedido concluído. Reabertura administrativa necessária.']);
+            }
+
+            if (in_array(mb_strtolower(trim($status->name)), ['ativo', 'parcialmente ativado', 'concluído'], true)) {
+                throw ValidationException::withMessages(['order_status_id' => 'Utilize as ações de ativação de linhas ou conclusão administrativa.']);
+            }
+
+            if ($order->items()->where('status', 'ACTIVE')->exists()) {
+                throw ValidationException::withMessages(['order_status_id' => 'Pedidos com linhas ativadas devem ser movimentados pelo fluxo de ativação.']);
+            }
 
             $order->update([
                 'order_status_id' => $data['order_status_id'],
