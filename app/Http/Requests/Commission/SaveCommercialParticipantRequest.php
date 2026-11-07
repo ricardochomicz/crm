@@ -4,6 +4,7 @@ namespace App\Http\Requests\Commission;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class SaveCommercialParticipantRequest extends FormRequest
 {
@@ -28,5 +29,19 @@ class SaveCommercialParticipantRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:5000'],
             'is_active' => ['required', 'boolean'],
         ];
+    }
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $data = $this->validated();
+
+            if (! empty($data['document']) && strlen($data['document']) !== ($data['person_type'] === 'PF' ? 11 : 14)) {
+                $validator->errors()->add('document', 'Documento incompatível com o tipo de pessoa.');
+            }
+        }];
     }
 }
