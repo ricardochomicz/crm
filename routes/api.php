@@ -188,7 +188,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/commissions/order-types', [\App\Http\Controllers\Commission\CommissionTableController::class, 'orderTypes']);
                 Route::get('/commissions/settings', [\App\Http\Controllers\Commission\CommissionTableController::class, 'settings'])->name('commissions.settings.show');
                 Route::get('/opportunity-funnel-stages', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'stages']);
-                Route::get('/opportunities/overview', [\\App\\Http\\Controllers\\Opportunity\\OpportunityController::class, 'overview'])->name('opportunities.overview');
+                Route::get('/opportunities/overview', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'overview'])->name('opportunities.overview');
                 Route::get('/opportunities', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'index']);
                 Route::get('/opportunities/{opportunityId}', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'show'])->whereUuid('opportunityId');
                 Route::get('/calendar/events', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'index']);
