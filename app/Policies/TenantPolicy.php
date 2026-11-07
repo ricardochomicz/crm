@@ -107,7 +107,11 @@ class TenantPolicy
     {
         return $this->manageTenantOperators($user, $tenant)
             || $this->viewProducts($user, $tenant)
-            || $this->viewCommissions($user, $tenant);
+            || $this->viewCommissions($user, $tenant)
+            || $this->permissions->allows($user, $tenant, TenantPermission::ViewCommercialGoals)
+            || $this->permissions->allows($user, $tenant, TenantPermission::ViewTeamCommissions)
+            || $this->permissions->allows($user, $tenant, TenantPermission::ViewOperatorClassifications)
+            || $this->viewClients($user, $tenant);
     }
 
     public function manageOperatorClassifications(User $user, Tenant $tenant): bool
