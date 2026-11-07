@@ -4,6 +4,11 @@ namespace App\Enums;
 
 enum TenantPermission: string
 {
+    case ViewCalendar = 'calendar.view';
+    case ViewTeamCalendar = 'calendar.team.view';
+    case CreateCalendarEvents = 'calendar.create';
+    case UpdateCalendarEvents = 'calendar.update';
+    case DeleteCalendarEvents = 'calendar.delete';
     case ViewClients = 'clients.view';
     case CreateClients = 'clients.create';
     case UpdateClients = 'clients.update';
@@ -45,6 +50,11 @@ enum TenantPermission: string
     public static function catalog(): array
     {
         return [
+            ['key' => self::ViewCalendar->value, 'group' => 'Agenda', 'label' => 'Visualizar agenda própria', 'requires' => []],
+            ['key' => self::ViewTeamCalendar->value, 'group' => 'Agenda', 'label' => 'Visualizar agenda da equipe', 'requires' => ['calendar.view']],
+            ['key' => self::CreateCalendarEvents->value, 'group' => 'Agenda', 'label' => 'Criar compromissos', 'requires' => ['calendar.view']],
+            ['key' => self::UpdateCalendarEvents->value, 'group' => 'Agenda', 'label' => 'Editar compromissos próprios', 'requires' => ['calendar.view']],
+            ['key' => self::DeleteCalendarEvents->value, 'group' => 'Agenda', 'label' => 'Excluir compromissos próprios', 'requires' => ['calendar.view']],
             ['key' => self::ViewClients->value, 'group' => 'Clientes', 'label' => 'Visualizar clientes', 'requires' => []],
             ['key' => self::CreateClients->value, 'group' => 'Clientes', 'label' => 'Cadastrar clientes', 'requires' => ['clients.view']],
             ['key' => self::UpdateClients->value, 'group' => 'Clientes', 'label' => 'Editar clientes e contatos', 'requires' => ['clients.view']],

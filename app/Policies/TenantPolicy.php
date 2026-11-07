@@ -12,6 +12,31 @@ class TenantPolicy
 {
     public function __construct(private ResolveTenantPermissionsAction $permissions) {}
 
+    public function viewCalendar(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewCalendar);
+    }
+
+    public function viewTeamCalendar(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewTeamCalendar);
+    }
+
+    public function createCalendarEvents(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::CreateCalendarEvents);
+    }
+
+    public function updateCalendarEvents(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::UpdateCalendarEvents);
+    }
+
+    public function deleteCalendarEvents(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::DeleteCalendarEvents);
+    }
+
     public function viewClients(User $user, Tenant $tenant): bool
     {
         return $this->permissions->allows($user, $tenant, TenantPermission::ViewClients);
