@@ -6,6 +6,7 @@ use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Opportunity;
+use App\Models\Product;
 use App\Models\Tenant;
 use App\Models\TenantUser;
 use App\Models\User;
@@ -48,7 +49,7 @@ class OpportunityAction
             $query->where(fn (Builder $q) => $q->where('title', 'like', "%{$term}%")->orWhere('code', 'like', "%{$term}%"));
         }
         if (! empty($filters['funnel_stage_id'])) $query->where('funnel_stage_id', $filters['funnel_stage_id']);
-        return $query->with(['client', 'stage', 'operator'])->latest()->paginate(20);
+        return $query->with(['client', 'stage', 'operator', 'items'])->latest()->paginate(20);
     }
 
     public function find(Tenant $tenant, User $user, string $id): Opportunity
@@ -70,10 +71,56 @@ class OpportunityAction
         }
     }
 
+    private function validatedItems(Tenant $tenant, array $items): array
+    {
+        $resolved = [];
+        $numbers = [];
+        foreach ($items as $index => $item) {
+            $product = Product::query()->where('tenant_id', $tenant->id)->where('is_active', true)
+                ->find($item['product_id']);
+            if (! $product) {
+                throw ValidationException::withMessages(["items.$index.product_id" => 'Selecione um plano ativo da empresa.']);
+            }
+            $number = preg_replace('/\\D/', '', $item['line_number'] ?? '');
+            if ($number !== '' && ! in_array(strlen($number), [10, 11], true)) {
+                throw ValidationException::withMessages(["items.$index.line_number" => 'Informe um número com DDD válido.']);
+            }
+            if ($number !== '' && in_array($number, $numbers, true)) {
+                throw ValidationException::withMessages(["items.$index.line_number" => 'Esta linha já foi adicionada.']);
+            }
+            if ($number !== '') $numbers[] = $number;
+            if ($number !== '' && (int) $item['quantity'] !== 1) {
+                throw ValidationException::withMessages(["items.$index.quantity" => 'Uma linha identificada deve ter quantidade 1.']);
+            }
+            $resolved[] = [
+                'product_id' => $product->id, 'operator_id' => $product->operator_id,
+                'line_number' => $number ?: null, 'description' => $item['description'],
+                'quantity' => $item['quantity'], 'monthly_unit_amount' => $item['monthly_unit_amount'],
+                'one_time_unit_amount' => $item['one_time_unit_amount'] ?? 0, 'notes' => $item['notes'] ?? null,
+            ];
+        }
+        return $resolved;
+    }
+
+    private function totals(array $items): array
+    {
+        $monthly = 0;
+        $once = 0;
+        foreach ($items as $item) {
+            $monthly += (int) round((float) $item['monthly_unit_amount'] * 100) * $item['quantity'];
+            $once += (int) round((float) $item['one_time_unit_amount'] * 100) * $item['quantity'];
+        }
+        return ['estimated_monthly_amount' => number_format($monthly / 100, 2, '.', ''),
+            'estimated_one_time_amount' => number_format($once / 100, 2, '.', '')];
+    }
+
     public function create(Tenant $tenant, User $user, array $data): Opportunity
     {
         $actor = $this->actor($tenant, $user);
         $this->validateRelations($tenant, $data);
+        $items = $this->validatedItems($tenant, $data['items']);
+        unset($data['items']);
+        $data = [...$data, ...$this->totals($items)];
         $assignee = $data['tenant_user_id'] ?? $actor->id;
         if ($assignee !== $actor->id && ! in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
             $member = TenantUser::query()->where('tenant_id', $tenant->id)->findOrFail($assignee);
@@ -82,8 +129,10 @@ class OpportunityAction
         }
         abort_unless(TenantUser::query()->where('tenant_id', $tenant->id)
             ->where('status', TenantUserStatus::Active->value)->whereKey($assignee)->exists(), 422);
-        return DB::transaction(function () use ($tenant, $data, $assignee) {
-            return Opportunity::create([...$data, 'tenant_id' => $tenant->id, 'tenant_user_id' => $assignee]);
+        return DB::transaction(function () use ($tenant, $data, $assignee, $items) {
+            $opportunity = Opportunity::create([...$data, 'tenant_id' => $tenant->id, 'tenant_user_id' => $assignee]);
+            $opportunity->items()->createMany($items);
+            return $opportunity->load('items');
         });
     }
 
@@ -96,7 +145,16 @@ class OpportunityAction
         $this->validateRelations($tenant, $data);
         // Reassignment must go through an explicit, authorized workflow.
         unset($data['tenant_user_id']);
-        $event->update($data);
-        return $event->refresh();
+        $items = array_key_exists('items', $data) ? $this->validatedItems($tenant, $data['items']) : null;
+        unset($data['items']);
+        if ($items !== null) $data = [...$data, ...$this->totals($items)];
+        return DB::transaction(function () use ($event, $data, $items) {
+            $event->update($data);
+            if ($items !== null) {
+                $event->items()->delete();
+                $event->items()->createMany($items);
+            }
+            return $event->refresh()->load('items');
+        });
     }
 }

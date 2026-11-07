@@ -12,7 +12,7 @@ class OpportunityItem extends Model
 
     protected $fillable = [
         'opportunity_id', 'product_id', 'operator_id', 'origin_operator_id',
-        'description', 'quantity', 'monthly_unit_amount', 'one_time_unit_amount', 'notes',
+        'description', 'line_number', 'quantity', 'monthly_unit_amount', 'one_time_unit_amount', 'notes',
     ];
 
     protected function casts(): array

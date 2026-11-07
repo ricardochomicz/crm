@@ -42,6 +42,14 @@ class OpportunityRequest extends FormRequest
             'estimated_monthly_amount' => ['sometimes', 'numeric', 'min:0'],
             'estimated_one_time_amount' => ['sometimes', 'numeric', 'min:0'],
             'probability' => ['nullable', 'integer', 'between:0,100'],
+            'items' => [$required, 'array', 'min:1', 'max:200'],
+            'items.*.product_id' => ['required', 'uuid'],
+            'items.*.line_number' => ['nullable', 'string', 'max:20'],
+            'items.*.description' => ['required', 'string', 'max:200'],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:10000'],
+            'items.*.monthly_unit_amount' => ['required', 'numeric', 'min:0'],
+            'items.*.one_time_unit_amount' => ['sometimes', 'numeric', 'min:0'],
+            'items.*.notes' => ['nullable', 'string', 'max:10000'],
             'source' => ['nullable', 'string', 'max:100'],
         ];
     }
