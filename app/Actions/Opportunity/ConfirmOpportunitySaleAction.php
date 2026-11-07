@@ -83,18 +83,26 @@ class ConfirmOpportunitySaleAction
                 'sold_on' => now()->toDateString(),
             ]);
 
-            $order->items()->createMany($items->map(fn ($item) => [
-                'opportunity_item_id' => $item->id,
-                'product_id' => $item->product_id,
-                'operator_id' => $item->operator_id,
-                'order_type_id' => $item->order_type_id,
-                'line_number' => $item->line_number,
-                'description' => $item->description,
-                'quantity' => $item->quantity,
-                'monthly_unit_amount' => $item->monthly_unit_amount,
-                'one_time_unit_amount' => $item->one_time_unit_amount,
-                'notes' => $item->notes,
-            ])->all());
+            // Cada registro representa uma linha ativável, mesmo quando a oportunidade
+            // possui um item com quantidade maior que um.
+            $orderLines = [];
+            foreach ($items as $item) {
+                for ($number = 1; $number <= $item->quantity; $number++) {
+                    $orderLines[] = [
+                        'opportunity_item_id' => $number === 1 ? $item->id : null,
+                        'product_id' => $item->product_id,
+                        'operator_id' => $item->operator_id,
+                        'order_type_id' => $item->order_type_id,
+                        'line_number' => $item->line_number,
+                        'description' => $item->description,
+                        'quantity' => 1,
+                        'monthly_unit_amount' => $item->monthly_unit_amount,
+                        'one_time_unit_amount' => $item->one_time_unit_amount,
+                        'notes' => $item->notes,
+                    ];
+                }
+            }
+            $order->items()->createMany($orderLines);
 
             $opportunity->update(['status' => 'won', 'closed_at' => now()]);
 
