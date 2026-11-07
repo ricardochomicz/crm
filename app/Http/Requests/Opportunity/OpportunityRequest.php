@@ -13,7 +13,7 @@ class OpportunityRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
         if (! $tenant instanceof Tenant) return false;
         $ability = match ($this->method()) {
-            'POST' => ($this->route()?->getActionMethod() === 'confirmSale' || $this->route()?->getActionMethod() === 'markLost') ? 'updateOpportunities' : 'createOpportunities',
+            'POST' => ($this->route()?->getActionMethod() === 'confirmSale' || $this->route()?->getActionMethod() === 'markLost' || $this->route()?->getActionMethod() === 'recover') ? 'updateOpportunities' : 'createOpportunities',
             'PATCH' => 'updateOpportunities',
             default => 'viewOpportunities',
         };
@@ -22,7 +22,7 @@ class OpportunityRequest extends FormRequest
 
     public function rules(): array
     {
-        if ($this->route()?->getActionMethod() === 'confirmSale') return [];
+        if (in_array($this->route()?->getActionMethod(), ['confirmSale', 'recover'], true)) return [];
         if ($this->route()?->getActionMethod() === 'markLost') return ['lost_reason' => ['required', 'string', 'min:3', 'max:200']];
         if ($this->routeIs('opportunities.overview')) return [
             'date_from' => ['required', 'date'],
@@ -31,7 +31,7 @@ class OpportunityRequest extends FormRequest
         if ($this->isMethod('GET')) return [
             'search' => ['sometimes', 'string', 'max:100'],
             'status' => ['sometimes', Rule::in(['open', 'won', 'lost', 'cancelled', 'all'])],
-            'period' => ['sometimes', Rule::in(['current', 'overdue', 'future', 'all', 'custom'])],
+            'period' => ['sometimes', Rule::in(['current', 'overdue', 'future', 'all', 'custom', 'closed'])],
             'order_type_id' => ['sometimes', 'uuid'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],

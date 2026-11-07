@@ -42,7 +42,10 @@ final class OpportunityFilters
         $last = Carbon::today()->endOfMonth()->toDateString();
         $period = $filters['period'] ?? 'current';
 
-        if ($period === 'current') {
+        if ($period === 'closed') {
+            if (! empty($filters['date_from'])) $query->whereDate('closed_at', '>=', $filters['date_from']);
+            if (! empty($filters['date_to'])) $query->whereDate('closed_at', '<=', $filters['date_to']);
+        } elseif ($period === 'current') {
             $query->where(function (Builder $builder) use ($last) {
                 $builder->whereNull('expected_close_at')->orWhereDate('expected_close_at', '<=', $last);
             });
