@@ -6,9 +6,11 @@ use App\Models\Client;
 
 class ShowClientAction
 {
-    public function execute(string $tenantId, string $clientId): Client
+    public function __construct(private ScopeVisibleClientsAction $visibility) {}
+
+    public function execute(string $tenantId, string $clientId, int $userId): Client
     {
-        return Client::query()->where('tenant_id', $tenantId)
+        return $this->visibility->execute(Client::query(), $tenantId, $userId)
             ->with([
                 'operator:id,name',
                 'classification:id,code,name',

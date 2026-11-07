@@ -28,8 +28,8 @@ class ClientController extends Controller
         $tenant = $request->attributes->get('active_tenant');
         $filters = $request->validated();
         $clients = isset($filters['per_page'])
-            ? $action->paginate($tenant->id, $filters)
-            : $action->execute($tenant->id, $filters);
+            ? $action->paginate($tenant->id, $filters, $request->user()->id)
+            : $action->execute($tenant->id, $filters, $request->user()->id);
 
         return ClientResource::collection($clients)->additional([
             'meta' => [
@@ -48,7 +48,8 @@ class ClientController extends Controller
     ): ClientResource {
         return new ClientResource($action->execute(
             $request->attributes->get('active_tenant')->id,
-            $clientId
+            $clientId,
+            $request->user()->id
         ));
     }
 
@@ -69,7 +70,7 @@ class ClientController extends Controller
         string $clientId,
         DeleteClientAction $action
     ): Response {
-        $action->execute($request->attributes->get('active_tenant')->id, $clientId);
+        $action->execute($request->attributes->get('active_tenant')->id, $clientId, $request->user()->id);
 
         return response()->noContent();
     }
@@ -111,6 +112,7 @@ class ClientController extends Controller
             $request->attributes->get('active_tenant')->id,
             $clientId,
             $request->validated(),
+            $request->user()->id,
             $contactId
         ));
     }

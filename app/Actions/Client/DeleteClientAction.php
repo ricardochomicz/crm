@@ -6,8 +6,10 @@ use App\Models\Client;
 
 class DeleteClientAction
 {
-    public function execute(string $tenantId, string $clientId): void
+    public function __construct(private ScopeVisibleClientsAction $visibility) {}
+
+    public function execute(string $tenantId, string $clientId, int $userId): void
     {
-        Client::query()->where('tenant_id', $tenantId)->findOrFail($clientId)->delete();
+        $this->visibility->findOrFail($tenantId, $userId, $clientId)->delete();
     }
 }

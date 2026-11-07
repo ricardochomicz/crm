@@ -7,6 +7,8 @@ use App\Models\TenantUser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 class SaveClientAction {
+ public function __construct(private ScopeVisibleClientsAction $visibility) {}
+
  public function execute(string $tenantId,int $userId,array $data,?string $clientId=null):Client {
   $membership=TenantUser::where('tenant_id',$tenantId)->where('user_id',$userId)->where('status','ACTIVE')->first();
   $canAssign=$membership && (in_array($membership->role->value,['OWNER','MANAGER'],true)||$membership->supervisedTeams()->exists());
@@ -19,7 +21,7 @@ class SaveClientAction {
   unset($data['seller_membership_id'],$data['seller_reason']);
   if($sellerId&&!TenantUser::where('tenant_id',$tenantId)->where('status','ACTIVE')->whereKey($sellerId)->exists())throw ValidationException::withMessages(['seller_membership_id'=>'Vendedor não está ativo nesta empresa.']);
   return DB::transaction(function()use($tenantId,$userId,$clientId,$data,$sellerId,$reason){
-   $client=$clientId?Client::where('tenant_id',$tenantId)->lockForUpdate()->findOrFail($clientId):new Client(['tenant_id'=>$tenantId]);
+   $client=$clientId?$this->visibility->execute(Client::query(),$tenantId,$userId)->lockForUpdate()->findOrFail($clientId):new Client(['tenant_id'=>$tenantId]);
    $oldOperator=$client->operator_id;$oldClass=$client->classification_id;$isNew=!$client->exists;
    $client->fill($data);$client->save();
    if($isNew||(string)$oldOperator!==(string)$client->operator_id||(string)$oldClass!==(string)$client->classification_id){
