@@ -24,14 +24,14 @@ class TenantUnit extends Model
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
-            ->when($filters['search'] ?? null, fn (Builder $q, string $search) => $q->where(function (Builder $sub) use ($search) {
-                $sub->where('name', 'LIKE', '%'.$search.'%')
-                    ->orWhere('city', 'LIKE', '%'.$search.'%')
-                    ->orWhere('state', 'LIKE', '%'.$search.'%')
-                    ->orWhere('email', 'LIKE', '%'.$search.'%')
-                    ->orWhere('phone', 'LIKE', '%'.$search.'%');
+            ->when($filters['search'] ?? null, fn(Builder $q, string $search) => $q->where(function (Builder $sub) use ($search) {
+                $sub->where('name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('city', 'LIKE', '%' . $search . '%')
+                    ->orWhere('state', 'LIKE', '%' . $search . '%')
+                    ->orWhere('email', 'LIKE', '%' . $search . '%')
+                    ->orWhere('phone', 'LIKE', '%' . $search . '%');
             }))
-            ->when(array_key_exists('is_headquarters', $filters), fn (Builder $q) => $q->where('is_headquarters', $filters['is_headquarters']));
+            ->when(array_key_exists('is_headquarters', $filters), fn(Builder $q) => $q->where('is_headquarters', $filters['is_headquarters']));
     }
 
     public function tenant(): BelongsTo

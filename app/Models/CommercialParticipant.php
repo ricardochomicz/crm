@@ -29,7 +29,7 @@ class CommercialParticipant extends Model
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         if (filled($filters['search'] ?? null)) {
-            $query->where('name', 'like', '%'.addcslashes(trim($filters['search']), '%_\\').'%');
+            $query->where('name', 'like', '%' . addcslashes(trim($filters['search']), '%_\\') . '%');
         }
         if (isset($filters['role'])) {
             $query->where('role', $filters['role']);

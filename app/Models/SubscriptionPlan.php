@@ -45,6 +45,6 @@ class SubscriptionPlan extends Model
     /** @param array<string, mixed> $filters */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
-        return $query->when(array_key_exists('is_active', $filters), fn (Builder $query): Builder => $query->where('is_active', $filters['is_active']));
+        return $query->when(array_key_exists('is_active', $filters), fn(Builder $query): Builder => $query->where('is_active', $filters['is_active']));
     }
 }

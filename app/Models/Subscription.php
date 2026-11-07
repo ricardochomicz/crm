@@ -54,8 +54,8 @@ class Subscription extends Model
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
-            ->when($filters['status'] ?? null, fn (Builder $q, mixed $status) => $q->where('status', $status))
-            ->when($filters['subscription_plan_id'] ?? null, fn (Builder $q, string $planId) => $q->where('subscription_plan_id', $planId));
+            ->when($filters['status'] ?? null, fn(Builder $q, mixed $status) => $q->where('status', $status))
+            ->when($filters['subscription_plan_id'] ?? null, fn(Builder $q, string $planId) => $q->where('subscription_plan_id', $planId));
     }
 
     public function allowsOperationalWrites(

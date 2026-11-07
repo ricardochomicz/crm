@@ -12,8 +12,14 @@ class TeamCommissionRule extends Model
     use HasUuids;
 
     protected $fillable = [
-        'tenant_id', 'operator_id', 'order_type', 'commercial_role',
-        'percentage', 'starts_on', 'ends_on', 'is_active',
+        'tenant_id',
+        'operator_id',
+        'order_type',
+        'commercial_role',
+        'percentage',
+        'starts_on',
+        'ends_on',
+        'is_active',
     ];
 
     protected function casts(): array

@@ -20,8 +20,8 @@ class Operator extends Model
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
-            ->when($filters['search'] ?? null, fn (Builder $query, string $search): Builder => $query->whereAny(['name', 'slug'], 'LIKE', '%'.$search.'%'))
-            ->when(array_key_exists('is_active', $filters), fn (Builder $query): Builder => $query->where('is_active', $filters['is_active']));
+            ->when($filters['search'] ?? null, fn(Builder $query, string $search): Builder => $query->whereAny(['name', 'slug'], 'LIKE', '%' . $search . '%'))
+            ->when(array_key_exists('is_active', $filters), fn(Builder $query): Builder => $query->where('is_active', $filters['is_active']));
     }
 
 

@@ -76,6 +76,6 @@ class TenantUser extends Pivot
     /** @param array<string, mixed> $filters */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
-        return $query->when(isset($filters['status']), fn (Builder $query): Builder => $query->where('status', $filters['status']));
+        return $query->when(isset($filters['status']), fn(Builder $query): Builder => $query->where('status', $filters['status']));
     }
 }

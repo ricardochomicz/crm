@@ -35,7 +35,7 @@ class CommercialOrder extends Model
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         if (filled($filters['search'] ?? null)) {
-            $query->where('customer_name', 'like', '%'.addcslashes(trim($filters['search']), '%_\\').'%');
+            $query->where('customer_name', 'like', '%' . addcslashes(trim($filters['search']), '%_\\') . '%');
         }
         if (isset($filters['operator_id'])) {
             $query->where('operator_id', $filters['operator_id']);
