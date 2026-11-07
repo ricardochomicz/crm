@@ -6,6 +6,7 @@ use App\Enums\CommercialRole;
 use App\Enums\OrderType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class SaveCommercialGoalRequest extends FormRequest
 {
@@ -32,5 +33,26 @@ class SaveCommercialGoalRequest extends FormRequest
             'tiers.*.minimum' => ['required', 'numeric', 'min:0', 'max:999999999999.99', 'decimal:0,2'],
             'tiers.*.percentage' => ['required', 'numeric', 'min:0', 'max:9999.99', 'decimal:0,2'],
         ];
+    }
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $data = $this->validated();
+            $minimums = array_map(fn ($tier) => (float) $tier['minimum'], $data['tiers']);
+
+            if (count(array_unique($minimums)) !== count($minimums) || min($minimums) !== 0.0) {
+                $validator->errors()->add('tiers', 'As faixas devem começar em zero e não podem repetir valores mínimos.');
+            }
+
+            if ($data['metric'] === 'QUANTITY' && collect($data['tiers'])->contains(
+                fn ($tier) => floor((float) $tier['minimum']) !== (float) $tier['minimum']
+            )) {
+                $validator->errors()->add('tiers', 'Metas por quantidade exigem limites inteiros.');
+            }
+        }];
     }
 }
