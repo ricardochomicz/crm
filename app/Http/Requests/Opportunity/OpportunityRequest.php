@@ -22,7 +22,7 @@ class OpportunityRequest extends FormRequest
 
     public function rules(): array
     {
-        if ($this->routeIs('opportunities.sale.confirm')) return [];
+        if ($this->route()?->getActionMethod() === 'confirmSale') return [];
         if ($this->route()?->getActionMethod() === 'markLost') return ['lost_reason' => ['required', 'string', 'min:3', 'max:200']];
         if ($this->routeIs('opportunities.overview')) return [
             'date_from' => ['required', 'date'],
