@@ -13,7 +13,7 @@ class OpportunityRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
         if (! $tenant instanceof Tenant) return false;
         $ability = match ($this->method()) {
-            'POST' => $this->routeIs('opportunities.sale.confirm') ? 'updateOpportunities' : 'createOpportunities',
+            'POST' => ($this->routeIs('opportunities.sale.confirm') || $this->routeIs('opportunities.sale.lost')) ? 'updateOpportunities' : 'createOpportunities',
             'PATCH' => 'updateOpportunities',
             default => 'viewOpportunities',
         };
@@ -23,6 +23,7 @@ class OpportunityRequest extends FormRequest
     public function rules(): array
     {
         if ($this->routeIs('opportunities.sale.confirm')) return [];
+        if ($this->routeIs('opportunities.sale.lost')) return ['lost_reason' => ['required', 'string', 'min:3', 'max:200']];
         if ($this->routeIs('opportunities.overview')) return [
             'date_from' => ['required', 'date'],
             'date_to' => ['required', 'date', 'after_or_equal:date_from'],

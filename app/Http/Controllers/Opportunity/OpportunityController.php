@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Opportunity;
 
 use App\Actions\Opportunity\OpportunityAction;
 use App\Actions\Opportunity\ConfirmOpportunitySaleAction;
+use App\Actions\Opportunity\MarkOpportunityLostAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Opportunity\OpportunityRequest;
 use App\Models\Tenant;
@@ -52,6 +53,11 @@ class OpportunityController extends Controller
     public function confirmSale(OpportunityRequest $request, string $tenantId, string $opportunityId, ConfirmOpportunitySaleAction $action): JsonResponse
     {
         return response()->json(['data' => $action->execute($this->tenant($request), $request->user(), $opportunityId)], 201);
+    }
+
+    public function markLost(OpportunityRequest $request, string $tenantId, string $opportunityId, MarkOpportunityLostAction $action): JsonResponse
+    {
+        return response()->json(['data' => $action->execute($this->tenant($request), $request->user(), $opportunityId, $request->validated('lost_reason'))]);
     }
 
     public function update(OpportunityRequest $request, string $tenantId, string $opportunityId, OpportunityAction $action): JsonResponse
