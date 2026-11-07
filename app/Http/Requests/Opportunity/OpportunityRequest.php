@@ -44,6 +44,7 @@ class OpportunityRequest extends FormRequest
             'probability' => ['nullable', 'integer', 'between:0,100'],
             'items' => [$required, 'array', 'min:1', 'max:200'],
             'items.*.product_id' => ['required', 'uuid'],
+            'items.*.operation_type' => ['required', Rule::in(['portability', 'new'])],
             'items.*.line_number' => ['nullable', 'string', 'max:20'],
             'items.*.description' => ['required', 'string', 'max:200'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:10000'],

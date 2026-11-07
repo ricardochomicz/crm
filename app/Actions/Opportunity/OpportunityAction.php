@@ -82,6 +82,9 @@ class OpportunityAction
                 throw ValidationException::withMessages(["items.$index.product_id" => 'Selecione um plano ativo da empresa.']);
             }
             $number = preg_replace('/\\D/', '', $item['line_number'] ?? '');
+            if (($item['operation_type'] ?? null) === 'portability' && $number === '') {
+                throw ValidationException::withMessages(["items.$index.line_number" => 'Portabilidade exige número com DDD.']);
+            }
             if ($number !== '' && ! in_array(strlen($number), [10, 11], true)) {
                 throw ValidationException::withMessages(["items.$index.line_number" => 'Informe um número com DDD válido.']);
             }
@@ -94,7 +97,7 @@ class OpportunityAction
             }
             $resolved[] = [
                 'product_id' => $product->id, 'operator_id' => $product->operator_id,
-                'line_number' => $number ?: null, 'description' => $item['description'],
+                'line_number' => $number ?: null, 'operation_type' => $item['operation_type'], 'description' => $item['description'],
                 'quantity' => $item['quantity'], 'monthly_unit_amount' => $item['monthly_unit_amount'],
                 'one_time_unit_amount' => $item['one_time_unit_amount'] ?? 0, 'notes' => $item['notes'] ?? null,
             ];
