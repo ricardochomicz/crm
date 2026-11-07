@@ -15,7 +15,8 @@ class TimelineController extends Controller {
     }
 
     public function index(Request $request, string $tenantId, string $type, string $id, TimelineAction $action): JsonResponse {
-        return response()->json($action->list($this->tenant($request), $request->user(), $type, $id));
+        $data = $request->validate(['origin' => ['sometimes', 'in:client,opportunity,commercial_order']]);
+        return response()->json($action->list($this->tenant($request), $request->user(), $type, $id, $data['origin'] ?? null));
     }
 
     public function store(Request $request, string $tenantId, string $type, string $id, TimelineAction $action): JsonResponse {
