@@ -2,28 +2,24 @@
 
 namespace App\Http\Controllers\Tenant;
 
-use App\Http\Resources\Tenant\TenantInvitationResource;
-use App\Http\Controllers\Controller;
 use App\Actions\Tenant\FilterTenantInvitationAction;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\ListTenantInvitationsRequest;
+use App\Http\Resources\Tenant\TenantInvitationResource;
 use App\Models\Tenant;
-use App\Models\TenantInvitation;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ListTenantInvitationsController extends Controller
 {
-    /**
-     * @return array<string, mixed>
-     */
     public function __invoke(
         ListTenantInvitationsRequest $request,
-    ): array {
+        FilterTenantInvitationAction $action
+    ): AnonymousResourceCollection {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
-        $filters = $request->validated();
-
-        return (new FilterTenantInvitationAction)->execute($tenant, $filters)
-            ->through(fn (TenantInvitation $invitation): array => (new TenantInvitationResource($invitation))->resolve($request))
-            ->toArray();
+        return TenantInvitationResource::collection(
+            $action->execute($tenant, $request->validated())
+        );
     }
 }
