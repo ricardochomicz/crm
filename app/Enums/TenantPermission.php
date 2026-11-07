@@ -4,6 +4,9 @@ namespace App\Enums;
 
 enum TenantPermission: string
 {
+    case ViewOpportunities = 'opportunities.view';
+    case CreateOpportunities = 'opportunities.create';
+    case UpdateOpportunities = 'opportunities.update';
     case ViewCalendar = 'calendar.view';
     case ViewTeamCalendar = 'calendar.team.view';
     case CreateCalendarEvents = 'calendar.create';
@@ -50,6 +53,9 @@ enum TenantPermission: string
     public static function catalog(): array
     {
         return [
+            ['key' => self::ViewOpportunities->value, 'group' => 'Oportunidades', 'label' => 'Visualizar oportunidades permitidas', 'requires' => []],
+            ['key' => self::CreateOpportunities->value, 'group' => 'Oportunidades', 'label' => 'Criar oportunidades', 'requires' => ['opportunities.view']],
+            ['key' => self::UpdateOpportunities->value, 'group' => 'Oportunidades', 'label' => 'Editar oportunidades', 'requires' => ['opportunities.view']],
             ['key' => self::ViewCalendar->value, 'group' => 'Agenda', 'label' => 'Visualizar agenda própria', 'requires' => []],
             ['key' => self::ViewTeamCalendar->value, 'group' => 'Agenda', 'label' => 'Visualizar agenda da equipe', 'requires' => ['calendar.view']],
             ['key' => self::CreateCalendarEvents->value, 'group' => 'Agenda', 'label' => 'Criar compromissos', 'requires' => ['calendar.view']],
