@@ -36,8 +36,12 @@ class ActivateOrderItemsAction
                 throw ValidationException::withMessages(['item_ids' => 'Uma ou mais linhas não pertencem ao pedido.']);
             }
 
-            if ($selected->contains(fn ($item) => $item->status !== 'PENDING' || $item->activated_at !== null)) {
-                throw ValidationException::withMessages(['item_ids' => 'Selecione apenas linhas pendentes.']);
+            $invalid = $selected->first(fn ($item) => $item->status !== 'PENDING' || $item->activated_at !== null);
+            if ($invalid) {
+                $line = $invalid->line_number ?: ($invalid->description ?: 'sem número');
+                throw ValidationException::withMessages([
+                    'item_ids' => "A linha {$line} não está mais pendente ou já possui data de ativação. Atualize o pedido e selecione somente linhas pendentes.",
+                ]);
             }
 
             if ($selected->contains(fn ($item) => $item->quantity !== 1)) {
