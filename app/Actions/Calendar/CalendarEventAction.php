@@ -39,9 +39,13 @@ class CalendarEventAction
         return $data;
     }
 
-    private function checkDates(array $data): void
+    private function checkDates(array $data, bool $enforceFuture = false): void
     {
-        if (Carbon::parse($data['ends_at'])->lessThanOrEqualTo(Carbon::parse($data['starts_at']))) {
+        $start = Carbon::parse($data['starts_at']);
+        if ($enforceFuture && $start->lessThanOrEqualTo(now())) {
+            throw ValidationException::withMessages(['starts_at' => 'Escolha uma data e horário futuros.']);
+        }
+        if (Carbon::parse($data['ends_at'])->lessThanOrEqualTo($start)) {
             throw ValidationException::withMessages(['ends_at' => 'O término deve ser posterior ao início.']);
         }
     }
@@ -62,7 +66,7 @@ class CalendarEventAction
     {
         $actor = $this->member($user, $tenant);
         $data = $this->prepare($tenant, $actor, $data);
-        $this->checkDates($data);
+        $this->checkDates($data, true);
         return CalendarEvent::create([...$data, 'tenant_id' => $tenant->getKey(), 'created_by_tenant_user_id' => $actor->getKey()]);
     }
 
@@ -78,7 +82,7 @@ class CalendarEventAction
         $event = $this->owned($tenant, $user, $id);
         $actor = $this->member($user, $tenant);
         $data = $this->prepare($tenant, $actor, [...$event->only(['tenant_user_id', 'client_id']), ...$data]);
-        $this->checkDates([...$event->only(['starts_at', 'ends_at']), ...$data]);
+        $this->checkDates([...$event->only(['starts_at', 'ends_at']), ...$data], array_key_exists('starts_at', $data) || array_key_exists('ends_at', $data));
         $event->update($data);
         return $event->refresh();
     }
