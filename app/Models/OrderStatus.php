@@ -10,7 +10,9 @@ class OrderStatus extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['tenant_id', 'name'];
+    protected $fillable = ['tenant_id', 'name', 'is_initial'];
+
+    protected $casts = ['is_initial' => 'boolean'];
 
     public function tenant(): BelongsTo
     {

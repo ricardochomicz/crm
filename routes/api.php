@@ -206,6 +206,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::middleware('subscription.writable')->group(function (): void {
                     Route::post('/order-statuses', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'store']);
                     Route::patch('/order-statuses/{statusId}', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'update'])->whereUuid('statusId');
+                    Route::patch('/order-statuses/{statusId}/initial', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'initial'])->whereUuid('statusId');
                     Route::delete('/order-statuses/{statusId}', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'destroy'])->whereUuid('statusId');
                     Route::post('/commercial-participants', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'store']);
                     Route::patch('/commercial-participants/{participantId}', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'update'])->whereUuid('participantId');

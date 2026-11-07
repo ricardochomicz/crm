@@ -5,6 +5,8 @@ namespace App\Actions\Opportunity;
 use App\Enums\TenantUserRole;
 use App\Models\CommercialOrder;
 use App\Models\Opportunity;
+use App\Models\OrderStatus;
+use Illuminate\Support\Str;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
@@ -56,7 +58,18 @@ class ConfirmOpportunitySaleAction
                 }
             }
 
+            $initialStatus = OrderStatus::query()->where('tenant_id', $tenant->id)
+                ->where('is_initial', true)->first();
+
+            if (! $initialStatus) {
+                throw ValidationException::withMessages(['order_status' => 'Configure o status inicial dos pedidos antes de confirmar a venda.']);
+            }
+
             $order = CommercialOrder::create([
+                'code' => 'PED-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
+                'order_status_id' => $initialStatus->id,
+                'tenant_user_id' => $opportunity->tenant_user_id,
+                'client_id' => $opportunity->client_id,
                 'tenant_id' => $tenant->id,
                 'opportunity_id' => $opportunity->id,
                 'operator_id' => $first->operator_id,
@@ -68,7 +81,6 @@ class ConfirmOpportunitySaleAction
                 'line_quantity' => $items->sum('quantity'),
                 'status' => 'DRAFT',
                 'sold_on' => now()->toDateString(),
-                'notes' => $opportunity->description,
             ]);
 
             $order->items()->createMany($items->map(fn ($item) => [

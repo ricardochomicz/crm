@@ -23,7 +23,6 @@ class CommercialOrderResource extends JsonResource
             'line_quantity' => $attributes['line_quantity'] ?? null,
             'status' => $attributes['status'] ?? null,
             'sold_on' => $attributes['sold_on'] ?? null,
-            'notes' => $attributes['notes'] ?? null,
             'created_at' => $attributes['created_at'] ?? null,
             'updated_at' => $attributes['updated_at'] ?? null,
             'operator' => $this->whenLoaded('operator'),

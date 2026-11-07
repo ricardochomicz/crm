@@ -40,6 +40,14 @@ class OrderStatusController extends Controller
         return new OrderStatusResource($action->save($tenant->id, $request->validated('name'), $statusId));
     }
 
+    public function initial(Request $request, string $tenantId, string $statusId, ManageOrderStatusesAction $action): OrderStatusResource
+    {
+        $tenant = $request->attributes->get('active_tenant');
+        $action->authorizeManager($tenant, $request->user()->id);
+
+        return new OrderStatusResource($action->setInitial($tenant->id, $statusId));
+    }
+
     public function destroy(Request $request, string $tenantId, string $statusId, ManageOrderStatusesAction $action): JsonResponse
     {
         $tenant = $request->attributes->get('active_tenant');

@@ -39,7 +39,21 @@ class ManageOrderStatusesAction
                 : new OrderStatus(['tenant_id' => $tenantId]);
 
             $status->name = $name;
+            if (! $id && ! OrderStatus::query()->where('tenant_id', $tenantId)->where('is_initial', true)->exists()) {
+                $status->is_initial = true;
+            }
             $status->save();
+
+            return $status;
+        });
+    }
+
+    public function setInitial(string $tenantId, string $id): OrderStatus
+    {
+        return DB::transaction(function () use ($tenantId, $id): OrderStatus {
+            $status = OrderStatus::query()->where('tenant_id', $tenantId)->findOrFail($id);
+            OrderStatus::query()->where('tenant_id', $tenantId)->update(['is_initial' => false]);
+            $status->update(['is_initial' => true]);
 
             return $status;
         });
@@ -51,6 +65,10 @@ class ManageOrderStatusesAction
 
         if (CommercialOrder::query()->where('tenant_id', $tenantId)->where('order_status_id', $id)->exists()) {
             throw ValidationException::withMessages(['status' => 'Este status está em uso e não pode ser excluído.']);
+        }
+
+        if ($status->is_initial) {
+            throw ValidationException::withMessages(['status' => 'Defina outro status inicial antes de excluir este.']);
         }
 
         $status->delete();
