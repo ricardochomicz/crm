@@ -23,7 +23,7 @@ class CommercialGoalController extends Controller
                 $action->execute($tenant->id, $request->validated())
             ),
             'meta' => [
-                'can_manage' => $request->user()->can('manageCommissions', $tenant),
+                'can_manage' => $request->user()->can('manageCommercialGoals', $tenant),
             ],
         ];
     }
