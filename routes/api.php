@@ -99,6 +99,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::get('/operators', \App\Http\Controllers\Operator\ListAvailableOperatorsController::class)->name('operators.available');
 
+        Route::get('/order-types', [\\App\\Http\\Controllers\\OrderType\\OrderTypeController::class, 'available']);
+
         Route::get('/subscription-plans', ListSubscriptionPlansController::class)
             ->name('subscription-plans.index');
 
@@ -138,6 +140,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::patch('/operator-classifications/{classificationId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalUpdate'])->whereNumber('classificationId');
                 Route::patch('/operator-classifications/{classificationId}/renewal-rules/{ruleId}', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalUpdateRule'])->whereNumber('classificationId')->whereUuid('ruleId');
                 Route::post('/operator-classifications/{classificationId}/renewal-rules', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'globalSaveRule'])->whereNumber('classificationId');
+                Route::get('/order-types', [\App\Http\Controllers\OrderType\OrderTypeController::class, 'index']);
+                Route::post('/order-types', [\App\Http\Controllers\OrderType\OrderTypeController::class, 'store']);
+                Route::patch('/order-types/{orderTypeId}', [\App\Http\Controllers\OrderType\OrderTypeController::class, 'update'])->whereUuid('orderTypeId');
                 Route::get('/operators', ListOperatorsController::class)->name('operators.index');
                 Route::post('/operators', StoreOperatorController::class)->middleware('throttle:20,1')->name('operators.store');
                 Route::patch('/operators/{operator}', UpdateOperatorController::class)->whereNumber('operator')->middleware('throttle:20,1')->name('operators.update');
