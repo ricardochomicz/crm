@@ -39,7 +39,7 @@ class TimelineAction {
         return $comment;
     }
 
-    public function list(Tenant $tenant, User $user, string $type, string $id): array
+    public function list(Tenant $tenant, User $user, string $type, string $id, ?string $origin = null): array
     {
         $this->authorize($tenant, $user, $type, $id);
 
@@ -81,6 +81,10 @@ class TimelineAction {
             });
         } else {
             $query->where('commentable_type', $type)->where('commentable_id', $id);
+        }
+
+        if ($type === 'client' && in_array($origin, ['client', 'opportunity', 'commercial_order'], true)) {
+            $query->where('commentable_type', $origin);
         }
 
         $page = $query->with(['author', 'attachments'])->latest()->paginate(20);
