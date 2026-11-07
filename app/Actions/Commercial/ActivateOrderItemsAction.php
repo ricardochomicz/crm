@@ -44,11 +44,12 @@ class ActivateOrderItemsAction
                 throw ValidationException::withMessages(['item_ids' => 'Itens com quantidade maior que um precisam ser individualizados antes da ativação parcial.']);
             }
 
+            $remaining = $items->filter(fn ($item) => $item->status === 'PENDING')->count() - $selected->count();
+
             foreach ($selected as $item) {
                 $item->update(['status' => 'ACTIVE', 'activated_at' => $data['activated_at']]);
             }
 
-            $remaining = $items->count() - $items->where('status', 'ACTIVE')->count() - $selected->count();
             $name = $remaining === 0 ? 'Ativo' : 'Parcialmente ativado';
             $status = OrderStatus::query()->where('tenant_id', $tenant->id)
                 ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
