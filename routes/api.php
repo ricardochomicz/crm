@@ -198,11 +198,15 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/clients/options', [\App\Http\Controllers\Client\ClientController::class, 'options']);
                 Route::get('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'show'])->whereUuid('clientId');
                 Route::get('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'index']);
+                Route::get('/order-statuses', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'index']);
                 Route::get('/commercial-orders', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'index']);
                 Route::get('/commercial-orders/options', [\App\Http\Controllers\Commercial\CommercialOrderController::class, 'options']);
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
+                    Route::post('/order-statuses', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'store']);
+                    Route::patch('/order-statuses/{statusId}', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'update'])->whereUuid('statusId');
+                    Route::delete('/order-statuses/{statusId}', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'destroy'])->whereUuid('statusId');
                     Route::post('/commercial-participants', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'store']);
                     Route::patch('/commercial-participants/{participantId}', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'update'])->whereUuid('participantId');
                     Route::post('/commercial-participants/{participantId}/commissions', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'saveCommission'])->whereUuid('participantId');
