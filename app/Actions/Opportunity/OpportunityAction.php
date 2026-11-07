@@ -94,6 +94,8 @@ class OpportunityAction
         abort_unless($event->tenant_user_id === $actor->id || in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
         abort_unless($event->status === 'open', 422, 'Somente oportunidades abertas podem ser editadas.');
         $this->validateRelations($tenant, $data);
+        // Reassignment must go through an explicit, authorized workflow.
+        unset($data['tenant_user_id']);
         $event->update($data);
         return $event->refresh();
     }
