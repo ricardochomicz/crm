@@ -1,0 +1,90 @@
+<?php
+
+namespace App\Actions\Calendar;
+
+use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Models\CalendarEvent;
+use App\Models\Tenant;
+use App\Models\TenantUser;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class CalendarEventAction
+{
+    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+
+    private function member(User $user, Tenant $tenant): TenantUser
+    {
+        return $this->permissions->membership($user, $tenant) ?? abort(403);
+    }
+
+    private function assignee(Tenant $tenant, string $id): TenantUser
+    {
+        return TenantUser::query()->where('tenant_id', $tenant->getKey())
+            ->where('status', 'ACTIVE')->findOrFail($id);
+    }
+
+    private function prepare(Tenant $tenant, TenantUser $actor, array $data): array
+    {
+        $assigneeId = $data['tenant_user_id'] ?? $actor->getKey();
+        if ($assigneeId !== $actor->getKey() && ! $actor->user->can('viewTeamCalendar', $tenant)) abort(403);
+        $this->assignee($tenant, $assigneeId);
+        if (! empty($data['client_id']) && ! DB::table('clients')->where('tenant_id', $tenant->getKey())->where('id', $data['client_id'])->exists()) {
+            throw ValidationException::withMessages(['client_id' => 'Cliente não pertence a esta empresa.']);
+        }
+        $data['tenant_user_id'] = $assigneeId;
+        return $data;
+    }
+
+    private function checkDates(array $data): void
+    {
+        if (Carbon::parse($data['ends_at'])->lessThanOrEqualTo(Carbon::parse($data['starts_at']))) {
+            throw ValidationException::withMessages(['ends_at' => 'O término deve ser posterior ao início.']);
+        }
+    }
+
+    public function list(Tenant $tenant, User $user, array $filters): Collection
+    {
+        $actor = $this->member($user, $tenant);
+        $team = ($filters['scope'] ?? 'mine') === 'team';
+        if ($team && ! $user->can('viewTeamCalendar', $tenant)) abort(403);
+        return CalendarEvent::query()->where('tenant_id', $tenant->getKey())
+            ->when(! $team, fn ($q) => $q->where('tenant_user_id', $actor->getKey()))
+            ->where('starts_at', '<', $filters['to'])
+            ->where('ends_at', '>', $filters['from'])
+            ->orderBy('starts_at')->limit(1000)->get();
+    }
+
+    public function create(Tenant $tenant, User $user, array $data): CalendarEvent
+    {
+        $actor = $this->member($user, $tenant);
+        $data = $this->prepare($tenant, $actor, $data);
+        $this->checkDates($data);
+        return CalendarEvent::create([...$data, 'tenant_id' => $tenant->getKey(), 'created_by_tenant_user_id' => $actor->getKey()]);
+    }
+
+    private function owned(Tenant $tenant, User $user, string $id): CalendarEvent
+    {
+        $actor = $this->member($user, $tenant);
+        return CalendarEvent::query()->where('tenant_id', $tenant->getKey())
+            ->where('tenant_user_id', $actor->getKey())->findOrFail($id);
+    }
+
+    public function update(Tenant $tenant, User $user, string $id, array $data): CalendarEvent
+    {
+        $event = $this->owned($tenant, $user, $id);
+        $actor = $this->member($user, $tenant);
+        $data = $this->prepare($tenant, $actor, [...$event->only(['tenant_user_id', 'client_id']), ...$data]);
+        $this->checkDates([...$event->only(['starts_at', 'ends_at']), ...$data]);
+        $event->update($data);
+        return $event->refresh();
+    }
+
+    public function delete(Tenant $tenant, User $user, string $id): void
+    {
+        $this->owned($tenant, $user, $id)->delete();
+    }
+}
