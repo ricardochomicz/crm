@@ -12,6 +12,7 @@ class ShowTenantMemberProfileController extends Controller
 {
     public function __invoke(
         ShowTenantMemberProfileRequest $request,
+        string $tenantId,
         string $membershipId,
         FindTenantMemberProfileAction $action
     ): TenantMemberProfileResource {
