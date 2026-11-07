@@ -24,14 +24,13 @@ class UpdateOrderWorkflowAction
         return DB::transaction(function () use ($tenant, $actor, $id, $data): CommercialOrder {
             $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
                 ->lockForUpdate()->findOrFail($id);
-            $status = OrderStatus::query()->where('tenant_id', $tenant->id)
-                ->findOrFail($data['order_status_id']);
+            $status = OrderStatus::query()->findOrFail($data['order_status_id']);
 
             if ($order->administratively_completed_at) {
                 throw ValidationException::withMessages(['order' => 'Pedido concluído. Reabertura administrativa necessária.']);
             }
 
-            if (in_array(mb_strtolower(trim($status->name)), ['ativo', 'parcialmente ativado', 'concluído'], true)) {
+            if (in_array(mb_strtolower(trim($status->name)), ['ativo', 'parcialmente ativado', 'concluido'], true)) {
                 throw ValidationException::withMessages(['order_status_id' => 'Utilize as ações de ativação de linhas ou conclusão administrativa.']);
             }
 
