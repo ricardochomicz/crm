@@ -182,7 +182,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/commissions', [\App\Http\Controllers\Commission\CommissionTableController::class, 'index'])->name('commissions.index');
                 Route::get('/commissions/order-types', [\App\Http\Controllers\Commission\CommissionTableController::class, 'orderTypes']);
                 Route::get('/commissions/settings', [\App\Http\Controllers\Commission\CommissionTableController::class, 'settings'])->name('commissions.settings.show');
-                Route::get('/calendar/events', [\\App\\Http\\Controllers\\Calendar\\CalendarEventController::class, 'index']);
+                Route::get('/calendar/events', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'index']);
                 Route::get('/clients', [\App\Http\Controllers\Client\ClientController::class, 'index']);
                 Route::get('/clients/options', [\App\Http\Controllers\Client\ClientController::class, 'options']);
                 Route::get('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'show'])->whereUuid('clientId');
@@ -204,9 +204,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::patch('/commissions/{commissionId}', [\App\Http\Controllers\Commission\CommissionTableController::class, 'update'])->whereUuid('commissionId');
                     Route::put('/commissions/settings', [\App\Http\Controllers\Commission\CommissionTableController::class, 'updateSettings']);
                     Route::post('/commissions', [\App\Http\Controllers\Commission\CommissionTableController::class, 'store'])->name('commissions.store');
-                    Route::post('/calendar/events', [\\App\\Http\\Controllers\\Calendar\\CalendarEventController::class, 'store']);
-                    Route::patch('/calendar/events/{eventId}', [\\App\\Http\\Controllers\\Calendar\\CalendarEventController::class, 'update'])->whereUuid('eventId');
-                    Route::delete('/calendar/events/{eventId}', [\\App\\Http\\Controllers\\Calendar\\CalendarEventController::class, 'destroy'])->whereUuid('eventId');
+                    Route::post('/calendar/events', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'store']);
+                    Route::patch('/calendar/events/{eventId}', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'update'])->whereUuid('eventId');
+                    Route::delete('/calendar/events/{eventId}', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'destroy'])->whereUuid('eventId');
                     Route::post('/clients', [\App\Http\Controllers\Client\ClientController::class, 'store']);
                     Route::patch('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'update'])->whereUuid('clientId');
                     Route::delete('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'destroy'])->whereUuid('clientId');
