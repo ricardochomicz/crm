@@ -32,7 +32,7 @@ class ActivateOrderItemsAction
             $items = $order->items()->lockForUpdate()->get();
             $selected = $items->whereIn('id', $data['item_ids']);
 
-            if ($selected->count() !== count($data['item_ids'])) {
+            if ($items->isEmpty() || $selected->count() !== count($data['item_ids'])) {
                 throw ValidationException::withMessages(['item_ids' => 'Uma ou mais linhas não pertencem ao pedido.']);
             }
 
