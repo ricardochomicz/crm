@@ -27,6 +27,7 @@ class OpportunityRequest extends FormRequest
             'status' => ['sometimes', Rule::in(['open', 'won', 'lost', 'cancelled'])],
             'funnel_stage_id' => ['sometimes', 'uuid'],
         ];
+        if ($this->routeIs('opportunities.stage.move')) return ['funnel_stage_id' => ['required', 'uuid']];
         $required = $this->isMethod('POST') ? 'required' : 'sometimes';
         return [
             'code' => [$required, 'string', 'max:40'],

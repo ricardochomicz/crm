@@ -6,6 +6,7 @@ use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Opportunity;
+use App\Models\OpportunityFunnelStage;
 use App\Models\OrderType;
 use App\Models\Product;
 use App\Models\Tenant;
@@ -51,6 +52,23 @@ class OpportunityAction
         }
         if (! empty($filters['funnel_stage_id'])) $query->where('funnel_stage_id', $filters['funnel_stage_id']);
         return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType'])->latest()->paginate(20);
+    }
+
+    public function stages(Tenant $tenant, User $user)
+    {
+        $this->actor($tenant, $user);
+        return OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->orderBy('position')->get();
+    }
+
+    public function moveStage(Tenant $tenant, User $user, string $id, string $stageId): Opportunity
+    {
+        $actor = $this->actor($tenant, $user);
+        $opportunity = $this->find($tenant, $user, $id);
+        abort_unless($opportunity->tenant_user_id === $actor->id || in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
+        abort_unless($opportunity->status === 'open', 422, 'Somente oportunidades abertas podem mudar de etapa.');
+        $stage = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($stageId);
+        $opportunity->update(['funnel_stage_id' => $stage->id]);
+        return $opportunity->refresh()->load(['client', 'stage', 'orderType']);
     }
 
     public function find(Tenant $tenant, User $user, string $id): Opportunity
