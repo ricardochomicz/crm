@@ -2,20 +2,19 @@
 
 namespace App\Http\Controllers\Team;
 
-use App\Http\Controllers\Controller;
 use App\Actions\Tenant\FilterTenantUserAction;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Team\ListTeamMembersRequest;
-use App\Models\Tenant;
-use App\Models\TenantUser;
 use App\Http\Resources\Tenant\TenantUserResource;
+use App\Models\Tenant;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ListTeamMembersController extends Controller
 {
-    /**
-     * @return array<string, mixed>
-     */
-    public function __invoke(ListTeamMembersRequest $request): array
-    {
+    public function __invoke(
+        ListTeamMembersRequest $request,
+        FilterTenantUserAction $action
+    ): AnonymousResourceCollection {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
@@ -23,10 +22,8 @@ class ListTeamMembersController extends Controller
             ->whereKey((string) $request->route('teamId'))
             ->firstOrFail();
 
-        $filters = $request->validated();
-
-        return (new FilterTenantUserAction)->execute($team, $filters)
-            ->through(fn (TenantUser $membership): array => (new TenantUserResource($membership))->resolve($request))
-            ->toArray();
+        return TenantUserResource::collection(
+            $action->execute($team, $request->validated())
+        );
     }
 }
