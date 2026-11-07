@@ -16,6 +16,11 @@ class CommercialOrder extends Model
 
     protected $casts = ['monthly_amount' => 'decimal:2', 'line_quantity' => 'integer', 'sold_on' => 'date:Y-m-d'];
 
+    public function consultant(): BelongsTo
+    {
+        return $this->belongsTo(TenantUser::class, 'tenant_user_id');
+    }
+
     public function orderStatus(): BelongsTo
     {
         return $this->belongsTo(OrderStatus::class, 'order_status_id');

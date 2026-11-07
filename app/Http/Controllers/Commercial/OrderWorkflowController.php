@@ -18,7 +18,7 @@ class OrderWorkflowController extends Controller
 
         return new CommercialOrderResource(
             CommercialOrder::query()->where('tenant_id', $tenant->id)
-                ->with(['orderStatus:id,name', 'items', 'operator:id,name', 'product:id,name'])
+                ->with(['orderStatus:id,name', 'consultant.user:id,name', 'items', 'operator:id,name', 'product:id,name'])
                 ->findOrFail($orderId)
         );
     }
