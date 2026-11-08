@@ -62,6 +62,13 @@ class UpdateTeamSupervisorAction
                 ]);
             }
 
+            if ($supervisor->tenantRole?->code !== 'SUPERVISOR') {
+                throw ValidationException::withMessages(['supervisor_membership_id' => 'Selecione um membro com o cargo Supervisor de Equipe.']);
+            }
+            if ($tenant->teams()->where('supervisor_membership_id', $supervisor->getKey())->whereKeyNot($team->getKey())->exists()) {
+                throw ValidationException::withMessages(['supervisor_membership_id' => 'Este supervisor já está vinculado a outra equipe.']);
+            }
+
             if ($team->supervisor_membership_id === $supervisor->getKey()) {
                 return;
             }
