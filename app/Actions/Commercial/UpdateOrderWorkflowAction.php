@@ -2,13 +2,14 @@
 
 namespace App\Actions\Commercial;
 
+use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
-use App\Models\CommercialOrder;
 use App\Models\Comment;
+use App\Models\CommercialOrder;
 use App\Models\OrderStatus;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -34,13 +35,9 @@ class UpdateOrderWorkflowAction
                 throw ValidationException::withMessages(['order_status_id' => 'Utilize as ações de ativação de linhas ou conclusão administrativa.']);
             }
 
-            if ($order->items()->where('status', 'ACTIVE')->exists()) {
-                throw ValidationException::withMessages(['order_status_id' => 'Pedidos com linhas ativadas devem ser movimentados pelo fluxo de ativação.']);
-            }
-
             $previousStatus = $order->orderStatus?->name ?? 'Sem status';
-            $previousDate = $order->expected_activation_at ? \Carbon\Carbon::parse($order->expected_activation_at)->format('d/m/Y') : null;
-            $newDate = isset($data['expected_activation_at']) ? \Carbon\Carbon::parse($data['expected_activation_at'])->format('d/m/Y') : null;
+            $previousDate = $order->expected_activation_at ? Carbon::parse($order->expected_activation_at)->format('d/m/Y') : null;
+            $newDate = isset($data['expected_activation_at']) ? Carbon::parse($data['expected_activation_at'])->format('d/m/Y') : null;
 
             $order->update([
                 'order_status_id' => $data['order_status_id'],
@@ -52,7 +49,7 @@ class UpdateOrderWorkflowAction
                 $changes[] = sprintf('Status do pedido: %s → %s.', $previousStatus, $status->name);
             }
             if ($order->wasChanged('expected_activation_at')) {
-                $changes[] = sprintf('Data de ativação informada: %s → %s.', $previousDate ?? 'Não informada', $newDate ?? 'Não informada');
+                $changes[] = sprintf('Previsão de ativação: %s → %s.', $previousDate ?? 'Não informada', $newDate ?? 'Não informada');
             }
             if ($changes) {
                 Comment::create([
