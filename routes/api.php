@@ -204,6 +204,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/clients', [\App\Http\Controllers\Client\ClientController::class, 'index']);
                 Route::get('/clients/options', [\App\Http\Controllers\Client\ClientController::class, 'options']);
                 Route::get('/client-portfolio', \App\Http\Controllers\Client\ContractPortfolioController::class);
+                Route::get('/client-portfolio/consolidated', [\App\Http\Controllers\Client\ContractPortfolioController::class, 'consolidated']);
                 Route::get('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'show'])->whereUuid('clientId');
                 Route::get('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'index']);
                 Route::get('/order-statuses', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'index']);
@@ -250,6 +251,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::delete('/calendar/events/{eventId}', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'destroy'])->whereUuid('eventId');
                     Route::post('/clients', [\App\Http\Controllers\Client\ClientController::class, 'store']);
                     Route::patch('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'update'])->whereUuid('clientId');
+                    Route::post('/clients/{clientId}/orders/{orderId}/consolidate', \App\Http\Controllers\Client\ConsolidateClientOrderController::class)->whereUuid('clientId')->whereUuid('orderId');
                     Route::patch('/clients/{clientId}/contracts/{orderId}/classification', \App\Http\Controllers\Client\UpdateClientContractClassificationController::class)->whereUuid('clientId')->whereUuid('orderId');
                     Route::delete('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'destroy'])->whereUuid('clientId');
                     Route::post('/clients/{clientId}/contacts', [\App\Http\Controllers\Client\ClientController::class, 'saveContact'])->whereUuid('clientId');
