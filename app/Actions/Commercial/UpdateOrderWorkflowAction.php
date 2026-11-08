@@ -58,9 +58,11 @@ class UpdateOrderWorkflowAction
                 $correctionStage = OpportunityFunnelStage::query()
                     ->where('tenant_id', $tenant->id)->where('name', 'Para Correção')->first();
                 if (! $correctionStage) {
+                    $nextPosition = ((int) OpportunityFunnelStage::query()
+                        ->where('tenant_id', $tenant->id)->max('position')) + 1;
                     $correctionStage = OpportunityFunnelStage::query()->create([
                         'tenant_id' => $tenant->id, 'name' => 'Para Correção',
-                        'position' => -1, 'is_active' => true,
+                        'position' => $nextPosition, 'is_active' => true,
                     ]);
                 }
                 $opportunity->update(['status' => 'open', 'closed_at' => null, 'funnel_stage_id' => $correctionStage->id]);
