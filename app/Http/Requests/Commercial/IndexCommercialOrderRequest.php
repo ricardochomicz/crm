@@ -12,7 +12,7 @@ class IndexCommercialOrderRequest extends FormRequest
     {
         $tenant = $this->attributes->get('active_tenant');
 
-        return $tenant !== null && (bool) $this->user()?->can('viewCommissions', $tenant);
+        return $tenant !== null && (bool) $this->user()?->( $this->user()->can('viewCommissions', $tenant) || $this->user()->can('viewOpportunities', $tenant) );
     }
 
     public function rules(): array
