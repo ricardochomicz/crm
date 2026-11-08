@@ -28,6 +28,7 @@ class CalendarEventRequest extends FormRequest
             'from' => ['required', 'date'],
             'to' => ['required', 'date', 'after:from'],
             'scope' => ['sometimes', Rule::in(['mine', 'team'])],
+            'opportunity_id' => ['sometimes', 'uuid'],
         ];
         return [
             'title' => [$this->isMethod('POST') ? 'required' : 'sometimes', 'string', 'max:200'],
