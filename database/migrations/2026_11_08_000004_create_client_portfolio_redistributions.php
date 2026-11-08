@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // MySQL DDL may leave tables behind when a migration fails midway.
         Schema::create('client_portfolio_redistributions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants')->cascadeOnDelete();
@@ -22,10 +23,13 @@ return new class extends Migration
 
         Schema::create('client_portfolio_redistribution_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('redistribution_id')
-                ->constrained('client_portfolio_redistributions')->cascadeOnDelete();
+            $table->foreignUuid('redistribution_id');
+            $table->foreign('redistribution_id', 'portfolio_items_batch_fk')
+                ->references('id')->on('client_portfolio_redistributions')->cascadeOnDelete();
             $table->foreignUuid('client_id')->constrained('clients')->restrictOnDelete();
-            $table->foreignUuid('destination_membership_id')->constrained('tenant_users')->restrictOnDelete();
+            $table->foreignUuid('destination_membership_id');
+            $table->foreign('destination_membership_id', 'portfolio_items_destination_fk')
+                ->references('id')->on('tenant_users')->restrictOnDelete();
             $table->timestamps();
             $table->unique(['redistribution_id', 'client_id'], 'portfolio_redistribution_unique_client');
         });
