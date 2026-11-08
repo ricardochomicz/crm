@@ -10,6 +10,11 @@ class ClientSeller extends Model
     use HasUuids;
     protected $fillable = ['tenant_id', 'client_id', 'tenant_user_id', 'assigned_by', 'started_at', 'ended_at', 'reason'];
     protected $casts = ['started_at' => 'datetime', 'ended_at' => 'datetime'];
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
+    }
+
     public function membership()
     {
         return $this->belongsTo(TenantUser::class, 'tenant_user_id')->with('user:id,name,email');
