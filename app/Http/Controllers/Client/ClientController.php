@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Actions\Client\DeleteClientAction;
 use App\Actions\Client\FilterClientsAction;
 use App\Actions\Client\ListClientOptionsAction;
+use App\Actions\Client\ListClientContractRenewalsAction;
 use App\Actions\Client\SaveClientAction;
 use App\Actions\Client\SaveClientContactAction;
 use App\Actions\Client\ShowClientAction;
@@ -44,13 +45,18 @@ class ClientController extends Controller
         ViewClientRequest $request,
         string $tenantId,
         string $clientId,
-        ShowClientAction $action
+        ShowClientAction $action,
+        ListClientContractRenewalsAction $renewals
     ): ClientResource {
-        return new ClientResource($action->execute(
+        $client = $action->execute(
             $request->attributes->get('active_tenant')->id,
             $clientId,
             $request->user()->id
-        ));
+        );
+
+        $client->setAttribute('contract_renewals', $renewals->execute($client));
+
+        return new ClientResource($client);
     }
 
     public function options(
