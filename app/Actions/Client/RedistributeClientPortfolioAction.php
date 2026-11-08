@@ -97,10 +97,19 @@ class RedistributeClientPortfolioAction
                 ]);
             }
 
+            $expectedIds = $assignments->pluck('client_id')->sort()->values()->all();
+            $reviewedIds = collect($data['client_ids'])->sort()->values()->all();
+
+            if ($expectedIds !== $reviewedIds) {
+                throw ValidationException::withMessages([
+                    'client_ids' => 'A carteira mudou desde a conferência. Atualize a lista e revise novamente.',
+                ]);
+            }
+
             $destinations = TenantUser::query()
                 ->where('tenant_id', $tenant->id)
                 ->where('status', TenantUserStatus::Active->value)
-                ->whereKeyNot($source->id)
+                ->where('id', '!=', $source->id)
                 ->whereIn('role', [TenantUserRole::Consultant->value, TenantUserRole::Manager->value])
                 ->get()->keyBy('id');
 
