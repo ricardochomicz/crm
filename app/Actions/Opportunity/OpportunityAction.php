@@ -48,7 +48,7 @@ class OpportunityAction
     {
         $query = $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user));
         $query = OpportunityFilters::apply($query, $filters);
-        return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType'])->latest()->paginate(20);
+        return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType', 'assignee.user'])->latest()->paginate(20);
     }
 
     public function overview(Tenant $tenant, User $user, array $filters): array
@@ -109,7 +109,7 @@ class OpportunityAction
     public function find(Tenant $tenant, User $user, string $id): Opportunity
     {
         return $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user))
-            ->with(['items.orderType', 'client', 'stage', 'operator', 'orderType'])->findOrFail($id);
+            ->with(['items.orderType', 'client', 'stage', 'operator', 'orderType', 'assignee.user'])->findOrFail($id);
     }
 
     private function validateRelations(Tenant $tenant, array $data): void
