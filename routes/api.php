@@ -235,6 +235,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::post('/opportunities', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'store']);
                     Route::post('/opportunities/{opportunityId}/recover', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'recover'])->whereUuid('opportunityId')->name('opportunities.recover');
                     Route::post('/opportunities/{opportunityId}/mark-lost', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'markLost'])->whereUuid('opportunityId')->name('opportunities.sale.lost');
+                    Route::post('/opportunities/{opportunityId}/resend-to-backoffice', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'resendToBackoffice'])->whereUuid('opportunityId')->name('opportunities.resend');
                     Route::post('/opportunities/{opportunityId}/confirm-sale', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'confirmSale'])->whereUuid('opportunityId')->name('opportunities.sale.confirm');
                     Route::patch('/opportunities/{opportunityId}/stage', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'moveStage'])->whereUuid('opportunityId')->name('opportunities.stage.move');
                     Route::patch('/opportunities/{opportunityId}', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'update'])->whereUuid('opportunityId');
