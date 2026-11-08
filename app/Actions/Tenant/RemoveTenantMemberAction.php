@@ -3,6 +3,7 @@
 namespace App\Actions\Tenant;
 
 use App\Enums\TenantUserRole;
+use App\Models\ClientSeller;
 use App\Models\Tenant;
 use App\Models\TenantUser;
 use App\Models\User;
@@ -45,6 +46,16 @@ class RemoveTenantMemberAction
             if ($membership->team_id !== null || $membership->supervisedTeams()->exists()) {
                 throw ValidationException::withMessages([
                     'member' => 'Remova a pessoa de sua equipe e substitua sua supervisão antes de desvinculá-la.',
+                ]);
+            }
+
+            if (ClientSeller::query()
+                ->where('tenant_id', $tenant->getKey())
+                ->where('tenant_user_id', $membership->getKey())
+                ->whereNull('ended_at')
+                ->exists()) {
+                throw ValidationException::withMessages([
+                    'member' => 'Este consultor ainda possui clientes. Suspenda o acesso e redistribua a carteira antes de desvincular.',
                 ]);
             }
 
