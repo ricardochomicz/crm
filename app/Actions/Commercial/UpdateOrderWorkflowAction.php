@@ -72,6 +72,21 @@ class UpdateOrderWorkflowAction
             if ($returnForCorrection && $order->wasChanged('order_status_id')) {
                 $changes[] = 'Motivo da devolução ao consultor: ' . trim($data['correction_reason']);
             }
+            if ($returnForCorrection && $order->wasChanged('order_status_id')) {
+                Comment::create([
+                    'tenant_id' => $tenant->id,
+                    'tenant_user_id' => $actor->id,
+                    'commentable_type' => 'opportunity',
+                    'commentable_id' => $order->opportunity_id,
+                    'content' => sprintf(
+                        'Pedido %s devolvido para correção pelo Backoffice. Status: %s → %s. Motivo: %s',
+                        $order->code ?: substr($order->id, 0, 8),
+                        $previousStatus,
+                        $status->name,
+                        trim($data['correction_reason'])
+                    ),
+                ]);
+            }
             if ($order->wasChanged('order_status_id')) {
                 $changes[] = sprintf('Status do pedido: %s → %s.', $previousStatus, $status->name);
             }
