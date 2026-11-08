@@ -34,7 +34,8 @@ class TenantPolicy
 
     public function viewTeamCalendar(User $user, Tenant $tenant): bool
     {
-        return $this->permissions->allows($user, $tenant, TenantPermission::ViewTeamCalendar);
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewTeamCalendar)
+            || ($this->permissions->membership($user, $tenant)?->supervisedTeams()->where('tenant_id', $tenant->getKey())->exists() ?? false);
     }
 
     public function createCalendarEvents(User $user, Tenant $tenant): bool
