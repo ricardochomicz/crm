@@ -70,10 +70,6 @@ class ClientTransferController extends Controller
                 throw ValidationException::withMessages(['client_id' => 'O cliente já pertence à sua carteira.']);
             }
 
-            if (! $eligibility->execute($client)['eligible']) {
-                throw ValidationException::withMessages(['client_id' => 'Cliente não atende aos critérios de transferência.']);
-            }
-
             if (ClientTransferRequest::query()->where('tenant_id', $tenant->id)
                 ->where('client_id', $client->id)->where('status', 'PENDING')->exists()) {
                 throw ValidationException::withMessages(['client_id' => 'Já existe uma transferência pendente para este cliente.']);
@@ -145,9 +141,6 @@ class ClientTransferController extends Controller
             abort_unless($owner->tenant_user_id === $transfer->from_tenant_user_id, 409);
 
             if ($data['decision'] === 'APPROVED') {
-                if (! $eligibility->execute($client)['eligible']) {
-                    throw ValidationException::withMessages(['decision' => 'O cliente teve interação recente e a carteira está protegida.']);
-                }
                 $destination = TenantUser::query()->where('tenant_id', $tenant->id)
                     ->where('status', 'ACTIVE')->findOrFail($transfer->to_tenant_user_id);
 
