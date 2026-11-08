@@ -41,6 +41,8 @@ class ClientPortfolioRedistributionController extends Controller
 
         $data = $request->validate([
             'source_membership_id' => ['required', 'uuid'],
+            'client_ids' => ['required', 'array', 'min:1', 'max:10000'],
+            'client_ids.*' => ['required', 'uuid', 'distinct'],
             'mode' => ['required', Rule::in(['single', 'equal', 'manual'])],
             'reason' => ['required', 'string', 'min:10', 'max:1000'],
             'destination_ids' => ['required_unless:mode,manual', 'array', 'max:200'],
