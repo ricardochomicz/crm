@@ -202,6 +202,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'index'])->whereUuid('opportunityId');
                 Route::get('/calendar/events', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'index']);
                 Route::get('/clients', [\App\Http\Controllers\Client\ClientController::class, 'index']);
+                Route::get('/clients/transfer-lookup', [\App\Http\Controllers\Client\ClientTransferController::class, 'lookup']);
+                Route::get('/clients/transfers', [\App\Http\Controllers\Client\ClientTransferController::class, 'index']);
                 Route::get('/clients/options', [\App\Http\Controllers\Client\ClientController::class, 'options']);
                 Route::get('/client-portfolio', \App\Http\Controllers\Client\ContractPortfolioController::class);
                 Route::get('/client-portfolio/consolidated', [\App\Http\Controllers\Client\ContractPortfolioController::class, 'consolidated']);
@@ -252,6 +254,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::post('/clients', [\App\Http\Controllers\Client\ClientController::class, 'store']);
                     Route::patch('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'update'])->whereUuid('clientId');
                     Route::get('/clients/{clientId}/consolidation-options', \App\Http\Controllers\Client\ClientContractConsolidationOptionsController::class)->whereUuid('clientId');
+                    Route::post('/clients/transfers', [\App\Http\Controllers\Client\ClientTransferController::class, 'store']);
+                    Route::post('/clients/transfers/{transferId}/review', [\App\Http\Controllers\Client\ClientTransferController::class, 'review'])->whereUuid('transferId');
                     Route::post('/clients/{clientId}/orders/{orderId}/consolidate', \App\Http\Controllers\Client\ConsolidateClientOrderController::class)->whereUuid('clientId')->whereUuid('orderId');
                     Route::patch('/clients/{clientId}/contracts/{orderId}/classification', \App\Http\Controllers\Client\UpdateClientContractClassificationController::class)->whereUuid('clientId')->whereUuid('orderId');
                     Route::delete('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'destroy'])->whereUuid('clientId');
