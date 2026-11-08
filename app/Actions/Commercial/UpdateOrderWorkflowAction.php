@@ -12,6 +12,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Events\CommercialOrdersChanged;
 use Illuminate\Validation\ValidationException;
 
 class UpdateOrderWorkflowAction
@@ -103,6 +104,7 @@ class UpdateOrderWorkflowAction
                 ]);
             }
 
+            if ($changes) DB::afterCommit(fn () => CommercialOrdersChanged::dispatch($tenant->id));
             return $order->load(['orderStatus:id,name', 'items']);
         });
     }
