@@ -7,6 +7,7 @@ use App\Enums\TenantUserRole;
 use App\Models\Comment;
 use App\Models\CommercialOrder;
 use App\Models\OrderStatus;
+use App\Models\OpportunityFunnelStage;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
@@ -39,10 +40,28 @@ class UpdateOrderWorkflowAction
             $previousDate = $order->expected_activation_at ? Carbon::parse($order->expected_activation_at)->format('d/m/Y') : null;
             $newDate = isset($data['expected_activation_at']) ? Carbon::parse($data['expected_activation_at'])->format('d/m/Y') : null;
 
+            $returnForCorrection = mb_strtolower(trim($status->name)) === 'para correção';
+            if ($returnForCorrection && ! $order->opportunity_id) {
+                throw ValidationException::withMessages(['order_status_id' => 'Pedido sem oportunidade vinculada para devolução.']);
+            }
+
             $order->update([
                 'order_status_id' => $data['order_status_id'],
                 'expected_activation_at' => $data['expected_activation_at'] ?? null,
             ]);
+
+            if ($returnForCorrection && $order->wasChanged('order_status_id')) {
+                $opportunity = $order->opportunity()->lockForUpdate()->firstOrFail();
+                $correctionStage = OpportunityFunnelStage::query()
+                    ->where('tenant_id', $tenant->id)->where('name', 'Para Correção')->first();
+                if (! $correctionStage) {
+                    $correctionStage = OpportunityFunnelStage::query()->create([
+                        'tenant_id' => $tenant->id, 'name' => 'Para Correção',
+                        'position' => -1, 'is_active' => true,
+                    ]);
+                }
+                $opportunity->update(['status' => 'open', 'closed_at' => null, 'funnel_stage_id' => $correctionStage->id]);
+            }
 
             $changes = [];
             if ($order->wasChanged('order_status_id')) {
