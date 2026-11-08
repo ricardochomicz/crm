@@ -13,6 +13,7 @@ class CalendarEventResource extends JsonResource
             'id' => $this->id,
             'tenant_user_id' => $this->tenant_user_id,
             'client_id' => $this->client_id,
+            'opportunity_id' => $this->opportunity_id,
             'title' => $this->title,
             'description' => $this->description,
             'type' => $this->type,
