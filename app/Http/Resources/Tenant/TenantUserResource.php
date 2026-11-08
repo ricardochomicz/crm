@@ -16,6 +16,7 @@ class TenantUserResource extends JsonResource
                 'name' => $this->user?->name,
                 'email' => $this->user?->email,
                 'role' => $this->role->value,
+                'role_name' => $this->tenantRole?->name,
                 'status' => $this->status->value,
                 'team_id' => $this->team_id,
                 'joined_at' => $this->joined_at?->toIso8601String(),
