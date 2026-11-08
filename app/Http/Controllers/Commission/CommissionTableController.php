@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Commission;
 use App\Actions\Commission\FilterCommissionTableAction;
 use App\Actions\Commission\ManageCommissionSettingsAction;
 use App\Actions\Commission\SaveCommissionTableAction;
-use App\Enums\OrderType;
+use App\Models\OrderType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Commission\IndexCommissionTableRequest;
 use App\Http\Requests\Commission\SaveCommissionSettingsRequest;
@@ -34,7 +34,7 @@ class CommissionTableController extends Controller
 
     public function orderTypes(ViewCommissionSettingsRequest $request, string $tenantId): array
     {
-        return ['data' => OrderType::options()];
+        return ['data' => OrderType::query()->where('is_active', true)->orderBy('position')->orderBy('name')->get(['id', 'name'])->map(fn (OrderType $type): array => ['value' => $type->id, 'label' => $type->name])->all()];
     }
 
     public function settings(
