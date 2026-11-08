@@ -40,6 +40,7 @@ class CalendarEventRequest extends FormRequest
             'ends_at' => [$this->isMethod('POST') ? 'required' : 'sometimes', 'date'],
             'tenant_user_id' => ['sometimes', 'uuid'],
             'client_id' => ['nullable', 'uuid'],
+            'opportunity_id' => ['nullable', 'uuid'],
         ];
     }
 }
