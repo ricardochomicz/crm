@@ -21,7 +21,13 @@ class ListClientContractRenewalsAction
     {
         $orders = CommercialOrder::query()
             ->where('tenant_id', $client->tenant_id)
-            ->where('customer_document', $client->document)
+            ->where(function ($query) use ($client) {
+                $query->where('client_id', $client->id)
+                    ->orWhere(function ($legacy) use ($client) {
+                        $legacy->whereNull('client_id')
+                            ->where('customer_document', $client->document);
+                    });
+            })
             ->whereNotNull('administratively_completed_at')
             ->with(['items', 'operator:id,name'])
             ->orderByDesc('administratively_completed_at')
