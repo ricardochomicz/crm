@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Commercial;
 
 use App\Actions\Commercial\FilterCommercialOrderAction;
+use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Commercial\IndexCommercialOrderRequest;
 use App\Http\Requests\Commercial\SaveCommercialOrderRequest;
@@ -26,12 +28,20 @@ class CommercialOrderController extends Controller
         return $tenant;
     }
 
-    public function index(IndexCommercialOrderRequest $request, string $tenantId, FilterCommercialOrderAction $filter): array
+    public function index(IndexCommercialOrderRequest $request, string $tenantId, FilterCommercialOrderAction $filter, ResolveTenantPermissionsAction $permissions): array
     {
-        $tenant = $this->tenant($request);
+        $tenant = $request->attributes->get('active_tenant');
+        $actor = $permissions->membership($request->user(), $tenant) ?? abort(403);
+        $visibleIds = null;
+        if (! in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
+            $teams = DB::table('teams')->where('tenant_id', $tenant->id)
+                ->where('supervisor_membership_id', $actor->id)->pluck('id');
+            $visibleIds = TenantUser::query()->where('tenant_id', $tenant->id)
+                ->whereIn('team_id', $teams)->pluck('id')->push($actor->id)->unique()->all();
+        }
 
         return [
-            'data' => CommercialOrderResource::collection($filter->execute($tenant->id, $request->validated())),
+            'data' => CommercialOrderResource::collection($filter->execute($tenant->id, $request->validated(), $visibleIds)),
             'meta' => ['can_manage' => $request->user()->can('manageCommissions', $tenant)],
         ];
     }
