@@ -56,7 +56,7 @@ class ClientTransferController extends Controller
         $member = $this->member($request, $tenant->id);
         $data = $request->validate([
             'client_id' => ['required', 'uuid'],
-            'reason' => ['nullable', 'string', 'max:1000'],
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
         ]);
 
         $transfer = DB::transaction(function () use ($tenant, $member, $data, $eligibility) {
@@ -93,12 +93,12 @@ class ClientTransferController extends Controller
         return response()->json(['data' => ['id' => $transfer->id, 'status' => $transfer->status]], 201);
     }
 
-    public function index(Request $request, string $tenantId): JsonResponse
+    public function index(Request $request, string $tenantId, EvaluateClientTransferAction $eligibility): JsonResponse
     {
         $tenant = $request->attributes->get('active_tenant');
         $member = $this->member($request, $tenant->id);
         $query = ClientTransferRequest::query()->where('tenant_id', $tenant->id)
-            ->where('status', 'PENDING')->with(['client:id,company_name', 'source', 'destination']);
+            ->where('status', 'PENDING')->with(['client', 'source', 'destination']);
 
         if (! in_array($member->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
             $teams = $member->supervisedTeams()->where('tenant_id', $tenant->id)->select('id');
@@ -112,6 +112,7 @@ class ClientTransferController extends Controller
             'to_name' => $item->destination?->user?->name,
             'reason' => $item->reason,
             'created_at' => $item->created_at,
+            'eligibility' => $eligibility->execute($item->client),
         ])]);
     }
 
@@ -121,7 +122,7 @@ class ClientTransferController extends Controller
         $reviewer = $this->member($request, $tenant->id);
         $data = $request->validate([
             'decision' => ['required', 'in:APPROVED,REJECTED'],
-            'review_note' => ['nullable', 'string', 'max:1000'],
+            'review_note' => ['required', 'string', 'min:10', 'max:1000'],
         ]);
 
         DB::transaction(function () use ($tenant, $reviewer, $transferId, $data, $eligibility): void {
@@ -145,7 +146,7 @@ class ClientTransferController extends Controller
 
             if ($data['decision'] === 'APPROVED') {
                 if (! $eligibility->execute($client)['eligible']) {
-                    throw ValidationException::withMessages(['decision' => 'O cliente não atende mais aos critérios de transferência.']);
+                    throw ValidationException::withMessages(['decision' => 'O cliente teve interação recente e a carteira está protegida.']);
                 }
                 $destination = TenantUser::query()->where('tenant_id', $tenant->id)
                     ->where('status', 'ACTIVE')->findOrFail($transfer->to_tenant_user_id);
