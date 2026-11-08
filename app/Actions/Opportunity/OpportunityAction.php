@@ -98,6 +98,9 @@ class OpportunityAction
         $opportunity = $this->find($tenant, $user, $id);
         abort_unless($opportunity->tenant_user_id === $actor->id || in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
         abort_unless($opportunity->status === 'open', 422, 'Somente oportunidades abertas podem mudar de etapa.');
+        if ($opportunity->commercialOrder()->whereHas('orderStatus', fn (Builder $query) => $query->where('name', 'Para Correção'))->exists()) {
+            throw ValidationException::withMessages(['funnel_stage_id' => 'Reenvie a correção ao Backoffice antes de mover a oportunidade.']);
+        }
         $stage = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($stageId);
         $opportunity->update(['funnel_stage_id' => $stage->id]);
         return $opportunity->refresh()->load(['client', 'stage', 'orderType']);
