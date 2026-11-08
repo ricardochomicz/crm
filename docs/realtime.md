@@ -7,7 +7,7 @@ Primeira etapa: invalidação de Pedidos Comerciais em tempo real após alteraç
 1. Instale o servidor Reverb e atualize o lockfile no backend: `docker compose exec app composer require laravel/reverb` (ou `composer require laravel/reverb` no host).
 2. Configure no `.env` do backend: `BROADCAST_CONNECTION=reverb`, `REVERB_APP_ID=telecomhub`, `REVERB_APP_KEY=telecomhub-local-key`, `REVERB_APP_SECRET=telecomhub-local-secret`.
 3. Suba o servidor: `docker compose --profile realtime up -d reverb`. O WebSocket local fica em `ws://localhost:8086`.
-4. No frontend, instale as dependências atualizadas com `npm install`. Configure `.env.local`: `VITE_REVERB_APP_KEY=telecomhub-local-key`, `VITE_REVERB_HOST=localhost`, `VITE_REVERB_PORT=8086`, `VITE_REVERB_SCHEME=http`.
+4. O frontend é orquestrado pelo Docker do backend: as variáveis `VITE_REVERB_*` são injetadas pelo serviço `frontend` no `compose.yaml`, sem necessidade de `.env.local` no crm-web. Recrie o container frontend para instalar as novas dependências e carregar essas variáveis: `docker compose up -d --force-recreate frontend`.
 5. Reinicie o frontend. O backend lê as variáveis no momento da inicialização: recrie o container app se necessário.
 
 **Importante:** em `compose.yaml`, `BROADCAST_CONNECTION` é lida da variável do Compose; apenas editar `.env` requer recriar o serviço app (`docker compose up -d --force-recreate app`). Reverb não deve ser exposto diretamente na internet sem TLS e proxy reverso.
