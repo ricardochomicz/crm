@@ -18,6 +18,10 @@ services:
         environment:
             API_PROXY_TARGET: http://app:8000
             VITE_USE_POLLING: "true"
+            VITE_REVERB_APP_KEY: "${REVERB_APP_KEY:-telecomhub-local-key}"
+            VITE_REVERB_HOST: "${VITE_REVERB_HOST:-localhost}"
+            VITE_REVERB_PORT: "${DOCKER_REVERB_PORT:-8086}"
+            VITE_REVERB_SCHEME: "${VITE_REVERB_SCHEME:-http}"
             npm_config_cache: /tmp/npm-cache
         command:
             - sh
