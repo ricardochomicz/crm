@@ -6,6 +6,7 @@ use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Opportunity;
+use App\Models\Comment;
 use App\Models\OpportunityFunnelStage;
 use App\Actions\Opportunity\OpportunityFilters;
 use App\Models\OrderType;
@@ -193,9 +194,30 @@ class OpportunityAction
         }
         abort_unless(TenantUser::query()->where('tenant_id', $tenant->id)
             ->where('status', TenantUserStatus::Active->value)->whereKey($assignee)->exists(), 422);
-        return DB::transaction(function () use ($tenant, $data, $assignee, $items) {
+        return DB::transaction(function () use ($tenant, $data, $assignee, $items, $actor) {
             $opportunity = Opportunity::create([...$data, 'tenant_id' => $tenant->id, 'tenant_user_id' => $assignee]);
             $opportunity->items()->createMany($items);
+
+            $quantity = array_sum(array_map(static fn (array $item): int => (int) $item['quantity'], $items));
+            $monthly = 'R$ ' . number_format((float) $opportunity->estimated_monthly_amount, 2, ',', '.');
+            $createdAt = $opportunity->created_at->format('d/m/Y \\à\\s H:i');
+            $content = sprintf(
+                'Oportunidade criada em %s. Código: %s. Título: %s. Tipo de negociação: %s. Quantidade de linhas: %d. Valor mensal estimado: %s.',
+                $createdAt,
+                $opportunity->code ?: substr($opportunity->id, 0, 8),
+                $opportunity->title ?: 'Não informado',
+                $opportunity->order_type ?: 'Não informado',
+                $quantity,
+                $monthly
+            );
+            Comment::create([
+                'tenant_id' => $tenant->id,
+                'tenant_user_id' => $actor->id,
+                'commentable_type' => 'opportunity',
+                'commentable_id' => $opportunity->id,
+                'content' => $content,
+            ]);
+
             return $opportunity->load('items');
         });
     }
