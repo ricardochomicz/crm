@@ -203,6 +203,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/calendar/events', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'index']);
                 Route::get('/clients', [\App\Http\Controllers\Client\ClientController::class, 'index']);
                 Route::get('/clients/options', [\App\Http\Controllers\Client\ClientController::class, 'options']);
+                Route::get('/client-portfolio', \App\Http\Controllers\Client\ContractPortfolioController::class);
                 Route::get('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'show'])->whereUuid('clientId');
                 Route::get('/operator-classifications', [\App\Http\Controllers\Client\OperatorClassificationController::class, 'index']);
                 Route::get('/order-statuses', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'index']);
