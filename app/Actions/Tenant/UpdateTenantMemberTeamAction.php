@@ -70,6 +70,12 @@ class UpdateTenantMemberTeamAction
                     ]);
                 }
 
+                if (mb_strtolower(trim($membership->tenantRole?->name ?? '')) !== 'consultor') {
+                    throw ValidationException::withMessages([
+                        'team_id' => 'Somente membros com o cargo Consultor podem ser adicionados a equipes.',
+                    ]);
+                }
+
                 $team = $tenant->teams()
                     ->whereKey($teamId)
                     ->lockForUpdate()
