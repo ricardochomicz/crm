@@ -13,6 +13,9 @@ class TenantPermissionChangeResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'tenant_role_id' => $this->tenant_role_id,
+            'previous_role_state' => $this->previous_role_state === null ? null : json_decode($this->previous_role_state, true, flags: JSON_THROW_ON_ERROR),
+            'role_state' => $this->role_state === null ? null : json_decode($this->role_state, true, flags: JSON_THROW_ON_ERROR),
             'actor_name' => $this->actor_name,
             'role' => $this->role,
             'version' => $this->version,

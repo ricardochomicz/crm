@@ -85,33 +85,27 @@ class TenantPolicy
 
     public function viewCommercialGoals(User $user, Tenant $tenant): bool
     {
-        return $this->permissions->allows($user, $tenant, TenantPermission::ViewCommercialGoals)
-            || $this->viewCommissions($user, $tenant);
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewCommercialGoals);
     }
 
     public function manageCommercialGoals(User $user, Tenant $tenant): bool
     {
-        return $this->permissions->allows($user, $tenant, TenantPermission::ManageCommercialGoals)
-            || $this->manageCommissions($user, $tenant);
+        return $this->permissions->allows($user, $tenant, TenantPermission::ManageCommercialGoals);
     }
 
     public function viewTeamCommissions(User $user, Tenant $tenant): bool
     {
-        return $this->permissions->allows($user, $tenant, TenantPermission::ViewTeamCommissions)
-            || $this->viewCommissions($user, $tenant);
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewTeamCommissions);
     }
 
     public function manageTeamCommissions(User $user, Tenant $tenant): bool
     {
-        return $this->permissions->allows($user, $tenant, TenantPermission::ManageTeamCommissions)
-            || $this->manageCommissions($user, $tenant);
+        return $this->permissions->allows($user, $tenant, TenantPermission::ManageTeamCommissions);
     }
 
     public function viewOperatorClassifications(User $user, Tenant $tenant): bool
     {
-        return $this->permissions->allows($user, $tenant, TenantPermission::ViewOperatorClassifications)
-            || $this->viewCommissions($user, $tenant)
-            || $this->viewClients($user, $tenant);
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewOperatorClassifications);
     }
 
     public function viewProducts(User $user, Tenant $tenant): bool

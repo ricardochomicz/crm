@@ -25,6 +25,7 @@ class StoreTenantMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'tenant_role_id' => ['nullable', 'uuid', Rule::exists('tenant_roles', 'id')->where('tenant_id', $this->attributes->get('active_tenant')?->id)->where('is_active', true)],
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',

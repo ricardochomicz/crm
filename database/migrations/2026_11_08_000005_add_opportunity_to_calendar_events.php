@@ -6,22 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    private function hasOpportunityForeignKey(): bool
-    {
-        return \Illuminate\Support\Facades\DB::table('information_schema.KEY_COLUMN_USAGE')
-            ->where('TABLE_SCHEMA', \Illuminate\Support\Facades\DB::getDatabaseName())
-            ->where('TABLE_NAME', 'calendar_events')
-            ->where('COLUMN_NAME', 'opportunity_id')
-            ->whereNotNull('REFERENCED_TABLE_NAME')
-            ->exists();
-    }
-
-    private function hasOpportunityIndex(): bool
-    {
-        return collect(\Illuminate\Support\Facades\DB::select('SHOW INDEX FROM calendar_events'))
-            ->contains(fn (object $index): bool => $index->Key_name === 'calendar_events_tenant_opportunity_idx');
-    }
-
     public function up(): void
     {
         if (! Schema::hasColumn('calendar_events', 'opportunity_id')) {
@@ -30,14 +14,14 @@ return new class extends Migration
             });
         }
 
-        if (! $this->hasOpportunityForeignKey()) {
+        if (! Schema::hasForeignKey('calendar_events', ['opportunity_id'])) {
             Schema::table('calendar_events', function (Blueprint $table): void {
                 $table->foreign('opportunity_id', 'calendar_events_opportunity_fk')
                     ->references('id')->on('opportunities')->restrictOnDelete();
             });
         }
 
-        if (! $this->hasOpportunityIndex()) {
+        if (! Schema::hasIndex('calendar_events', 'calendar_events_tenant_opportunity_idx')) {
             Schema::table('calendar_events', function (Blueprint $table): void {
                 $table->index(['tenant_id', 'opportunity_id'], 'calendar_events_tenant_opportunity_idx');
             });

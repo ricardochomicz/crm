@@ -7,8 +7,8 @@ use App\Enums\TenantStatus;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Tenant;
-use App\Models\TenantUser;
 use App\Models\TenantRole;
+use App\Models\TenantUser;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -49,9 +49,14 @@ class ResolveTenantPermissionsAction
     {
         $membership = $this->membership($user, $tenant);
 
-        if ($membership === null) return [];
-        if ($membership->role === TenantUserRole::Owner) return TenantPermission::keys();
+        if ($membership === null) {
+            return [];
+        }
+        if ($membership->role === TenantUserRole::Owner) {
+            return TenantPermission::keys();
+        }
         $customRole = $membership->tenantRole;
+
         return $customRole !== null ? $customRole->effectivePermissions() : $this->forRole($tenant, $membership->role)['permissions'];
     }
 
@@ -60,30 +65,73 @@ class ResolveTenantPermissionsAction
         return in_array($permission->value, $this->handle($user, $tenant), true);
     }
 
-    public function canAssign(User $user, Tenant $tenant, TenantUserRole $role): bool
+    public function defaultRole(Tenant $tenant, TenantUserRole $role): ?TenantRole
+    {
+        $code = match ($role) {
+            TenantUserRole::Owner => 'OWNER',
+            TenantUserRole::Manager => 'MANAGER',
+            TenantUserRole::Consultant => 'TELEMARKETING',
+            TenantUserRole::Assistant => 'BACKOFFICE',
+        };
+
+        return $tenant->roles()->where('code', $code)->first();
+    }
+
+    public function resolveAssignableRole(User $user, Tenant $tenant, TenantUserRole $role, ?string $roleId = null): TenantRole
+    {
+        $selectedRole = $roleId === null
+            ? $this->defaultRole($tenant, $role)
+            : $tenant->roles()->findOrFail($roleId);
+
+        abort_unless($selectedRole !== null && $selectedRole->is_active, 422, 'Selecione um cargo ativo desta empresa.');
+        abort_unless($selectedRole->legacy_role === $role->value && $selectedRole->code !== 'OWNER', 422, 'Cargo incompatível com o papel informado.');
+        abort_unless($this->canAssign($user, $tenant, $role, $selectedRole), 403, 'Você não pode atribuir um cargo com permissões superiores às suas.');
+
+        return $selectedRole;
+    }
+
+    public function canAssign(User $user, Tenant $tenant, TenantUserRole $role, ?TenantRole $selectedRole = null): bool
     {
         $membership = $this->membership($user, $tenant);
-        if ($membership === null || $role === TenantUserRole::Owner) {
+        if (! $this->canManageRole($membership, $role)) {
             return false;
         }
-        if ($membership->role === TenantUserRole::Owner) {
-            return true;
+
+        $selectedRole ??= $this->defaultRole($tenant, $role);
+        if ($selectedRole !== null && (
+            $selectedRole->tenant_id !== $tenant->id || ! $selectedRole->is_active
+            || $selectedRole->legacy_role !== $role->value || $selectedRole->code === 'OWNER'
+        )) {
+            return false;
         }
 
-        // Managers can assign operational roles, but cannot grant Manager or Owner.
-        // The invitation/member-update policies still control who may perform the action.
-        if ($membership->role === TenantUserRole::Manager) {
-            return in_array($role, [TenantUserRole::Consultant, TenantUserRole::Assistant], true);
-        }
+        $targetPermissions = $selectedRole?->effectivePermissions() ?? $this->forRole($tenant, $role)['permissions'];
 
-        return array_diff($this->forRole($tenant, $role)['permissions'],
-            $this->forRole($tenant, $membership->role)['permissions']) === [];
+        return $membership->role === TenantUserRole::Owner
+            || array_diff($targetPermissions, $this->handle($user, $tenant)) === [];
     }
 
     public function canManageMember(User $user, Tenant $tenant, TenantUser $member): bool
     {
-        return $member->tenant_id === $tenant->getKey()
-            && $member->user_id !== $user->getKey()
-            && $this->canAssign($user, $tenant, $member->role);
+        $membership = $this->membership($user, $tenant);
+        if ($member->tenant_id !== $tenant->id || $member->user_id === $user->id
+            || ! $this->canManageRole($membership, $member->role)) {
+            return false;
+        }
+
+        $targetPermissions = $member->tenantRole?->effectivePermissions()
+            ?? $this->forRole($tenant, $member->role)['permissions'];
+
+        return $membership->role === TenantUserRole::Owner
+            || array_diff($targetPermissions, $this->handle($user, $tenant)) === [];
+    }
+
+    private function canManageRole(?TenantUser $membership, TenantUserRole $role): bool
+    {
+        if ($membership === null || $role === TenantUserRole::Owner) {
+            return false;
+        }
+
+        return $membership->role === TenantUserRole::Owner || $role !== TenantUserRole::Manager;
     }
 }

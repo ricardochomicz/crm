@@ -56,7 +56,7 @@ class CommercialModulePermissionsTest extends TestCase
         $this->assertFalse($user->can('manageOperatorClassifications', $tenant));
     }
 
-    public function test_legacy_commission_permission_still_allows_commercial_modules(): void
+    public function test_commission_permissions_do_not_grant_other_commercial_modules(): void
     {
         $tenant = Tenant::factory()->create();
         $user = User::factory()->create();
@@ -78,9 +78,9 @@ class CommercialModulePermissionsTest extends TestCase
             'joined_at' => now(),
         ]);
 
-        $this->assertTrue($user->can('viewCommercialGoals', $tenant));
-        $this->assertTrue($user->can('manageCommercialGoals', $tenant));
-        $this->assertTrue($user->can('viewTeamCommissions', $tenant));
-        $this->assertTrue($user->can('manageTeamCommissions', $tenant));
+        $this->assertFalse($user->can('viewCommercialGoals', $tenant));
+        $this->assertFalse($user->can('manageCommercialGoals', $tenant));
+        $this->assertFalse($user->can('viewTeamCommissions', $tenant));
+        $this->assertFalse($user->can('manageTeamCommissions', $tenant));
     }
 }

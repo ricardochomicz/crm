@@ -45,7 +45,8 @@ class ResendTenantInvitationAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            abort_unless($this->permissions->canAssign($actor, $tenant, $invitation->role), 403, 'Você não pode reenviar convites para este cargo.');
+            $selectedRole = $this->permissions->resolveAssignableRole($actor, $tenant, $invitation->role, $invitation->tenant_role_id);
+            $invitation->tenant_role_id = $selectedRole->id;
 
             $at = now();
 

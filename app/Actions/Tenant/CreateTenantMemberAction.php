@@ -18,7 +18,7 @@ class CreateTenantMemberAction
     public function __construct(private ResolveTenantPermissionsAction $permissions) {}
 
     /**
-     * @param  array{name: string, email: string, role: string}  $data
+     * @param  array{name: string, email: string, role: string, tenant_role_id?: string|null}  $data
      */
     public function handle(User $owner, Tenant $tenant, array $data): User
     {
@@ -45,7 +45,7 @@ class CreateTenantMemberAction
 
                 Gate::forUser($owner)->authorize('addMember', $tenant);
 
-                abort_unless($this->permissions->canAssign($owner, $tenant, $role), 403, 'Você não pode atribuir este cargo.');
+                $selectedRole = $this->permissions->resolveAssignableRole($owner, $tenant, $role, $data['tenant_role_id'] ?? null);
 
                 $subscription = $tenant->subscription()
                     ->lockForUpdate()
@@ -97,6 +97,7 @@ class CreateTenantMemberAction
 
                 $tenant->users()->attach($user->getKey(), [
                     'role' => $role->value,
+                    'tenant_role_id' => $selectedRole->id,
                     'status' => TenantUserStatus::Active->value,
                     'joined_at' => now(),
                 ]);

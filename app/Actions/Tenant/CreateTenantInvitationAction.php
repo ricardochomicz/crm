@@ -6,7 +6,6 @@ use App\Enums\TenantInvitationStatus;
 use App\Enums\TenantUserRole;
 use App\Models\Tenant;
 use App\Models\TenantInvitation;
-use App\Models\TenantRole;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -48,12 +47,7 @@ class CreateTenantInvitationAction
 
             Gate::forUser($owner)->authorize('createInvitation', $tenant);
 
-            abort_unless($this->permissions->canAssign($owner, $tenant, $role), 403, 'Você não pode atribuir este cargo.');
-            if ($tenantRoleId !== null) {
-                $selectedRole = TenantRole::where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($tenantRoleId);
-                abort_unless($selectedRole->code !== 'OWNER' && $selectedRole->legacy_role === $role->value, 422, 'Cargo incompatível com o papel informado.');
-                abort_unless($this->permissions->membership($owner, $tenant)?->role === TenantUserRole::Owner || array_diff($selectedRole->effectivePermissions(), $this->permissions->handle($owner, $tenant)) === [], 403, 'Você não pode atribuir um cargo com permissões superiores às suas.');
-            }
+            $selectedRole = $this->permissions->resolveAssignableRole($owner, $tenant, $role, $tenantRoleId);
 
             $subscription = $tenant->subscription()
                 ->lockForUpdate()
@@ -100,12 +94,7 @@ class CreateTenantInvitationAction
                 ]);
             }
 
-            $resolvedRoleId = $tenantRoleId ?? TenantRole::where('tenant_id', $tenant->id)->where('code', match ($role) {
-                TenantUserRole::Manager => 'MANAGER',
-                TenantUserRole::Consultant => 'TELEMARKETING',
-                TenantUserRole::Assistant => 'BACKOFFICE',
-                default => 'OWNER',
-            })->value('id');
+            $resolvedRoleId = $selectedRole->id;
 
             $token = Str::random(64);
 

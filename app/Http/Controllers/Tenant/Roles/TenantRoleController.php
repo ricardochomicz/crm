@@ -28,7 +28,7 @@ class TenantRoleController extends Controller
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
-        return new TenantRoleResource($action->execute($tenant, $request->validated()));
+        return new TenantRoleResource($action->execute($request->user(), $tenant, $request->validated()));
     }
 
     public function update(SaveTenantRoleRequest $request, string $tenantId, string $roleId, SaveTenantRoleAction $action): TenantRoleResource
@@ -36,6 +36,6 @@ class TenantRoleController extends Controller
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
-        return new TenantRoleResource($action->execute($tenant, $request->validated(), $roleId));
+        return new TenantRoleResource($action->execute($request->user(), $tenant, $request->validated(), $roleId));
     }
 }

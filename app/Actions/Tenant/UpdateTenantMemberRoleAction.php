@@ -5,7 +5,6 @@ namespace App\Actions\Tenant;
 use App\Enums\TenantUserRole;
 use App\Models\Tenant;
 use App\Models\TenantUser;
-use App\Models\TenantRole;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -67,26 +66,18 @@ class UpdateTenantMemberRoleAction
 
             abort_unless($this->permissions->canManageMember($owner, $tenant, $membership), 403, 'Você não pode alterar o acesso deste membro.');
 
-            abort_unless($this->permissions->canAssign($owner, $tenant, $role), 403, 'Você não pode atribuir este cargo.');
-
             if ($membership->role === TenantUserRole::Owner) {
                 throw ValidationException::withMessages([
                     'role' => 'O papel do proprietário não pode ser alterado por esta operação.',
                 ]);
             }
 
-            if ($tenantRoleId !== null) {
-                $selectedRole = TenantRole::where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($tenantRoleId);
-                abort_unless($selectedRole->code !== 'OWNER' && $selectedRole->legacy_role === $role->value, 422, 'Cargo incompatível com o papel informado.');
-                abort_unless($this->permissions->membership($owner, $tenant)?->role === TenantUserRole::Owner || array_diff($selectedRole->effectivePermissions(), $this->permissions->handle($owner, $tenant)) === [], 403, 'Você não pode atribuir um cargo com permissões superiores às suas.');
+            $selectedRole = $this->permissions->resolveAssignableRole($owner, $tenant, $role, $tenantRoleId);
+
+            $resolvedRoleId = $selectedRole->id;
+            if ($membership->role === $role && $membership->tenant_role_id === $resolvedRoleId) {
+                return;
             }
-            $resolvedRoleId = $tenantRoleId ?? TenantRole::where('tenant_id', $tenant->id)->where('code', match ($role) {
-                TenantUserRole::Manager => 'MANAGER',
-                TenantUserRole::Consultant => 'TELEMARKETING',
-                TenantUserRole::Assistant => 'BACKOFFICE',
-                default => 'OWNER',
-            })->value('id');
-            if ($membership->role === $role && $membership->tenant_role_id === $resolvedRoleId) return;
 
             $membership->tenant_role_id = $resolvedRoleId;
             $membership->role = $role;

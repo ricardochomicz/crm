@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Tenant;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ListTenantPermissionChangesRequest extends FormRequest
 {
@@ -15,8 +16,9 @@ class ListTenantPermissionChangesRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'tenant_role_id' => ['sometimes', 'uuid'],
             'page' => ['sometimes', 'integer', 'min:1'],
-            'role' => ['sometimes', 'string', \Illuminate\Validation\Rule::in(['OWNER', 'MANAGER', 'CONSULTANT', 'ASSISTANT'])],
+            'role' => ['sometimes', 'string', Rule::in(['OWNER', 'MANAGER', 'CONSULTANT', 'ASSISTANT'])],
         ];
     }
 }

@@ -14,7 +14,8 @@ class IndexTenantRoleRequest extends FormRequest
             return false;
         }
 
-        return $this->user()->can('viewMembers', $tenant)
+        return $this->user()->can('viewInvitations', $tenant)
+            || $this->user()->can('viewMembers', $tenant)
             || $this->user()->can('createInvitation', $tenant)
             || $this->user()->can('managePermissions', $tenant);
     }
@@ -28,4 +29,3 @@ class IndexTenantRoleRequest extends FormRequest
         ];
     }
 }
-

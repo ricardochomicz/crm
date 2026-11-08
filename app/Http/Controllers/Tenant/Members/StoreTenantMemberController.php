@@ -23,7 +23,7 @@ class StoreTenantMemberController extends Controller
         $user = $action->handle(
             $request->user(),
             $tenant,
-            $request->safe()->only(['name', 'email', 'role'])
+            $request->safe()->only(['name', 'email', 'role', 'tenant_role_id'])
         );
 
         $linkSent = $passwordLink->execute($user);

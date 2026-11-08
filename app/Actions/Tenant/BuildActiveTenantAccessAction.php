@@ -5,6 +5,7 @@ namespace App\Actions\Tenant;
 use App\Enums\TenantInvitationStatus;
 use App\Enums\TenantUserRole;
 use App\Models\Tenant;
+use App\Models\TenantRole;
 use App\Models\User;
 
 class BuildActiveTenantAccessAction
@@ -33,6 +34,8 @@ class BuildActiveTenantAccessAction
             ];
         }
 
+        $roles = $tenant->roles()->get();
+
         return [
             'permissions' => $grants,
             'tenant_role_id' => $tenant->membership->tenant_role_id,
@@ -43,7 +46,9 @@ class BuildActiveTenantAccessAction
                 fn (TenantUserRole $role): string => $role->value,
                 array_filter(
                     TenantUserRole::cases(),
-                    fn (TenantUserRole $role): bool => $this->permissions->canAssign($user, $tenant, $role)
+                    fn (TenantUserRole $role): bool => $roles->where('legacy_role', $role->value)->contains(
+                        fn (TenantRole $companyRole): bool => $this->permissions->canAssign($user, $tenant, $role, $companyRole)
+                    )
                 )
             )),
             'capacity' => $capacity,
