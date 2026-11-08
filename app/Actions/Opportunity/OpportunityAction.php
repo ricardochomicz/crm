@@ -186,7 +186,12 @@ class OpportunityAction
         $items = $this->validatedItems($tenant, $data['items']);
         $prospecting = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->where('is_active', true)->whereRaw('LOWER(name) LIKE ?', ['prospec%'])->orderBy('position')->first();
         if (! $prospecting) {
-            throw ValidationException::withMessages(['funnel_stage_id' => 'Cadastre uma etapa ativa Prospecção no funil antes de criar oportunidades.']);
+            $prospecting = OpportunityFunnelStage::query()->create([
+                'tenant_id' => $tenant->id,
+                'name' => 'Prospecção',
+                'position' => 0,
+                'is_active' => true,
+            ]);
         }
         $data['funnel_stage_id'] = $prospecting->id;
         unset($data['items']);
