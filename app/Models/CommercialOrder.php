@@ -31,6 +31,11 @@ class CommercialOrder extends Model
         return $this->belongsTo(Operator::class);
     }
 
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
     public function classification(): BelongsTo
     {
         return $this->belongsTo(OperatorClassification::class, 'classification_id');
