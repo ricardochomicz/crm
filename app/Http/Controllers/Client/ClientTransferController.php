@@ -155,7 +155,7 @@ class ClientTransferController extends Controller
                     'tenant_id' => $tenant->id,
                     'client_id' => $client->id,
                     'tenant_user_id' => $destination->id,
-                    'assigned_by' => $requestUserId = $reviewer->user_id,
+                    'assigned_by' => $reviewer->user_id,
                     'started_at' => now(),
                     'reason' => 'Transferência autorizada: ' . $transfer->id,
                 ]);
