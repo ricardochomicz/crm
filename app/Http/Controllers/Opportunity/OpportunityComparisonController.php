@@ -30,7 +30,7 @@ class OpportunityComparisonController extends Controller
         $action->find($tenant, $request->user(), $opportunityId);
         return response()->json(['data' => OpportunityComparison::query()
             ->where('tenant_id', $tenant->id)->where('opportunity_id', $opportunityId)
-            ->with('options')->latest()->get()->map(fn ($comparison) => $this->present($comparison))]);
+            ->with('options')->latest()->get()->map(fn($comparison) => $this->present($comparison))]);
     }
 
     public function store(Request $request, string $tenantId, string $opportunityId, OpportunityAction $action): JsonResponse
@@ -58,7 +58,7 @@ class OpportunityComparisonController extends Controller
         if ($operatorIds->count() !== $ids->count()) {
             throw ValidationException::withMessages(['options' => 'Selecione somente um plano por operadora neste comparativo.']);
         }
-        $allowed = $tenant->operators()->whereIn('operators.id', $operatorIds)->pluck('operators.id')->map(fn ($id) => (int) $id);
+        $allowed = $tenant->operators()->whereIn('operators.id', $operatorIds)->pluck('operators.id')->map(fn($id) => (int) $id);
         if ($allowed->count() !== $operatorIds->count()) {
             throw ValidationException::withMessages(['options' => 'Há operadoras não vinculadas à empresa.']);
         }
@@ -109,7 +109,7 @@ class OpportunityComparisonController extends Controller
             'title' => $comparison->title,
             'created_at' => $comparison->created_at,
             'expires_at' => $comparison->expires_at,
-            'options' => $comparison->options->map(fn ($option) => [
+            'options' => $comparison->options->map(fn($option) => [
                 'operator_name' => $option->operator_name,
                 'product_name' => $option->product_name,
                 'quantity' => $option->quantity,
@@ -117,7 +117,7 @@ class OpportunityComparisonController extends Controller
                 'one_time_unit_amount' => $option->one_time_unit_amount,
                 'notes' => $option->notes,
             ]),
-        ]]]);
+        ]]);
     }
 
     private function present(OpportunityComparison $comparison): array
