@@ -132,7 +132,7 @@ class OpportunityAction
         return $type;
     }
 
-    private function validatedItems(Tenant $tenant, array $items): array
+    private function validatedItems(Tenant $tenant, array $items, int $operatorId): array
     {
         $resolved = [];
         $numbers = [];
@@ -141,6 +141,9 @@ class OpportunityAction
                 ->find($item['product_id']);
             if (! $product) {
                 throw ValidationException::withMessages(["items.$index.product_id" => 'Selecione um plano ativo da empresa.']);
+            }
+            if ((int) $product->operator_id !== $operatorId) {
+                throw ValidationException::withMessages(["items.$index.product_id" => 'O plano selecionado não pertence à operadora da oportunidade.']);
             }
             $type = $this->resolveType($item['order_type_id'], "items.$index.order_type_id");
             $number = preg_replace('/\\D/', '', $item['line_number'] ?? '');
@@ -186,7 +189,8 @@ class OpportunityAction
         $this->validateRelations($tenant, $data);
         $type = $this->resolveType($data['order_type_id'], 'order_type_id');
         $data['order_type'] = mb_substr($type->name, 0, 40);
-        $items = $this->validatedItems($tenant, $data['items']);
+        if (empty($data['operator_id'])) throw ValidationException::withMessages(['operator_id' => 'Selecione a operadora da oportunidade.']);
+        $items = $this->validatedItems($tenant, $data['items'], (int) $data['operator_id']);
         $prospecting = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->where('is_active', true)->whereRaw('LOWER(name) LIKE ?', ['prospec%'])->orderBy('position')->first();
         if (! $prospecting) {
             $prospecting = OpportunityFunnelStage::query()->create([
@@ -248,7 +252,12 @@ class OpportunityAction
             $type = $this->resolveType($data['order_type_id'], 'order_type_id');
             $data['order_type'] = mb_substr($type->name, 0, 40);
         }
-        $items = array_key_exists('items', $data) ? $this->validatedItems($tenant, $data['items']) : null;
+        $operatorId = (int) ($data['operator_id'] ?? $event->operator_id);
+        if (! $operatorId) throw ValidationException::withMessages(['operator_id' => 'Selecione a operadora da oportunidade.']);
+        $items = array_key_exists('items', $data) ? $this->validatedItems($tenant, $data['items'], $operatorId) : null;
+        if ($items === null && $event->items()->where('operator_id', '!=', $operatorId)->exists()) {
+            throw ValidationException::withMessages(['operator_id' => 'Os itens existentes pertencem a outra operadora.']);
+        }
         unset($data['items']);
         if ($items !== null) $data = [...$data, ...$this->totals($items)];
         return DB::transaction(function () use ($event, $data, $items) {
