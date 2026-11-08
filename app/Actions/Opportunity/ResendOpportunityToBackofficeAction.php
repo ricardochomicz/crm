@@ -11,6 +11,7 @@ use App\Models\OrderStatus;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use App\Events\CommercialOrdersChanged;
 use Illuminate\Validation\ValidationException;
 
 class ResendOpportunityToBackofficeAction
@@ -92,6 +93,7 @@ class ResendOpportunityToBackofficeAction
                     'content' => $message,
                 ]);
             }
+            DB::afterCommit(fn () => CommercialOrdersChanged::dispatch($tenant->id));
             return $opportunity->refresh()->load(['items', 'stage', 'client']);
         });
     }
