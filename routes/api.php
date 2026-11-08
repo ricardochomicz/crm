@@ -202,9 +202,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'index'])->whereUuid('opportunityId');
                 Route::get('/calendar/events', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'index']);
                 Route::get('/clients', [\App\Http\Controllers\Client\ClientController::class, 'index']);
-                Route::get('/clients/portfolio-redistributions', [\\App\\Http\\Controllers\\Client\\ClientPortfolioRedistributionController::class, 'index']);
-                Route::get('/clients/portfolio-redistributions/{sourceId}/clients', [\\App\\Http\\Controllers\\Client\\ClientPortfolioRedistributionController::class, 'clients'])->whereUuid('sourceId');
-                Route::post('/clients/portfolio-redistributions', [\\App\\Http\\Controllers\\Client\\ClientPortfolioRedistributionController::class, 'store']);
+                Route::get('/clients/portfolio-redistributions', [\App\Http\Controllers\Client\ClientPortfolioRedistributionController::class, 'index']);
+                Route::get('/clients/portfolio-redistributions/{sourceId}/clients', [\App\Http\Controllers\Client\ClientPortfolioRedistributionController::class, 'clients'])->whereUuid('sourceId');
+                Route::post('/clients/portfolio-redistributions', [\App\Http\Controllers\Client\ClientPortfolioRedistributionController::class, 'store']);
                 Route::get('/clients/transfer-lookup', [\App\Http\Controllers\Client\ClientTransferController::class, 'lookup']);
                 Route::get('/clients/transfers', [\App\Http\Controllers\Client\ClientTransferController::class, 'index']);
                 Route::get('/clients/options', [\App\Http\Controllers\Client\ClientController::class, 'options']);
