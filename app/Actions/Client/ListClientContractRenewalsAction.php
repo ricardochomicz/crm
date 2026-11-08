@@ -68,6 +68,12 @@ class ListClientContractRenewalsAction
                 return $result;
             }
 
+            if ($order->items->isEmpty() || $order->items->contains(fn ($item) => $item->status !== 'ACTIVE' || ! $item->activated_at || $item->quantity < 1)) {
+                $result['status'] = 'activation_data_required';
+
+                return $result;
+            }
+
             $calculated = $this->calculator->execute($order->items, $rule->minimum_months);
             $renewalDate = CarbonImmutable::parse($calculated['renewal_date']);
             $daysRemaining = CarbonImmutable::today()->diffInDays($renewalDate, false);
