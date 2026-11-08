@@ -11,7 +11,7 @@ class CalendarEvent extends Model
     use HasUuids;
 
     protected $fillable = [
-        'tenant_id', 'tenant_user_id', 'created_by_tenant_user_id', 'client_id',
+        'tenant_id', 'tenant_user_id', 'created_by_tenant_user_id', 'client_id', 'opportunity_id',
         'title', 'description', 'type', 'status', 'priority', 'all_day',
         'starts_at', 'ends_at', 'completed_at',
     ];
@@ -34,6 +34,11 @@ class CalendarEvent extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(TenantUser::class, 'created_by_tenant_user_id');
+    }
+
+    public function opportunity(): BelongsTo
+    {
+        return $this->belongsTo(Opportunity::class);
     }
 
     public function client(): BelongsTo
