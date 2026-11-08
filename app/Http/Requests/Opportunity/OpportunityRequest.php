@@ -13,7 +13,7 @@ class OpportunityRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
         if (! $tenant instanceof Tenant) return false;
         $ability = match ($this->method()) {
-            'POST' => ($this->route()?->getActionMethod() === 'confirmSale' || $this->route()?->getActionMethod() === 'markLost' || $this->route()?->getActionMethod() === 'recover') ? 'updateOpportunities' : 'createOpportunities',
+            'POST' => ($this->route()?->getActionMethod() === 'confirmSale' || $this->route()?->getActionMethod() === 'markLost' || $this->route()?->getActionMethod() === 'recover' || $this->route()?->getActionMethod() === 'resendToBackoffice') ? 'updateOpportunities' : 'createOpportunities',
             'PATCH' => 'updateOpportunities',
             default => 'viewOpportunities',
         };
@@ -22,7 +22,7 @@ class OpportunityRequest extends FormRequest
 
     public function rules(): array
     {
-        if (in_array($this->route()?->getActionMethod(), ['confirmSale', 'recover'], true)) return [];
+        if (in_array($this->route()?->getActionMethod(), ['confirmSale', 'recover', 'resendToBackoffice'], true)) return [];
         if ($this->route()?->getActionMethod() === 'markLost') return ['lost_reason' => ['required', 'string', 'min:3', 'max:200']];
         if ($this->routeIs('opportunities.overview')) return [
             'date_from' => ['required', 'date'],
