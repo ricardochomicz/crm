@@ -5,6 +5,7 @@ namespace App\Actions\Client;
 use App\Models\Client;
 use App\Models\CommercialOrder;
 use App\Models\ClassificationRenewalRule;
+use App\Models\OperatorClassification;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -39,7 +40,7 @@ class ListClientContractRenewalsAction
                 'order_code' => $order->code,
                 'operator_id' => $order->operator_id,
                 'operator_name' => $order->operator?->name,
-                'classification_id' => null,
+                'classification_id' => $order->classification_id,
                 'renewal_months' => null,
                 'average_activation_date' => null,
                 'renewal_date' => null,
@@ -47,13 +48,22 @@ class ListClientContractRenewalsAction
                 'status' => 'classification_required',
             ];
 
-            // A classificação do cliente só é aplicável ao contrato da mesma operadora.
-            if (! $client->classification_id || (int) $client->operator_id !== (int) $order->operator_id) {
+            // Contratos novos têm classificação própria; os antigos podem usar a classificação do cliente.
+            $classificationId = $order->classification_id;
+            if (! $classificationId && (int) $client->operator_id === (int) $order->operator_id) {
+                $classificationId = $client->classification_id;
+            }
+
+            if (! $classificationId || ! OperatorClassification::query()
+                ->whereKey($classificationId)
+                ->where('operator_id', $order->operator_id)
+                ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $client->tenant_id))
+                ->exists()) {
                 return $result;
             }
 
             $rule = ClassificationRenewalRule::query()
-                ->where('classification_id', $client->classification_id)
+                ->where('classification_id', $classificationId)
                 ->where(function ($query) use ($client) {
                     $query->where('tenant_id', $client->tenant_id)->orWhereNull('tenant_id');
                 })
@@ -66,7 +76,7 @@ class ListClientContractRenewalsAction
                 ->orderByDesc('valid_from')
                 ->first();
 
-            $result['classification_id'] = $client->classification_id;
+            $result['classification_id'] = $classificationId;
 
             if (! $rule) {
                 $result['status'] = 'rule_required';
