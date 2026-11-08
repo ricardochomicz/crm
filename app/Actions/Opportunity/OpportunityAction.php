@@ -252,12 +252,39 @@ class OpportunityAction
         unset($data['items']);
         if ($items !== null) $data = [...$data, ...$this->totals($items)];
         return DB::transaction(function () use ($event, $data, $items) {
-            $event->update($data);
-            if ($items !== null) {
-                $event->items()->delete();
-                $event->items()->createMany($items);
+            $opportunity = Opportunity::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+            $order = $opportunity->commercialOrder()->lockForUpdate()->first();
+
+            if ($order) {
+                if (mb_strtolower(trim($order->orderStatus?->name ?? '')) !== 'para correção') {
+                    throw ValidationException::withMessages([
+                        'opportunity' => 'Este pedido não está em correção. Solicite a devolução ao Backoffice antes de editar.',
+                    ]);
+                }
+                if ($order->administratively_completed_at) {
+                    throw ValidationException::withMessages(['opportunity' => 'Pedido concluído não pode ser alterado.']);
+                }
             }
-            return $event->refresh()->load('items');
+
+            if ($items !== null && $order) {
+                $orderLines = $order->items()->lockForUpdate()->get();
+                if ($orderLines->contains(fn ($line) => $line->status === 'ACTIVE' || $line->activated_at !== null)) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Há linhas ativadas neste pedido. Solicite revisão ao Backoffice antes de alterar os planos.',
+                    ]);
+                }
+                // The existing order lines are retained until resubmission.
+                // Release their references before replacing the opportunity items,
+                // otherwise MySQL rejects the deletion due to the foreign key.
+                $order->items()->whereNotNull('opportunity_item_id')->update(['opportunity_item_id' => null]);
+            }
+
+            $opportunity->update($data);
+            if ($items !== null) {
+                $opportunity->items()->delete();
+                $opportunity->items()->createMany($items);
+            }
+            return $opportunity->refresh()->load('items');
         });
     }
 }
