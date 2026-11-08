@@ -249,6 +249,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::delete('/calendar/events/{eventId}', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'destroy'])->whereUuid('eventId');
                     Route::post('/clients', [\App\Http\Controllers\Client\ClientController::class, 'store']);
                     Route::patch('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'update'])->whereUuid('clientId');
+                    Route::patch('/clients/{clientId}/contracts/{orderId}/classification', \App\Http\Controllers\Client\UpdateClientContractClassificationController::class)->whereUuid('clientId')->whereUuid('orderId');
                     Route::delete('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'destroy'])->whereUuid('clientId');
                     Route::post('/clients/{clientId}/contacts', [\App\Http\Controllers\Client\ClientController::class, 'saveContact'])->whereUuid('clientId');
                     Route::patch('/clients/{clientId}/contacts/{contactId}', [\App\Http\Controllers\Client\ClientController::class, 'saveContact'])->whereUuid('clientId')->whereUuid('contactId');
