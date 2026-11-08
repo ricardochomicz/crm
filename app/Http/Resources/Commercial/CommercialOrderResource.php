@@ -29,6 +29,7 @@ class CommercialOrderResource extends JsonResource
             ]),
             'tenant_id' => $attributes['tenant_id'] ?? null,
             'operator_id' => $attributes['operator_id'] ?? null,
+            'classification_id' => $attributes['classification_id'] ?? null,
             'product_id' => $attributes['product_id'] ?? null,
             'order_type' => $attributes['order_type'] ?? null,
             'customer_name' => $attributes['customer_name'] ?? null,
