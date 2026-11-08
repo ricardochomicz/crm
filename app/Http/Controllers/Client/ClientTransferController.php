@@ -86,7 +86,7 @@ class ClientTransferController extends Controller
                 'to_tenant_user_id' => $member->id,
                 'requested_by' => $member->id,
                 'status' => 'PENDING',
-                'reason' => $data['reason'] ?? null,
+                'reason' => $data['reason'],
             ]);
         });
 
