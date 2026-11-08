@@ -27,7 +27,8 @@ class SaveCommissionTableAction
             ]);
         }
 
-        $data['name'] = OrderType::from($data['order_type'])->label();
+        $data['name'] = OrderType::tryFrom($data['order_type'])?->label()
+            ?? \App\Models\OrderType::query()->findOrFail($data['order_type'])->name;
 
         if ($record) {
             $record->update($data);
