@@ -41,6 +41,9 @@ class UpdateOrderWorkflowAction
             $newDate = isset($data['expected_activation_at']) ? Carbon::parse($data['expected_activation_at'])->format('d/m/Y') : null;
 
             $returnForCorrection = mb_strtolower(trim($status->name)) === 'para correção';
+            if ($returnForCorrection && $order->order_status_id !== $status->id && blank($data['correction_reason'] ?? null)) {
+                throw ValidationException::withMessages(['correction_reason' => 'Informe o motivo da devolução ao consultor.']);
+            }
             if ($returnForCorrection && ! $order->opportunity_id) {
                 throw ValidationException::withMessages(['order_status_id' => 'Pedido sem oportunidade vinculada para devolução.']);
             }
@@ -64,6 +67,9 @@ class UpdateOrderWorkflowAction
             }
 
             $changes = [];
+            if ($returnForCorrection && $order->wasChanged('order_status_id')) {
+                $changes[] = 'Motivo da devolução ao consultor: ' . trim($data['correction_reason']);
+            }
             if ($order->wasChanged('order_status_id')) {
                 $changes[] = sprintf('Status do pedido: %s → %s.', $previousStatus, $status->name);
             }
