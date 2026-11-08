@@ -15,6 +15,7 @@ class UpdateOrderWorkflowRequest extends FormRequest
     {
         return [
             'order_status_id' => ['required', 'uuid'],
+            'correction_reason' => ['nullable', 'string', 'max:2000'],
             'expected_activation_at' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
