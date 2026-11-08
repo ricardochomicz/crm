@@ -64,8 +64,19 @@ class CalendarEventAction
         $actor = $this->member($user, $tenant);
         $team = ($filters['scope'] ?? 'mine') === 'team';
         if ($team && ! $user->can('viewTeamCalendar', $tenant)) abort(403);
+        $isManager = in_array($actor->role->value, ['OWNER', 'MANAGER'], true);
+        $supervisedTeamIds = $actor->supervisedTeams()->where('tenant_id', $tenant->getKey())->pluck('id');
         return CalendarEvent::query()->where('tenant_id', $tenant->getKey())
             ->when(! $team, fn ($q) => $q->where('tenant_user_id', $actor->getKey()))
+            ->when($team && ! $isManager, function ($q) use ($tenant, $supervisedTeamIds, $actor) {
+                if ($supervisedTeamIds->isNotEmpty()) {
+                    $memberIds = TenantUser::query()->where('tenant_id', $tenant->getKey())
+                        ->whereIn('team_id', $supervisedTeamIds)->where('status', 'ACTIVE')->pluck('id');
+                    $q->whereIn('tenant_user_id', $memberIds);
+                } else {
+                    $q->where('tenant_user_id', $actor->getKey());
+                }
+            })
             ->when(! empty($filters['opportunity_id']), fn ($q) => $q->where('opportunity_id', $filters['opportunity_id']))
             ->where('starts_at', '<', $filters['to'])
             ->where('ends_at', '>', $filters['from'])
