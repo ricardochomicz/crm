@@ -7,7 +7,6 @@ use App\Models\Comment;
 use App\Models\CommercialOrder;
 use App\Models\Opportunity;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 
 class EvaluateClientTransferAction
 {
@@ -56,7 +55,8 @@ class EvaluateClientTransferAction
         $inactive = $lastActivity->lt(CarbonImmutable::now()->subDays(90));
 
         return [
-            'eligible' => $inactive && ! $openOpportunities && ! $openOrders,
+            'eligible' => $inactive,
+            'requires_special_review' => $openOpportunities || $openOrders,
             'last_interaction_at' => $latestInteraction,
             'inactive_for_90_days' => $inactive,
             'has_open_opportunities' => $openOpportunities,
