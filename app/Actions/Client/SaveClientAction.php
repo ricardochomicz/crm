@@ -36,6 +36,11 @@ class SaveClientAction {
     ClientOperatorHistory::create(['tenant_id'=>$tenantId,'client_id'=>$client->id,'operator_id'=>$client->operator_id,'classification_id'=>$client->classification_id,'changed_at'=>now(),'changed_by'=>$userId]);
    }
    $active=ClientSeller::where('tenant_id',$tenantId)->where('client_id',$client->id)->whereNull('ended_at')->lockForUpdate()->first();
+   if($active && $sellerId && $active->tenant_user_id !== $sellerId){
+    throw ValidationException::withMessages([
+     'seller_membership_id' => 'A troca de responsável deve ser solicitada e aprovada pela Transferência de Carteira.',
+    ]);
+   }
    if(($active?->tenant_user_id)!==$sellerId){
     if($active){$active->ended_at=now();$active->reason=$reason;$active->save();}
     if($sellerId)ClientSeller::create(['tenant_id'=>$tenantId,'client_id'=>$client->id,'tenant_user_id'=>$sellerId,'assigned_by'=>$userId,'started_at'=>now(),'reason'=>$reason]);
