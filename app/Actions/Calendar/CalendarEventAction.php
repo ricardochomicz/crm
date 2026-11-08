@@ -4,6 +4,7 @@ namespace App\Actions\Calendar;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Models\CalendarEvent;
+use App\Models\Opportunity;
 use App\Models\Tenant;
 use App\Models\TenantUser;
 use App\Models\User;
@@ -34,6 +35,14 @@ class CalendarEventAction
         $this->assignee($tenant, $assigneeId);
         if (! empty($data['client_id']) && ! DB::table('clients')->where('tenant_id', $tenant->getKey())->where('id', $data['client_id'])->exists()) {
             throw ValidationException::withMessages(['client_id' => 'Cliente não pertence a esta empresa.']);
+        }
+        if (! empty($data['opportunity_id'])) {
+            $opportunity = Opportunity::query()->where('tenant_id', $tenant->getKey())->findOrFail($data['opportunity_id']);
+            if ($opportunity->tenant_user_id !== $assigneeId && ! $actor->user->can('viewTeamCalendar', $tenant)) abort(403);
+            if (! empty($data['client_id']) && $data['client_id'] !== $opportunity->client_id) {
+                throw ValidationException::withMessages(['client_id' => 'O cliente deve ser o mesmo da oportunidade.']);
+            }
+            $data['client_id'] = $opportunity->client_id;
         }
         $data['tenant_user_id'] = $assigneeId;
         return $data;
@@ -81,7 +90,7 @@ class CalendarEventAction
     {
         $event = $this->owned($tenant, $user, $id);
         $actor = $this->member($user, $tenant);
-        $data = $this->prepare($tenant, $actor, [...$event->only(['tenant_user_id', 'client_id']), ...$data]);
+        $data = $this->prepare($tenant, $actor, [...$event->only(['tenant_user_id', 'client_id', 'opportunity_id']), ...$data]);
         $this->checkDates([...$event->only(['starts_at', 'ends_at']), ...$data], array_key_exists('starts_at', $data) || array_key_exists('ends_at', $data));
         $event->update($data);
         return $event->refresh();
