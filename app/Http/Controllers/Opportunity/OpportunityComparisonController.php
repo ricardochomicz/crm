@@ -58,8 +58,7 @@ class OpportunityComparisonController extends Controller
         if ($operatorIds->count() !== $ids->count()) {
             throw ValidationException::withMessages(['options' => 'Selecione somente um plano por operadora neste comparativo.']);
         }
-        $allowed = DB::table('tenant_operators')->where('tenant_id', $tenant->id)
-            ->whereIn('operator_id', $operatorIds)->pluck('operator_id')->map(fn ($id) => (int) $id);
+        $allowed = $tenant->operators()->whereIn('operators.id', $operatorIds)->pluck('operators.id')->map(fn ($id) => (int) $id);
         if ($allowed->count() !== $operatorIds->count()) {
             throw ValidationException::withMessages(['options' => 'Há operadoras não vinculadas à empresa.']);
         }
