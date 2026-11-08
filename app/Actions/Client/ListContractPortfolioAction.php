@@ -59,10 +59,18 @@ class ListContractPortfolioAction
             ->paginate($filters['per_page'] ?? 20);
 
         $orders = $paginator->getCollection();
+        $legacyClients = $this->visibility->execute(Client::query(), $tenantId, $userId)
+            ->whereIn('document', $orders->whereNull('client_id')->pluck('customer_document')->filter())
+            ->get(['id', 'company_name', 'document', 'operator_id', 'classification_id'])
+            ->keyBy('document');
         $classificationIds = $orders->pluck('classification_id')->merge(
-            $orders->map(fn (CommercialOrder $order) => $order->client?->operator_id == $order->operator_id
-                ? $order->client?->classification_id
-                : null)
+            $orders->map(function (CommercialOrder $order) use ($legacyClients) {
+                $client = $order->client ?? ($order->client_id === null ? $legacyClients->get($order->customer_document) : null);
+
+                return $client && (int) $client->operator_id === (int) $order->operator_id
+                    ? $client->classification_id
+                    : null;
+            })
         )->filter()->unique()->values();
 
         $classifications = OperatorClassification::query()
@@ -82,8 +90,8 @@ class ListContractPortfolioAction
             ->sortBy(fn ($rule) => $rule->tenant_id === null ? 1 : 0)
             ->groupBy('classification_id');
 
-        $paginator->setCollection($orders->map(function (CommercialOrder $order) use ($tenantId, $classifications, $rules, $today): array {
-            $client = $order->client;
+        $paginator->setCollection($orders->map(function (CommercialOrder $order) use ($legacyClients, $classifications, $rules, $today): array {
+            $client = $order->client ?? ($order->client_id === null ? $legacyClients->get($order->customer_document) : null);
             $classificationId = $order->classification_id
                 ?: ($client && (int) $client->operator_id === (int) $order->operator_id ? $client->classification_id : null);
             $classification = $classifications->get($classificationId);
