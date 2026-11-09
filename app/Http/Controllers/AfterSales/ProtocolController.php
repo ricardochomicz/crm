@@ -57,7 +57,7 @@ class ProtocolController extends Controller
     {
         $actor = $this->actor($request);
         $tenantId = $request->attributes->get('active_tenant')->id;
-        $filters = $request->validate(['search' => ['nullable', 'string', 'max:120'], 'status' => ['nullable', Rule::in(self::STATUSES)], 'category' => ['nullable', Rule::in(self::CATEGORIES)], 'page' => ['nullable', 'integer', 'min:1']]);
+        $filters = $request->validate(['search' => ['nullable', 'string', 'max:120'], 'status' => ['nullable', Rule::in(self::STATUSES)], 'category' => ['nullable', Rule::in(self::CATEGORIES)], 'client_id' => ['nullable', 'uuid'], 'page' => ['nullable', 'integer', 'min:1']]);
         $query = DB::table('after_sales_protocols as p')->join('clients as c', function ($join) {
             $join->on('c.id', '=', 'p.client_id')->on('c.tenant_id', '=', 'p.tenant_id');
         })->leftJoin('tenant_users as assignee', function ($join) {
@@ -65,6 +65,7 @@ class ProtocolController extends Controller
         })->leftJoin('users as responsible', 'responsible.id', '=', 'assignee.user_id')
             ->where('p.tenant_id', $tenantId)->whereIn('p.client_id', $this->visibleClientIds($request, $actor))
             ->select('p.*', 'c.company_name as client_name', 'responsible.name as assignee_name');
+        if (!empty($filters['client_id'])) $query->where('p.client_id', $filters['client_id']);
         if (!empty($filters['status'])) $query->where('p.status', $filters['status']);
         if (!empty($filters['category'])) $query->where('p.category', $filters['category']);
         if (!empty($filters['search'])) {
