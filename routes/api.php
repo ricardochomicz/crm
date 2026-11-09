@@ -200,6 +200,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/opportunities', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'index']);
                 Route::get('/opportunities/{opportunityId}', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'show'])->whereUuid('opportunityId');
                 Route::get('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'index'])->whereUuid('opportunityId');
+                Route::get('/after-sales/protocols', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'index']);
+                Route::get('/after-sales/options', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'options']);
+                Route::get('/after-sales/protocols/{protocolId}', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'show'])->whereUuid('protocolId');
                 Route::get('/calendar/events', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'index']);
                 Route::get('/clients', [\App\Http\Controllers\Client\ClientController::class, 'index']);
                 Route::get('/clients/portfolio-redistributions', [\App\Http\Controllers\Client\ClientPortfolioRedistributionController::class, 'index']);
@@ -221,7 +224,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/products', \App\Http\Controllers\Product\ListProductsController::class)->name('products.index');
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
-                    Route::post('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'store'])->whereUuid('opportunityId');
+                    Route::post('/after-sales/protocols', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'store']);
+                Route::patch('/after-sales/protocols/{protocolId}', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'update'])->whereUuid('protocolId');
+                Route::post('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'store'])->whereUuid('opportunityId');
                     Route::post('/opportunities/{opportunityId}/comparisons/{comparisonId}/revoke', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'revoke'])->whereUuid('opportunityId')->whereUuid('comparisonId');
                     Route::post('/commercial-orders/{orderId}/activate-items', [\App\Http\Controllers\Commercial\OrderActivationController::class, 'store'])->whereUuid('orderId');
                     Route::post('/commercial-orders/{orderId}/complete', [\App\Http\Controllers\Commercial\OrderActivationController::class, 'complete'])->whereUuid('orderId');
