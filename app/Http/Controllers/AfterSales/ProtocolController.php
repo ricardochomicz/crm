@@ -110,7 +110,8 @@ class ProtocolController extends Controller
         $this->validateAssignee($tenantId, $data['assigned_to_tenant_user_id'] ?? null);
         $id = (string) Str::uuid();
         DB::transaction(function () use ($tenantId, $actor, $data, $id): void {
-            $sequence = DB::table('after_sales_protocols')->where('tenant_id', $tenantId)->lockForUpdate()->count() + 1;
+            DB::table('tenants')->where('id', $tenantId)->lockForUpdate()->first();
+            $sequence = DB::table('after_sales_protocols')->where('tenant_id', $tenantId)->count() + 1;
             $code = 'PRO-'.now()->format('Y').'-'.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
             DB::table('after_sales_protocols')->insert([...$data, 'id' => $id, 'tenant_id' => $tenantId, 'code' => $code, 'opened_by_tenant_user_id' => $actor->id, 'status' => 'open', 'created_at' => now(), 'updated_at' => now()]);
             $this->history($tenantId, $id, $actor->id, 'created', null, 'open', $data['description']);
@@ -141,7 +142,7 @@ class ProtocolController extends Controller
         ]);
         $note = $data['note'] ?? null;
         unset($data['note']);
-        $this->validateAssignee($protocol->tenant_id, $data['assigned_to_tenant_user_id'] ?? null);
+        if (array_key_exists('assigned_to_tenant_user_id', $data)) $this->validateAssignee($protocol->tenant_id, $data['assigned_to_tenant_user_id']);
         if (isset($data['status']) && in_array($data['status'], ['resolved', 'cancelled'], true) && ! $note) {
             return response()->json(['message' => 'Informe a resolução ou o motivo do cancelamento.'], 422);
         }
