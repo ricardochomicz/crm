@@ -103,7 +103,9 @@ class CalendarEventAction
         $event = $this->owned($tenant, $user, $id);
         $actor = $this->member($user, $tenant);
         $data = $this->prepare($tenant, $actor, [...$event->only(['tenant_user_id', 'client_id', 'opportunity_id']), ...$data]);
-        $this->checkDates([...$event->only(['starts_at', 'ends_at']), ...$data], array_key_exists('starts_at', $data) || array_key_exists('ends_at', $data));
+        $datesChanged = (array_key_exists('starts_at', $data) && ! Carbon::parse($data['starts_at'])->equalTo($event->starts_at))
+            || (array_key_exists('ends_at', $data) && ! Carbon::parse($data['ends_at'])->equalTo($event->ends_at));
+        $this->checkDates([...$event->only(['starts_at', 'ends_at']), ...$data], $datesChanged);
         $event->update($data);
         return $event->refresh();
     }
