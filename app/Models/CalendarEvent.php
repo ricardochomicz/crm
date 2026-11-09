@@ -26,6 +26,16 @@ class CalendarEvent extends Model
         ];
     }
 
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function opportunity(): BelongsTo
+    {
+        return $this->belongsTo(Opportunity::class);
+    }
+
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(TenantUser::class, 'tenant_user_id');
@@ -36,13 +46,4 @@ class CalendarEvent extends Model
         return $this->belongsTo(TenantUser::class, 'created_by_tenant_user_id');
     }
 
-    public function opportunity(): BelongsTo
-    {
-        return $this->belongsTo(Opportunity::class);
-    }
-
-    public function client(): BelongsTo
-    {
-        return $this->belongsTo(Client::class);
-    }
 }
