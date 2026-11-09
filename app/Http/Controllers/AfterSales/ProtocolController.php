@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class ProtocolController extends Controller
@@ -110,6 +111,7 @@ class ProtocolController extends Controller
             abort_unless(DB::table('commercial_orders')->where('tenant_id', $tenantId)->where('client_id', $data['client_id'])->where('id', $data['commercial_order_id'])->exists(), 422, 'Pedido não pertence ao cliente.');
         }
         $data['code'] = trim($data['code']);
+        $this->normalizeDateTimes($data);
         $data['assigned_to_tenant_user_id'] = $data['assigned_to_tenant_user_id'] ?? $actor->id;
         $this->validateAssignee($tenantId, $data['assigned_to_tenant_user_id']);
         $id = (string) Str::uuid();
@@ -118,6 +120,15 @@ class ProtocolController extends Controller
             $this->history($tenantId, $id, $actor->id, 'created', null, 'open', $data['description']);
         });
         return $this->details($request, $actor, $id)->setStatusCode(201);
+    }
+
+    private function normalizeDateTimes(array &$data): void
+    {
+        foreach (['due_at', 'resolved_at'] as $field) {
+            if (isset($data[$field])) {
+                $data[$field] = Carbon::parse($data[$field])->setTimezone(config('app.timezone', 'UTC'))->format('Y-m-d H:i:s');
+            }
+        }
     }
 
     private function validateAssignee(string $tenantId, ?string $id): void
@@ -142,6 +153,7 @@ class ProtocolController extends Controller
             'resolved_at' => ['sometimes', 'nullable', 'date', 'before_or_equal:now'],
             'note' => ['nullable', 'string', 'max:10000'],
         ]);
+        $this->normalizeDateTimes($data);
         $note = $data['note'] ?? null;
         unset($data['note']);
         if (array_key_exists('assigned_to_tenant_user_id', $data)) $this->validateAssignee($protocol->tenant_id, $data['assigned_to_tenant_user_id']);
