@@ -28,7 +28,18 @@ services:
             - -c
             - |
                 chown -R node:node /workspace/node_modules
-                exec su node -s /bin/sh -c 'cd /workspace && if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-package-lock --no-audit --no-fund; fi && npm run dev -- --host 0.0.0.0 --port 5173'
+                exec su node -s /bin/sh -c '
+                    cd /workspace
+                    if [ -f pnpm-lock.yaml ]; then
+                        CI=true corepack pnpm@10.33.2 install --frozen-lockfile --store-dir=/tmp/pnpm-store || exit
+                        exec corepack pnpm@10.33.2 run dev --host 0.0.0.0 --port 5173
+                    elif [ -f package-lock.json ]; then
+                        npm ci --no-audit --no-fund || exit
+                    else
+                        npm install --no-package-lock --no-audit --no-fund || exit
+                    fi
+                    exec npm run dev -- --host 0.0.0.0 --port 5173
+                '
         ports:
             - "127.0.0.1:${DOCKER_FRONTEND_PORT:-8081}:5173"
         depends_on:
