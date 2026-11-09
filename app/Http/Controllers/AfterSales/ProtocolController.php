@@ -81,7 +81,7 @@ class ProtocolController extends Controller
         $clients = DB::table('clients')->where('tenant_id', $tenantId)->whereIn('id', $this->visibleClientIds($request, $actor))->orderBy('company_name')->get(['id', 'company_name']);
         $members = DB::table('tenant_users as tu')->join('users as u', 'u.id', '=', 'tu.user_id')
             ->where('tu.tenant_id', $tenantId)->where('tu.status', 'ACTIVE')->orderBy('u.name')->get(['tu.id', 'u.name']);
-        return response()->json(['data' => ['clients' => $clients, 'members' => $members]]);
+        return response()->json(['data' => ['clients' => $clients, 'members' => $members, 'current_member_id' => $actor->id]]);
     }
 
     public function show(Request $request, string $tenantId, string $protocolId): JsonResponse
@@ -94,6 +94,7 @@ class ProtocolController extends Controller
         $actor = $this->actor($request);
         $tenantId = $request->attributes->get('active_tenant')->id;
         $data = $request->validate([
+            'code' => ['required', 'string', 'max:40', Rule::unique('after_sales_protocols', 'code')->where('tenant_id', $tenantId)],
             'client_id' => ['required', 'uuid'],
             'commercial_order_id' => ['nullable', 'uuid'],
             'assigned_to_tenant_user_id' => ['nullable', 'uuid'],
@@ -107,13 +108,12 @@ class ProtocolController extends Controller
         if (!empty($data['commercial_order_id'])) {
             abort_unless(DB::table('commercial_orders')->where('tenant_id', $tenantId)->where('client_id', $data['client_id'])->where('id', $data['commercial_order_id'])->exists(), 422, 'Pedido não pertence ao cliente.');
         }
-        $this->validateAssignee($tenantId, $data['assigned_to_tenant_user_id'] ?? null);
+        $data['code'] = trim($data['code']);
+        $data['assigned_to_tenant_user_id'] = $data['assigned_to_tenant_user_id'] ?? $actor->id;
+        $this->validateAssignee($tenantId, $data['assigned_to_tenant_user_id']);
         $id = (string) Str::uuid();
         DB::transaction(function () use ($tenantId, $actor, $data, $id): void {
-            DB::table('tenants')->where('id', $tenantId)->lockForUpdate()->first();
-            $sequence = DB::table('after_sales_protocols')->where('tenant_id', $tenantId)->count() + 1;
-            $code = 'PRO-'.now()->format('Y').'-'.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
-            DB::table('after_sales_protocols')->insert([...$data, 'id' => $id, 'tenant_id' => $tenantId, 'code' => $code, 'opened_by_tenant_user_id' => $actor->id, 'status' => 'open', 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('after_sales_protocols')->insert([...$data, 'id' => $id, 'tenant_id' => $tenantId, 'opened_by_tenant_user_id' => $actor->id, 'status' => 'open', 'created_at' => now(), 'updated_at' => now()]);
             $this->history($tenantId, $id, $actor->id, 'created', null, 'open', $data['description']);
         });
         return $this->details($request, $actor, $id)->setStatusCode(201);
