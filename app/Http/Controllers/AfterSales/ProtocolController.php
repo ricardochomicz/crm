@@ -139,6 +139,7 @@ class ProtocolController extends Controller
             'assigned_to_tenant_user_id' => ['sometimes', 'nullable', 'uuid'],
             'priority' => ['sometimes', Rule::in(['low', 'normal', 'high', 'urgent'])],
             'due_at' => ['sometimes', 'nullable', 'date'],
+            'resolved_at' => ['sometimes', 'nullable', 'date', 'before_or_equal:now'],
             'note' => ['nullable', 'string', 'max:10000'],
         ]);
         $note = $data['note'] ?? null;
@@ -148,11 +149,21 @@ class ProtocolController extends Controller
             return response()->json(['message' => 'Informe a resolução ou o motivo do cancelamento.'], 422);
         }
         $previous = $protocol->status;
-        if (isset($data['status']) && $data['status'] === 'resolved') $data['resolved_at'] = now();
-        elseif (isset($data['status']) && $data['status'] !== 'resolved') $data['resolved_at'] = null;
+        if (isset($data['status']) && $data['status'] === 'resolved') {
+            $data['resolved_at'] = $data['resolved_at'] ?? now();
+        } elseif (isset($data['status']) && $data['status'] !== 'resolved') {
+            $data['resolved_at'] = null;
+        } elseif (array_key_exists('resolved_at', $data) && $protocol->status !== 'resolved') {
+            return response()->json(['message' => 'A data de resolução só pode ser informada para protocolos resolvidos.'], 422);
+        }
         DB::transaction(function () use ($protocol, $data, $note, $actor, $previous): void {
             if ($data) DB::table('after_sales_protocols')->where('tenant_id', $protocol->tenant_id)->where('id', $protocol->id)->update([...$data, 'updated_at' => now()]);
-            $this->history($protocol->tenant_id, $protocol->id, $actor->id, 'updated', $previous, $data['status'] ?? $previous, $note);
+            $historyNote = $note;
+            if (($data['status'] ?? null) === 'resolved') {
+                $resolvedAt = \Illuminate\Support\Carbon::parse($data['resolved_at'])->format('d/m/Y H:i');
+                $historyNote = 'Resolvido em '.$resolvedAt.($note ? "\n".$note : '');
+            }
+            $this->history($protocol->tenant_id, $protocol->id, $actor->id, 'updated', $previous, $data['status'] ?? $previous, $historyNote);
         });
         return $this->details($request, $actor, $protocolId);
     }
