@@ -3,6 +3,7 @@
 namespace App\Actions\Client;
 
 use App\Models\Client;
+use App\Models\ClientOperatorClassification;
 use App\Models\CommercialOrder;
 use App\Models\ClassificationRenewalRule;
 use App\Models\OperatorClassification;
@@ -63,15 +64,14 @@ class ListContractPortfolioAction
             ->whereIn('document', $orders->whereNull('client_id')->pluck('customer_document')->filter())
             ->get(['id', 'company_name', 'document', 'operator_id', 'classification_id'])
             ->keyBy('document');
-        $classificationIds = $orders->pluck('classification_id')->merge(
-            $orders->map(function (CommercialOrder $order) use ($legacyClients) {
-                $client = $order->client ?? ($order->client_id === null ? $legacyClients->get($order->customer_document) : null);
-
-                return $client && (int) $client->operator_id === (int) $order->operator_id
-                    ? $client->classification_id
-                    : null;
-            })
-        )->filter()->unique()->values();
+        $clientIds = $orders->map(fn (CommercialOrder $order) => $order->client?->id
+            ?? ($order->client_id === null ? $legacyClients->get($order->customer_document)?->id : null))
+            ->filter()->unique()->values();
+        $assignments = ClientOperatorClassification::query()
+            ->where('tenant_id', $tenantId)
+            ->whereIn('client_id', $clientIds)
+            ->get()->keyBy(fn ($entry) => $entry->client_id . ':' . $entry->operator_id);
+        $classificationIds = $assignments->pluck('classification_id')->filter()->unique()->values();
 
         $classifications = OperatorClassification::query()
             ->whereIn('id', $classificationIds)
@@ -90,10 +90,11 @@ class ListContractPortfolioAction
             ->sortBy(fn ($rule) => $rule->tenant_id === null ? 1 : 0)
             ->groupBy('classification_id');
 
-        $paginator->setCollection($orders->map(function (CommercialOrder $order) use ($legacyClients, $classifications, $rules, $today): array {
+        $paginator->setCollection($orders->map(function (CommercialOrder $order) use ($legacyClients, $assignments, $classifications, $rules, $today): array {
             $client = $order->client ?? ($order->client_id === null ? $legacyClients->get($order->customer_document) : null);
-            $classificationId = $order->classification_id
-                ?: ($client && (int) $client->operator_id === (int) $order->operator_id ? $client->classification_id : null);
+            $classificationId = $client
+                ? $assignments->get($client->id . ':' . $order->operator_id)?->classification_id
+                : null;
             $classification = $classifications->get($classificationId);
             $valid = $classification && (int) $classification->operator_id === (int) $order->operator_id;
             $rule = $valid ? $rules->get($classificationId)?->first() : null;
