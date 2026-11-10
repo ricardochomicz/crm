@@ -51,7 +51,7 @@ class OpportunityRequest extends FormRequest
             'order_type_id' => [$required, 'uuid'],
             'description' => ['nullable', 'string'],
             'external_protocol' => ['nullable', 'string', 'max:100'],
-            'expected_close_at' => ['nullable', 'date'],
+            'expected_close_at' => ['required', 'date'],
             'estimated_monthly_amount' => ['sometimes', 'numeric', 'min:0'],
             'estimated_one_time_amount' => ['sometimes', 'numeric', 'min:0'],
             'probability' => ['nullable', 'integer', 'between:0,100'],
