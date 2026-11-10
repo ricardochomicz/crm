@@ -42,6 +42,7 @@ class ContractPortfolioController extends Controller
         abort_unless($request->user()->can('viewClients', $tenant), 403);
 
         $filters = $request->validate([
+            'renewal_state' => ['sometimes', Rule::in(['available', 'in_progress'])],
             'search' => ['nullable', 'string', 'max:150'],
             'operator_id' => ['nullable', 'integer', Rule::exists('tenant_operators', 'operator_id')->where('tenant_id', $tenant->id)],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
