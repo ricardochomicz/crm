@@ -31,6 +31,11 @@ class OpportunityController extends Controller
         return response()->json(['data' => $action->overview($this->tenant($request), $request->user(), $request->validated())]);
     }
 
+    public function funnelOverview(OpportunityRequest $request, string $tenantId, OpportunityAction $action): JsonResponse
+    {
+        return response()->json(['data' => $action->funnelOverview($this->tenant($request), $request->user())]);
+    }
+
     public function stages(OpportunityRequest $request, string $tenantId, OpportunityAction $action): JsonResponse
     {
         return response()->json(['data' => $action->stages($this->tenant($request), $request->user())]);
