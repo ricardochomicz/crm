@@ -48,6 +48,51 @@ class TenantRoleAuthorizationTest extends TestCase
         ]);
     }
 
+    public function test_consultant_is_listed_and_can_replace_telemarketing_with_independent_permissions(): void
+    {
+        $tenant = $this->company();
+        $owner = $this->member($tenant, $this->role($tenant, 'OWNER'));
+        $telemarketing = $this->role($tenant, 'TELEMARKETING');
+        $member = $this->member($tenant, $telemarketing);
+        $consultant = $tenant->roles()->where('code', 'CONSULTANT')->firstOrFail();
+        $this->actingAs($owner->user);
+
+        $this->getJson("/api/v1/tenants/{$tenant->id}/roles")
+            ->assertOk()->assertJsonFragment(['id' => $consultant->id, 'name' => 'Consultor', 'can_assign' => true])
+            ->assertJsonFragment(['id' => $telemarketing->id, 'name' => 'Telemarketing']);
+        $this->patchJson("/api/v1/tenants/{$tenant->id}/roles/{$consultant->id}", [
+            'name' => 'Consultor', 'permissions' => ['clients.view'], 'version' => 1,
+        ])->assertOk()->assertJsonPath('data.permissions', ['clients.view']);
+        $this->patchJson("/api/v1/tenants/{$tenant->id}/members/{$member->id}/role", [
+            'role' => 'CONSULTANT', 'tenant_role_id' => $consultant->id,
+        ])->assertNoContent();
+
+        $this->assertDatabaseHas('tenant_users', ['id' => $member->id, 'tenant_role_id' => $consultant->id]);
+        $this->assertSame([], $telemarketing->fresh()->permissions);
+        $this->assertTrue($member->user->can('viewClients', $tenant));
+    }
+
+    public function test_consultant_migration_backfills_existing_companies_without_changing_assignments_or_customizations(): void
+    {
+        $tenant = $this->company();
+        $tenant->roles()->where('code', 'CONSULTANT')->delete();
+        $telemarketing = $this->role($tenant, 'TELEMARKETING');
+        $member = $this->member($tenant, $telemarketing);
+        $otherTenant = $this->company();
+        $customized = $this->role($otherTenant, 'CONSULTANT', ['clients.view']);
+        $customized->update(['name' => 'Consultor externo', 'is_active' => false]);
+        $migration = require database_path('migrations/2026_11_10_191313_add_consultant_to_tenant_roles.php');
+
+        $migration->up();
+        $migration->up();
+
+        $this->assertDatabaseHas('tenant_roles', ['tenant_id' => $tenant->id, 'code' => 'CONSULTANT', 'name' => 'Consultor', 'is_active' => true]);
+        $this->assertSame(1, $tenant->roles()->where('code', 'CONSULTANT')->count());
+        $this->assertSame($telemarketing->id, $member->fresh()->tenant_role_id);
+        $this->assertDatabaseHas('tenant_roles', ['id' => $customized->id, 'name' => 'Consultor externo', 'is_active' => false]);
+        $this->assertSame(['clients.view'], $customized->fresh()->permissions);
+    }
+
     #[TestWith([false])]
     #[TestWith([true])]
     public function test_role_assignment_cannot_grant_missing_permissions_with_or_without_explicit_id(bool $explicit): void
