@@ -18,6 +18,8 @@ class ContractPortfolioController extends Controller
 
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:150'],
+            'renewal_month' => ['nullable', 'integer', 'between:1,12'],
+            'renewal_year' => ['nullable', 'integer', 'between:2000,2200'],
             'operator_id' => ['nullable', 'integer', Rule::exists('tenant_operators', 'operator_id')->where('tenant_id', $tenant->id)],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'page' => ['sometimes', 'integer', 'min:1'],
@@ -44,6 +46,8 @@ class ContractPortfolioController extends Controller
         $filters = $request->validate([
             'renewal_state' => ['sometimes', Rule::in(['available', 'in_progress'])],
             'search' => ['nullable', 'string', 'max:150'],
+            'renewal_month' => ['nullable', 'integer', 'between:1,12'],
+            'renewal_year' => ['nullable', 'integer', 'between:2000,2200'],
             'operator_id' => ['nullable', 'integer', Rule::exists('tenant_operators', 'operator_id')->where('tenant_id', $tenant->id)],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'page' => ['sometimes', 'integer', 'min:1'],
