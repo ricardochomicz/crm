@@ -8,7 +8,8 @@ class SaveRenewalRuleAction {
  public function execute(?string $tenantId,int $classificationId,array $data,?string $ruleId=null):ClassificationRenewalRule {
   $classification=OperatorClassification::where(fn($q)=>$q->whereNull('tenant_id')->orWhere('tenant_id',$tenantId))->findOrFail($classificationId);
   if($tenantId===null && $classification->tenant_id!==null)abort(403);
-  if($tenantId!==null && !DB::table('tenant_operators')->where('tenant_id',$tenantId)->where('operator_id',$classification->operator_id)->exists())abort(422);
+  // A classificação global ou da empresa já foi validada acima. O vínculo
+  // em tenant_operators não deve impedir o cadastro de sua regra de renovação.
   return DB::transaction(function()use($tenantId,$classification,$data,$ruleId){
    $scope=ClassificationRenewalRule::where('classification_id',$classification->id)->where('tenant_id',$tenantId);
    $existing=$ruleId?(clone $scope)->lockForUpdate()->findOrFail($ruleId):null;
