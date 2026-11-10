@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Builder;
 class Client extends Model
 {
     use HasUuids, \Illuminate\Database\Eloquent\SoftDeletes;
-    protected $fillable = ['tenant_id', 'person_type', 'document', 'company_name', 'phone', 'email', 'zip_code', 'address', 'address_number', 'address_complement', 'neighborhood', 'city', 'state', 'operator_id', 'classification_id', 'contract_started_on', 'contract_ends_on', 'is_active'];
-    protected $casts = ['is_active' => 'boolean', 'contract_started_on' => 'date:Y-m-d', 'contract_ends_on' => 'date:Y-m-d'];
+    protected $fillable = ['tenant_id', 'person_type', 'document', 'company_name', 'phone', 'email', 'zip_code', 'address', 'address_number', 'address_complement', 'neighborhood', 'city', 'state', 'operator_id', 'classification_id', 'contract_started_on', 'contract_ends_on', 'is_active', 'contact_pending'];
+    protected $casts = ['is_active' => 'boolean', 'contact_pending' => 'boolean', 'contract_started_on' => 'date:Y-m-d', 'contract_ends_on' => 'date:Y-m-d'];
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query->when($filters['search'] ?? null, fn(Builder $q, $search) => $q->whereAny(['company_name', 'document', 'email'], 'LIKE', '%' . $search . '%'))
