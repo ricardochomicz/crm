@@ -16,11 +16,11 @@ class ProtocolController extends Controller
     private const CATEGORIES = ['activation', 'portability', 'billing', 'support', 'contract', 'cancellation', 'other'];
     private const STATUSES = ['open', 'in_progress', 'waiting', 'resolved', 'cancelled', 'reopened'];
 
-    private function actor(Request $request): TenantUser
+    private function actor(Request $request, string $permission = 'viewAfterSales'): TenantUser
     {
         $tenant = $request->attributes->get('active_tenant');
+        abort_unless($request->user()->can($permission, $tenant), 403);
         $actor = TenantUser::query()->where('tenant_id', $tenant->id)->where('user_id', $request->user()->id)->where('status', 'ACTIVE')->firstOrFail();
-        abort_unless(in_array($actor->role->value, ['OWNER', 'MANAGER', 'CONSULTANT', 'ASSISTANT'], true), 403);
         return $actor;
     }
 
@@ -93,7 +93,7 @@ class ProtocolController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $actor = $this->actor($request);
+        $actor = $this->actor($request, 'createAfterSales');
         $tenantId = $request->attributes->get('active_tenant')->id;
         $data = $request->validate([
             'code' => ['required', 'string', 'max:40', Rule::unique('after_sales_protocols', 'code')->where('tenant_id', $tenantId)],
@@ -143,7 +143,7 @@ class ProtocolController extends Controller
 
     public function update(Request $request, string $tenantId, string $protocolId): JsonResponse
     {
-        $actor = $this->actor($request);
+        $actor = $this->actor($request, 'updateAfterSales');
         $protocol = $this->accessible($request, $actor, $protocolId);
         $data = $request->validate([
             'status' => ['sometimes', Rule::in(self::STATUSES)],
