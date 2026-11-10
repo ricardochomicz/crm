@@ -6,7 +6,7 @@ class ClientResource extends JsonResource {
  public function toArray(Request $request):array {
   return [
    'id'=>$this->id,'tenant_id'=>$this->tenant_id,'person_type'=>$this->person_type,'document'=>$this->document,
-   'company_name'=>$this->company_name,'phone'=>$this->phone,'email'=>$this->email,'zip_code'=>$this->zip_code,
+   'company_name'=>$this->company_name,'contact_pending'=>$this->contact_pending,'phone'=>$this->phone,'email'=>$this->email,'zip_code'=>$this->zip_code,
    'address'=>$this->address,'address_number'=>$this->address_number,'address_complement'=>$this->address_complement,
    'neighborhood'=>$this->neighborhood,'city'=>$this->city,'state'=>$this->state,
    'operator_id'=>$this->operator_id,'classification_id'=>$this->classification_id,
