@@ -14,7 +14,7 @@ class ContractPortfolioController extends Controller
     public function consolidated(Request $request, string $tenantId, ListConsolidatedPortfolioAction $action): JsonResponse
     {
         $tenant = $request->attributes->get('active_tenant');
-        abort_unless($request->user()->can('viewClients', $tenant), 403);
+        abort_unless($request->user()->can('viewPortfolio', $tenant), 403);
 
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:150'],
@@ -41,7 +41,7 @@ class ContractPortfolioController extends Controller
     public function __invoke(Request $request, string $tenantId, ListContractPortfolioAction $action): JsonResponse
     {
         $tenant = $request->attributes->get('active_tenant');
-        abort_unless($request->user()->can('viewClients', $tenant), 403);
+        abort_unless($request->user()->can('viewPortfolio', $tenant), 403);
 
         $filters = $request->validate([
             'renewal_state' => ['sometimes', Rule::in(['available', 'in_progress'])],
