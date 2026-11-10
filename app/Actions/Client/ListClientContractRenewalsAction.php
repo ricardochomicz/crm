@@ -34,13 +34,15 @@ class ListClientContractRenewalsAction
             ->orderByDesc('administratively_completed_at')
             ->get();
 
-        return $orders->map(function (CommercialOrder $order) use ($client): array {
+        $assignments = $client->operatorClassifications()->pluck('classification_id', 'operator_id');
+
+        return $orders->map(function (CommercialOrder $order) use ($client, $assignments): array {
             $result = [
                 'order_id' => $order->id,
                 'order_code' => $order->code,
                 'operator_id' => $order->operator_id,
                 'operator_name' => $order->operator?->name,
-                'classification_id' => $client->classification_id,
+                'classification_id' => $assignments->get($order->operator_id),
                 'renewal_months' => null,
                 'average_activation_date' => null,
                 'renewal_date' => null,
@@ -48,11 +50,8 @@ class ListClientContractRenewalsAction
                 'status' => 'classification_required',
             ];
 
-            // A classificação pertence ao cliente, nunca ao pedido ou às linhas.
-            // Regras específicas da operadora só se aplicam quando ela corresponde à operadora atual do cliente.
-            $classificationId = (int) $client->operator_id === (int) $order->operator_id
-                ? $client->classification_id
-                : null;
+            // Every order for the same client/operator shares one classification.
+            $classificationId = $assignments->get($order->operator_id);
 
             if (! $classificationId || ! OperatorClassification::query()
                 ->whereKey($classificationId)
