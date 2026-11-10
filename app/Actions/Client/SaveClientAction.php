@@ -31,7 +31,7 @@ class SaveClientAction {
   return DB::transaction(function()use($tenantId,$userId,$clientId,$data,$sellerId,$reason){
    $client=$clientId?$this->visibility->execute(Client::query(),$tenantId,$userId)->lockForUpdate()->findOrFail($clientId):new Client(['tenant_id'=>$tenantId]);
    $oldOperator=$client->operator_id;$oldClass=$client->classification_id;$isNew=!$client->exists;
-   $client->fill($data);$client->save();
+   $client->fill($data);if($isNew)$client->contact_pending=true;$client->save();
    if($isNew||(string)$oldOperator!==(string)$client->operator_id||(string)$oldClass!==(string)$client->classification_id){
     ClientOperatorHistory::create(['tenant_id'=>$tenantId,'client_id'=>$client->id,'operator_id'=>$client->operator_id,'classification_id'=>$client->classification_id,'changed_at'=>now(),'changed_by'=>$userId]);
    }
