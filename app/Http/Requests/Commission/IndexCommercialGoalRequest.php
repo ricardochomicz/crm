@@ -22,7 +22,11 @@ class IndexCommercialGoalRequest extends FormRequest
 
         return [
             'operator_id' => ['nullable', 'integer'],
-            'order_type' => ['nullable', Rule::enum(OrderType::class)],
+            'order_type' => ['nullable', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (!is_string($value) || (!OrderType::tryFrom($value) && !\App\Models\OrderType::query()->whereKey($value)->where('is_active', true)->exists())) {
+                    $fail('Selecione um tipo de negociação válido e ativo.');
+                }
+            }],
             'commercial_role' => ['nullable', Rule::enum(CommercialRole::class)],
             'metric' => ['nullable', Rule::in(['QUANTITY', 'REVENUE'])],
             'is_active' => ['nullable', 'boolean'],
