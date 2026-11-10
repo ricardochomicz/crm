@@ -227,8 +227,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
                     Route::post('/after-sales/protocols', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'store']);
-                Route::patch('/after-sales/protocols/{protocolId}', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'update'])->whereUuid('protocolId');
-                Route::post('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'store'])->whereUuid('opportunityId');
+                    Route::patch('/after-sales/protocols/{protocolId}', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'update'])->whereUuid('protocolId');
+                    Route::post('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'store'])->whereUuid('opportunityId');
                     Route::post('/opportunities/{opportunityId}/comparisons/{comparisonId}/revoke', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'revoke'])->whereUuid('opportunityId')->whereUuid('comparisonId');
                     Route::post('/commercial-orders/{orderId}/activate-items', [\App\Http\Controllers\Commercial\OrderActivationController::class, 'store'])->whereUuid('orderId');
                     Route::post('/commercial-orders/{orderId}/complete', [\App\Http\Controllers\Commercial\OrderActivationController::class, 'complete'])->whereUuid('orderId');
@@ -264,7 +264,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::patch('/calendar/events/{eventId}', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'update'])->whereUuid('eventId');
                     Route::delete('/calendar/events/{eventId}', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'destroy'])->whereUuid('eventId');
                     Route::post('/clients', [\App\Http\Controllers\Client\ClientController::class, 'store']);
-                    Route::put('/clients/{clientId}/operators/{operatorId}/classification', [\\App\\Http\\Controllers\\Client\\ClientOperatorClassificationController::class, 'update'])->whereUuid('clientId')->whereNumber('operatorId');
+                    Route::put('/clients/{clientId}/operators/{operatorId}/classification', [\App\Http\Controllers\Client\ClientOperatorClassificationController::class, 'update'])->whereUuid('clientId')->whereNumber('operatorId');
                     Route::patch('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'update'])->whereUuid('clientId');
                     Route::get('/clients/{clientId}/consolidation-options', \App\Http\Controllers\Client\ClientContractConsolidationOptionsController::class)->whereUuid('clientId');
                     Route::post('/clients/transfers', [\App\Http\Controllers\Client\ClientTransferController::class, 'store']);
