@@ -19,6 +19,9 @@ class SaveClientAction {
    $reason=null;
   }
   unset($data['seller_membership_id'],$data['seller_reason']);
+  if (isset($data['company_name'])) {
+   $data['company_name'] = mb_strtoupper(trim($data['company_name']), 'UTF-8');
+  }
   if($sellerId){
    $seller=TenantUser::where('tenant_id',$tenantId)->where('status','ACTIVE')->whereKey($sellerId)->first();
    if(!$seller)throw ValidationException::withMessages(['seller_membership_id'=>'Vendedor não está ativo nesta empresa.']);
