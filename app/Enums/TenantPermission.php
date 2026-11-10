@@ -7,6 +7,12 @@ enum TenantPermission: string
     case ViewOpportunities = 'opportunities.view';
     case CreateOpportunities = 'opportunities.create';
     case UpdateOpportunities = 'opportunities.update';
+    case ViewOrders = 'orders.view';
+    case ManageOrders = 'orders.manage';
+    case ViewAfterSales = 'after-sales.view';
+    case CreateAfterSales = 'after-sales.create';
+    case UpdateAfterSales = 'after-sales.update';
+    case ViewPortfolio = 'portfolio.view';
     case ViewCalendar = 'calendar.view';
     case ViewTeamCalendar = 'calendar.team.view';
     case CreateCalendarEvents = 'calendar.create';
@@ -56,6 +62,12 @@ enum TenantPermission: string
             ['key' => self::ViewOpportunities->value, 'group' => 'Oportunidades', 'label' => 'Visualizar oportunidades permitidas', 'requires' => []],
             ['key' => self::CreateOpportunities->value, 'group' => 'Oportunidades', 'label' => 'Criar oportunidades', 'requires' => ['opportunities.view']],
             ['key' => self::UpdateOpportunities->value, 'group' => 'Oportunidades', 'label' => 'Editar oportunidades', 'requires' => ['opportunities.view']],
+            ['key' => self::ViewOrders->value, 'group' => 'Pedidos comerciais', 'label' => 'Visualizar pedidos comerciais', 'requires' => []],
+            ['key' => self::ManageOrders->value, 'group' => 'Pedidos comerciais', 'label' => 'Criar e editar pedidos comerciais', 'requires' => ['orders.view']],
+            ['key' => self::ViewAfterSales->value, 'group' => 'Pós-venda', 'label' => 'Visualizar protocolos permitidos', 'requires' => []],
+            ['key' => self::CreateAfterSales->value, 'group' => 'Pós-venda', 'label' => 'Abrir protocolos', 'requires' => ['after-sales.view']],
+            ['key' => self::UpdateAfterSales->value, 'group' => 'Pós-venda', 'label' => 'Atualizar e resolver protocolos', 'requires' => ['after-sales.view']],
+            ['key' => self::ViewPortfolio->value, 'group' => 'Carteira', 'label' => 'Visualizar carteira de contratos', 'requires' => []],
             ['key' => self::ViewCalendar->value, 'group' => 'Agenda', 'label' => 'Visualizar agenda própria', 'requires' => []],
             ['key' => self::ViewTeamCalendar->value, 'group' => 'Agenda', 'label' => 'Visualizar agenda da equipe', 'requires' => ['calendar.view']],
             ['key' => self::CreateCalendarEvents->value, 'group' => 'Agenda', 'label' => 'Criar compromissos', 'requires' => ['calendar.view']],
