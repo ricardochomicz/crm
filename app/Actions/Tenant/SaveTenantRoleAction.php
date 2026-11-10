@@ -38,6 +38,19 @@ class SaveTenantRoleAction
                 throw ValidationException::withMessages(['code' => 'Este código já existe nesta empresa.']);
             }
 
+            $normalizedName = mb_strtolower(trim(preg_replace('/\\s+/u', ' ', $data['name'])), 'UTF-8');
+            $duplicate = $tenant->roles()
+                ->when($role->exists, fn ($query) => $query->whereKeyNot($role->id))
+                ->get(['id', 'name'])
+                ->contains(fn (TenantRole $existing): bool =>
+                    mb_strtolower(trim(preg_replace('/\\s+/u', ' ', $existing->name)), 'UTF-8') === $normalizedName
+                );
+            if ($duplicate) {
+                throw ValidationException::withMessages([
+                    'name' => 'Já existe um cargo com este nome nesta empresa. Escolha um nome diferente.',
+                ]);
+            }
+
             $permissions = array_values(array_unique($data['permissions']));
             sort($permissions);
             foreach (TenantPermission::catalog() as $item) {
