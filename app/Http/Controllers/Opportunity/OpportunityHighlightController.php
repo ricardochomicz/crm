@@ -22,7 +22,7 @@ class OpportunityHighlightController extends Controller
         return [$tenant, $actor];
     }
 
-    public function index(Request $request, OpportunityAction $opportunities, ResolveTenantPermissionsAction $permissions): JsonResponse
+    public function index(Request $request, string $tenantId, OpportunityAction $opportunities, ResolveTenantPermissionsAction $permissions): JsonResponse
     {
         [$tenant] = $this->context($request, $permissions);
 
