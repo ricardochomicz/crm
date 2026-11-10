@@ -20,7 +20,7 @@ final class DefaultTenantRolePermissions
         $consultant = [
             'clients.view', 'clients.create', 'clients.update',
             'opportunities.view', 'opportunities.create', 'opportunities.update',
-            'orders.view', 'orders.manage',
+            'orders.view',
             'portfolio.view',
             'calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete',
             'after-sales.view', 'after-sales.create', 'after-sales.update',
