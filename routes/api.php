@@ -243,6 +243,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::patch('/commercial-participants/{participantId}/commissions/{overrideId}', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'saveCommission'])->whereUuid('participantId')->whereUuid('overrideId');
                     Route::delete('/commercial-participants/{participantId}/commissions/{overrideId}', [\App\Http\Controllers\Commission\CommercialParticipantController::class, 'deleteCommission'])->whereUuid('participantId')->whereUuid('overrideId');
                     Route::post('/commercial-goals', [\App\Http\Controllers\Commission\CommercialGoalController::class, 'store']);
+                    Route::post('/commercial-goals/bulk', [\App\Http\Controllers\Commission\CommercialGoalController::class, 'bulkStore']);
                     Route::patch('/commercial-goals/{goalId}', [\App\Http\Controllers\Commission\CommercialGoalController::class, 'update'])->whereUuid('goalId');
                     Route::post('/team-commissions', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'store']);
                     Route::patch('/team-commissions/{ruleId}', [\App\Http\Controllers\Commission\TeamCommissionRuleController::class, 'update'])->whereUuid('ruleId');
