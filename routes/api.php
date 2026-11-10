@@ -265,6 +265,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                     Route::delete('/calendar/events/{eventId}', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'destroy'])->whereUuid('eventId');
                     Route::post('/clients', [\App\Http\Controllers\Client\ClientController::class, 'store']);
                     Route::put('/clients/{clientId}/operators/{operatorId}/classification', [\App\Http\Controllers\Client\ClientOperatorClassificationController::class, 'update'])->whereUuid('clientId')->whereNumber('operatorId');
+                    Route::post('/client-portfolio/orders/{orderId}/renew', \\App\\Http\\Controllers\\Client\\HistoricalOrderRenewalController::class)->whereUuid('orderId');
                     Route::patch('/clients/{clientId}', [\App\Http\Controllers\Client\ClientController::class, 'update'])->whereUuid('clientId');
                     Route::get('/clients/{clientId}/consolidation-options', \App\Http\Controllers\Client\ClientContractConsolidationOptionsController::class)->whereUuid('clientId');
                     Route::post('/clients/transfers', [\App\Http\Controllers\Client\ClientTransferController::class, 'store']);
