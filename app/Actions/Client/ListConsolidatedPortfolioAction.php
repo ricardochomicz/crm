@@ -9,6 +9,7 @@ use App\Models\ClientOperatorClassification;
 use App\Models\OperatorClassification;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListConsolidatedPortfolioAction
@@ -46,8 +47,9 @@ class ListConsolidatedPortfolioAction
             $query->where('client_contracts.operator_id', $filters['operator_id']);
         }
 
+        $dateFiltered = filled($filters['renewal_month'] ?? null) || filled($filters['renewal_year'] ?? null);
         $page = $query->orderBy('client_contracts.created_at')->orderBy('client_contracts.id')
-            ->paginate($filters['per_page'] ?? 20);
+            ->paginate($dateFiltered ? max(1, $query->count()) : ($filters['per_page'] ?? 20), ['*'], 'page', $dateFiltered ? 1 : ($filters['page'] ?? 1));
 
         $assignments = ClientOperatorClassification::query()
             ->where('tenant_id', $tenantId)
@@ -124,6 +126,18 @@ class ListConsolidatedPortfolioAction
                 'status' => $days < 0 ? 'overdue' : ($days <= 90 ? 'upcoming' : 'waiting'),
             ]);
         }));
+
+        if ($dateFiltered) {
+            $filtered = $page->getCollection()->filter(function (array $row) use ($filters): bool {
+                if (empty($row['renewal_date'])) return false;
+                $date = CarbonImmutable::parse($row['renewal_date']);
+                return (!filled($filters['renewal_month'] ?? null) || $date->month === (int) $filters['renewal_month'])
+                    && (!filled($filters['renewal_year'] ?? null) || $date->year === (int) $filters['renewal_year']);
+            })->values();
+            $currentPage = max(1, (int) ($filters['page'] ?? 1));
+            $perPage = (int) ($filters['per_page'] ?? 20);
+            return new Paginator($filtered->forPage($currentPage, $perPage)->values(), $filtered->count(), $perPage, $currentPage);
+        }
 
         return $page;
     }
