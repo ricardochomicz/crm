@@ -74,7 +74,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->name('logout');
     });
 
-    Route::get('/public/proposals/{token}', [\\App\\Http\\Controllers\\Opportunity\\OpportunityProposalController::class, 'publicShow'])->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:30,1');
+    Route::get('/public/proposals/{token}', [\App\Http\Controllers\Opportunity\OpportunityProposalController::class, 'publicShow'])->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:30,1');
 
     Route::get('/public/comparisons/{token}', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'publicShow'])->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:30,1');
 
@@ -203,7 +203,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/opportunities/highlights', [\App\Http\Controllers\Opportunity\OpportunityHighlightController::class, 'index']);
                 Route::put('/opportunities/{opportunityId}/highlight', [\App\Http\Controllers\Opportunity\OpportunityHighlightController::class, 'update'])->whereUuid('opportunityId');
                 Route::get('/opportunities/{opportunityId}', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'show'])->whereUuid('opportunityId');
-                Route::get('/opportunities/{opportunityId}/proposals', [\\App\\Http\\Controllers\\Opportunity\\OpportunityProposalController::class, 'index'])->whereUuid('opportunityId');
+                Route::get('/opportunities/{opportunityId}/proposals', [\App\Http\Controllers\Opportunity\OpportunityProposalController::class, 'index'])->whereUuid('opportunityId');
                 Route::get('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'index'])->whereUuid('opportunityId');
                 Route::get('/after-sales/protocols', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'index']);
                 Route::get('/after-sales/options', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'options']);
@@ -231,8 +231,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::middleware('subscription.writable')->group(function (): void {
                     Route::post('/after-sales/protocols', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'store']);
                     Route::patch('/after-sales/protocols/{protocolId}', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'update'])->whereUuid('protocolId');
-                    Route::post('/opportunities/{opportunityId}/proposals', [\\App\\Http\\Controllers\\Opportunity\\OpportunityProposalController::class, 'store'])->whereUuid('opportunityId');
-                    Route::post('/opportunities/{opportunityId}/proposals/{proposalId}/revoke', [\\App\\Http\\Controllers\\Opportunity\\OpportunityProposalController::class, 'revoke'])->whereUuid('opportunityId')->whereUuid('proposalId');
+                    Route::post('/opportunities/{opportunityId}/proposals', [\App\Http\Controllers\Opportunity\OpportunityProposalController::class, 'store'])->whereUuid('opportunityId');
+                    Route::post('/opportunities/{opportunityId}/proposals/{proposalId}/revoke', [\App\Http\Controllers\Opportunity\OpportunityProposalController::class, 'revoke'])->whereUuid('opportunityId')->whereUuid('proposalId');
                     Route::post('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'store'])->whereUuid('opportunityId');
                     Route::post('/opportunities/{opportunityId}/comparisons/{comparisonId}/revoke', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'revoke'])->whereUuid('opportunityId')->whereUuid('comparisonId');
                     Route::post('/commercial-orders/{orderId}/activate-items', [\App\Http\Controllers\Commercial\OrderActivationController::class, 'store'])->whereUuid('orderId');
