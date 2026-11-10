@@ -5,6 +5,8 @@ namespace App\Actions\Client;
 use App\Models\ClassificationRenewalRule;
 use App\Models\Client;
 use App\Models\ClientContract;
+use App\Models\ClientOperatorClassification;
+use App\Models\OperatorClassification;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,9 +49,17 @@ class ListConsolidatedPortfolioAction
         $page = $query->orderBy('client_contracts.created_at')->orderBy('client_contracts.id')
             ->paginate($filters['per_page'] ?? 20);
 
+        $assignments = ClientOperatorClassification::query()
+            ->where('tenant_id', $tenantId)
+            ->whereIn('client_id', $page->getCollection()->pluck('client_id')->unique())
+            ->get()->keyBy(fn ($entry) => $entry->client_id . ':' . $entry->operator_id);
+        $classifications = OperatorClassification::query()
+            ->whereIn('id', $assignments->pluck('classification_id')->unique())
+            ->where(fn (Builder $q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenantId))
+            ->get()->keyBy('id');
         $today = CarbonImmutable::today();
         $rules = ClassificationRenewalRule::query()
-            ->whereIn('classification_id', $page->getCollection()->pluck('classification_id')->filter()->unique())
+            ->whereIn('classification_id', $classifications->keys())
             ->where(fn (Builder $q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenantId))
             ->where('is_active', true)
             ->whereDate('valid_from', '<=', $today->toDateString())
@@ -58,14 +68,16 @@ class ListConsolidatedPortfolioAction
             ->orderByDesc('valid_from')
             ->get()->groupBy('classification_id');
 
-        $page->setCollection($page->getCollection()->map(function (ClientContract $contract) use ($today, $rules): array {
+        $page->setCollection($page->getCollection()->map(function (ClientContract $contract) use ($today, $rules, $assignments, $classifications): array {
             $items = $contract->orders->flatMap(fn ($order) => $order->items);
             $active = $items->filter(fn ($item) => $item->status === 'ACTIVE');
             $lines = (int) $active->sum('quantity');
             $revenueCents = $active->sum(fn ($item) => (int) round((float) $item->monthly_unit_amount * 100) * $item->quantity);
-            $validClassification = $contract->classification
-                && (int) $contract->classification->operator_id === (int) $contract->operator_id;
-            $rule = $validClassification ? $rules->get($contract->classification_id)?->first() : null;
+            $classificationId = $assignments->get($contract->client_id . ':' . $contract->operator_id)?->classification_id;
+            $classification = $classifications->get($classificationId);
+            $validClassification = $classification
+                && (int) $classification->operator_id === (int) $contract->operator_id;
+            $rule = $validClassification ? $rules->get($classificationId)?->first() : null;
 
             $row = [
                 'contract_id' => $contract->id,
@@ -76,8 +88,8 @@ class ListConsolidatedPortfolioAction
                 'client_name' => $contract->client?->company_name,
                 'operator_id' => $contract->operator_id,
                 'operator_name' => $contract->operator?->name,
-                'classification_id' => $contract->classification_id,
-                'classification_name' => $contract->classification?->name,
+                'classification_id' => $validClassification ? $classificationId : null,
+                'classification_name' => $validClassification ? $classification->name : null,
                 'line_count' => $lines,
                 'monthly_revenue' => number_format($revenueCents / 100, 2, '.', ''),
                 'average_activation_date' => null,
