@@ -39,7 +39,7 @@ class OpportunityRequest extends FormRequest
             'max_amount' => ['nullable', 'numeric', 'min:0', 'gte:min_amount'],
             'funnel_stage_id' => ['sometimes', 'uuid'],
         ];
-        if ($this->routeIs('opportunities.stage.move')) return ['funnel_stage_id' => ['required', 'uuid']];
+        if ($this->routeIs('opportunities.stage.move') || $this->route()?->getActionMethod() === 'moveStage') return ['funnel_stage_id' => ['required', 'uuid']];
         $required = $this->isMethod('POST') ? 'required' : 'sometimes';
         return [
             'code' => [$required, 'string', 'max:40'],
@@ -51,7 +51,7 @@ class OpportunityRequest extends FormRequest
             'order_type_id' => [$required, 'uuid'],
             'description' => ['nullable', 'string'],
             'external_protocol' => ['nullable', 'string', 'max:100'],
-            'expected_close_at' => ['required', 'date'],
+            'expected_close_at' => [$required, 'date'],
             'estimated_monthly_amount' => ['sometimes', 'numeric', 'min:0'],
             'estimated_one_time_amount' => ['sometimes', 'numeric', 'min:0'],
             'probability' => ['nullable', 'integer', 'between:0,100'],
