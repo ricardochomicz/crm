@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Commission;
 
 use App\Enums\CommercialRole;
-use App\Enums\OrderType;
+
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +22,7 @@ class SaveTeamCommissionRuleRequest extends FormRequest
 
         return [
             'operator_id' => ['required', 'integer', Rule::exists('tenant_operators', 'operator_id')->where('tenant_id', $tenant->id)],
-            'order_type' => ['required', Rule::enum(OrderType::class)],
+            'order_type' => ['required', 'uuid', Rule::exists('order_types', 'id')->where('is_active', true)],
             'commercial_role' => ['required', Rule::enum(CommercialRole::class)],
             'percentage' => ['required', 'numeric', 'min:0', 'max:9999.99', 'decimal:0,2'],
             'starts_on' => ['required', 'date_format:Y-m-d'],
