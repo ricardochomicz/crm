@@ -35,6 +35,8 @@ class SaveCommercialGoalAction
                 }
             }
 
+            // Keep the existing order_type field for compatibility with older goal reports.
+            // The category and selected negotiation types are additional grouping criteria.
             $tiers = $data['tiers'];
             unset($data['tiers']);
 
