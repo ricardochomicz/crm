@@ -23,7 +23,11 @@ class SaveCommercialGoalRequest extends FormRequest
 
         return [
             'operator_id' => ['required', 'integer', Rule::exists('tenant_operators', 'operator_id')->where('tenant_id', $tenant->id)],
-            'order_type' => ['required', Rule::enum(OrderType::class)],
+            'order_type' => ['required', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (!is_string($value) || (!OrderType::tryFrom($value) && !\App\Models\OrderType::query()->whereKey($value)->where('is_active', true)->exists())) {
+                    $fail('Selecione um tipo de negociação válido e ativo.');
+                }
+            }],
             'commercial_role' => ['required', Rule::enum(CommercialRole::class)],
             'metric' => ['required', Rule::in(['QUANTITY', 'REVENUE'])],
             'starts_on' => ['required', 'date_format:Y-m-d'],
