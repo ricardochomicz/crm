@@ -17,7 +17,6 @@ class SaveCommercialGoalAction
 
             if ($data['is_active']) {
                 $overlap = (clone $query)->where('operator_id', $data['operator_id'])
-                    ->where('order_type', $data['order_type'])
                     ->where('commercial_role', $data['commercial_role'])
                     ->where('metric', $data['metric'])
                     ->where('is_active', true)
@@ -28,7 +27,16 @@ class SaveCommercialGoalAction
                     $overlap->where('id', '!=', $goal->id);
                 }
 
-                if ($overlap->exists()) {
+                $selected = $data['negotiation_type_ids'] ?? [$data['order_type']];
+                $conflict = $overlap->get()->contains(function (CommercialGoal $existing) use ($selected, $data): bool {
+                    if ($existing->category && ($data['category'] ?? null) && $existing->category !== $data['category']) {
+                        return false;
+                    }
+
+                    return count(array_intersect($selected, $existing->negotiation_type_ids ?: [$existing->order_type])) > 0;
+                });
+
+                if ($conflict) {
                     throw ValidationException::withMessages([
                         'starts_on' => 'Já existe uma meta ativa com vigência sobreposta para essa combinação.',
                     ]);
