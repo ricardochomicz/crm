@@ -15,6 +15,8 @@ class CommercialOrderResource extends JsonResource
             'id' => $attributes['id'] ?? null,
             'code' => $attributes['code'] ?? null,
             'opportunity_id' => $attributes['opportunity_id'] ?? null,
+            'consultant_team_id' => $this->whenLoaded('consultant', fn () => $this->consultant?->team_id),
+            'consultant_team_name' => $this->whenLoaded('consultant', fn () => $this->consultant?->team?->name),
             'consultant_name' => $this->whenLoaded('consultant', fn () => $this->consultant?->user?->name),
             'client_id' => $attributes['client_id'] ?? null,
             'order_status_id' => $attributes['order_status_id'] ?? null,
