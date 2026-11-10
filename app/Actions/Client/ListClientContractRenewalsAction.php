@@ -40,7 +40,7 @@ class ListClientContractRenewalsAction
                 'order_code' => $order->code,
                 'operator_id' => $order->operator_id,
                 'operator_name' => $order->operator?->name,
-                'classification_id' => $order->classification_id,
+                'classification_id' => $client->classification_id,
                 'renewal_months' => null,
                 'average_activation_date' => null,
                 'renewal_date' => null,
@@ -48,11 +48,11 @@ class ListClientContractRenewalsAction
                 'status' => 'classification_required',
             ];
 
-            // Contratos novos têm classificação própria; os antigos podem usar a classificação do cliente.
-            $classificationId = $order->classification_id;
-            if (! $classificationId && (int) $client->operator_id === (int) $order->operator_id) {
-                $classificationId = $client->classification_id;
-            }
+            // A classificação pertence ao cliente, nunca ao pedido ou às linhas.
+            // Regras específicas da operadora só se aplicam quando ela corresponde à operadora atual do cliente.
+            $classificationId = (int) $client->operator_id === (int) $order->operator_id
+                ? $client->classification_id
+                : null;
 
             if (! $classificationId || ! OperatorClassification::query()
                 ->whereKey($classificationId)
