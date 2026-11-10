@@ -102,6 +102,32 @@ class OpportunityAction
         ];
     }
 
+    public function funnelOverview(Tenant $tenant, User $user): array
+    {
+        $base = $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user))
+            ->where('status', 'open');
+        $stages = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)
+            ->where('is_active', true)->orderBy('position')->get(['id', 'name']);
+        $totals = (clone $base)->selectRaw('funnel_stage_id, COUNT(*) as quantity, COALESCE(SUM(estimated_monthly_amount), 0) as monthly')
+            ->groupBy('funnel_stage_id')->get()->keyBy('funnel_stage_id');
+
+        return [
+            'stages' => $stages->map(static function ($stage) use ($totals): array {
+                $row = $totals->get($stage->id);
+                return [
+                    'id' => $stage->id,
+                    'name' => $stage->name,
+                    'count' => (int) ($row?->quantity ?? 0),
+                    'monthly' => (string) ($row?->monthly ?? '0'),
+                ];
+            })->values()->all(),
+            'unassigned' => [
+                'count' => (int) ($totals->get('')?->quantity ?? 0),
+                'monthly' => (string) ($totals->get('')?->monthly ?? '0'),
+            ],
+        ];
+    }
+
     public function stages(Tenant $tenant, User $user)
     {
         $this->actor($tenant, $user);
