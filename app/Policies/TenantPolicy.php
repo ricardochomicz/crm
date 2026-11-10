@@ -27,6 +27,36 @@ class TenantPolicy
         return $this->permissions->allows($user, $tenant, TenantPermission::UpdateOpportunities);
     }
 
+    public function viewOrders(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewOrders);
+    }
+
+    public function manageOrders(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ManageOrders);
+    }
+
+    public function viewAfterSales(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewAfterSales);
+    }
+
+    public function createAfterSales(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::CreateAfterSales);
+    }
+
+    public function updateAfterSales(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::UpdateAfterSales);
+    }
+
+    public function viewPortfolio(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewPortfolio);
+    }
+
     public function viewCalendar(User $user, Tenant $tenant): bool
     {
         return $this->permissions->allows($user, $tenant, TenantPermission::ViewCalendar);
