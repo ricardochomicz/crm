@@ -19,6 +19,8 @@ class SaveCommercialGoalAction
                 $overlap = (clone $query)->where('operator_id', $data['operator_id'])
                     ->where('commercial_role', $data['commercial_role'])
                     ->where('metric', $data['metric'])
+                    ->where('target_scope', $data['target_scope'])
+                    ->where('responsible_membership_id', $data['responsible_membership_id'] ?? null)
                     ->where('is_active', true)
                     ->where('starts_on', '<=', $data['ends_on'] ?? '9999-12-31')
                     ->where(fn ($q) => $q->whereNull('ends_on')->orWhere('ends_on', '>=', $data['starts_on']));
