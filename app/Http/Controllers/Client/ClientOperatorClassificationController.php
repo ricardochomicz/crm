@@ -17,7 +17,7 @@ class ClientOperatorClassificationController extends Controller
     public function update(Request $request, string $tenantId, string $clientId, int $operatorId, ScopeVisibleClientsAction $visibility)
     {
         $tenant = $request->attributes->get('active_tenant');
-        abort_unless($request->user()->can('updateClients', $tenant) && $tenant->access?->allows_operational_writes, 403);
+        abort_unless($request->user()->can('updateClients', $tenant), 403);
         $client = $visibility->execute(Client::query(), $tenant->id, $request->user()->id)->findOrFail($clientId);
         $data = $request->validate([
             'classification_id' => ['required', 'integer', Rule::exists('operator_classifications', 'id')
