@@ -60,6 +60,14 @@ class ListContractPortfolioAction
             ->paginate($filters['per_page'] ?? 20);
 
         $orders = $paginator->getCollection();
+        $renewals = \Illuminate\Support\Facades\DB::table('contract_renewal_opportunities')
+            ->join('opportunities', 'opportunities.id', '=', 'contract_renewal_opportunities.opportunity_id')
+            ->where('contract_renewal_opportunities.tenant_id', $tenantId)
+            ->whereIn('contract_renewal_opportunities.source_order_id', $orders->pluck('id'))
+            ->whereNull('opportunities.deleted_at')
+            ->whereIn('opportunities.status', ['open', 'won'])
+            ->select('contract_renewal_opportunities.source_order_id', 'opportunities.id', 'opportunities.status')
+            ->get()->groupBy('source_order_id');
         $legacyClients = $this->visibility->execute(Client::query(), $tenantId, $userId)
             ->whereIn('document', $orders->whereNull('client_id')->pluck('customer_document')->filter())
             ->get(['id', 'company_name', 'document', 'operator_id', 'classification_id'])
@@ -90,7 +98,7 @@ class ListContractPortfolioAction
             ->sortBy(fn ($rule) => $rule->tenant_id === null ? 1 : 0)
             ->groupBy('classification_id');
 
-        $paginator->setCollection($orders->map(function (CommercialOrder $order) use ($legacyClients, $assignments, $classifications, $rules, $today): array {
+        $paginator->setCollection($orders->map(function (CommercialOrder $order) use ($legacyClients, $assignments, $classifications, $rules, $today, $renewals): array {
             $client = $order->client ?? ($order->client_id === null ? $legacyClients->get($order->customer_document) : null);
             $classificationId = $client
                 ? $assignments->get($client->id . ':' . $order->operator_id)?->classification_id
@@ -101,6 +109,9 @@ class ListContractPortfolioAction
 
             $row = [
                 'order_id' => $order->id,
+                'renewal_opportunity_id' => $renewals->get($order->id)?->first()?->id,
+                'renewal_opportunity_status' => $renewals->get($order->id)?->first()?->status,
+                'lines' => $order->items->map(fn ($item) => ['id' => $item->id, 'line_number' => $item->line_number, 'description' => $item->description, 'quantity' => $item->quantity])->values()->all(),
                 'order_code' => $order->code,
                 'client_id' => $client?->id,
                 'client_name' => $client?->company_name ?? $order->customer_name,
