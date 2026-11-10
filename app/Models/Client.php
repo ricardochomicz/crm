@@ -18,6 +18,7 @@ class Client extends Model
             ->when(isset($filters['is_active']), fn(Builder $q) => $q->where('is_active', $filters['is_active']))
             ->when($filters['classification_id'] ?? null, fn(Builder $q, $id) => $q->where('classification_id', $id));
     }
+    public function operatorClassifications() { return $this->hasMany(ClientOperatorClassification::class); }
     public function contracts()
     {
         return $this->hasMany(ClientContract::class);
