@@ -14,6 +14,8 @@ class ShowClientAction
             ->with([
                 'operator:id,name',
                 'classification:id,code,name',
+                'operatorClassifications.operator:id,name',
+                'operatorClassifications.classification:id,code,name',
                 'contacts',
                 'sellers' => fn ($query) => $query->with('membership')->orderByDesc('started_at'),
                 'operatorHistory' => fn ($query) => $query
