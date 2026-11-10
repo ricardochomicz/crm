@@ -2,29 +2,43 @@
 
 namespace App\Actions\Tenant;
 
-use App\Enums\TenantPermission;
 use App\Models\Tenant;
 use App\Models\TenantRole;
-use Illuminate\Support\Facades\DB;
+use App\Support\Permissions\DefaultTenantRolePermissions;
 
+/**
+ * Cria os cargos padrão na criação de um tenant.
+ * Idempotente: não substitui personalizações já salvas.
+ *
+ * A coluna legacy_role é preenchida somente para compatibilidade com
+ * o schema atual e deve ser removida na migração definitiva de RBAC.
+ */
 class SeedTenantRolesAction
 {
-    public const DEFAULTS = [
-        ['OWNER', 'Proprietário', 'OWNER'],
-        ['MANAGER', 'Gerente', 'MANAGER'],
-        ['SUPERVISOR', 'Supervisor de Equipe', 'CONSULTANT'],
-        ['TELEMARKETING', 'Telemarketing', 'CONSULTANT'],
-        ['CONSULTANT', 'Consultor', 'CONSULTANT'],
-        ['BACKOFFICE', 'Backoffice', 'ASSISTANT'],
-        ['FINANCE', 'Financeiro', 'ASSISTANT'],
-        ['ADMINISTRATIVE', 'Administrativo', 'ASSISTANT'],
+    private const LEGACY_COMPATIBILITY = [
+        'OWNER' => 'OWNER',
+        'MANAGER' => 'MANAGER',
+        'SUPERVISOR' => 'CONSULTANT',
+        'CONSULTANT' => 'CONSULTANT',
+        'TELEMARKETING' => 'CONSULTANT',
+        'ADMINISTRATIVE' => 'ASSISTANT',
+        'BACKOFFICE' => 'ASSISTANT',
+        'FINANCE' => 'ASSISTANT',
     ];
 
     public function execute(Tenant $tenant): void
     {
-        foreach (self::DEFAULTS as [$code,$name,$legacy]) {
-            $permissions = $legacy === 'OWNER' ? TenantPermission::keys() : (json_decode(DB::table('tenant_role_permissions')->where('tenant_id', $tenant->id)->where('role', $legacy)->value('permissions') ?? '[]', true) ?: []);
-            TenantRole::firstOrCreate(['tenant_id' => $tenant->id, 'code' => $code], ['name' => $name, 'legacy_role' => $legacy, 'permissions' => $permissions, 'is_system' => true, 'is_active' => true]);
+        foreach (DefaultTenantRolePermissions::all() as $code => $definition) {
+            TenantRole::query()->firstOrCreate(
+                ['tenant_id' => $tenant->getKey(), 'code' => $code],
+                [
+                    'name' => $definition['name'],
+                    'permissions' => $definition['permissions'],
+                    'legacy_role' => self::LEGACY_COMPATIBILITY[$code],
+                    'is_system' => true,
+                    'is_active' => true,
+                ],
+            );
         }
     }
 }
