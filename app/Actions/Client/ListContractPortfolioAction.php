@@ -54,6 +54,24 @@ class ListContractPortfolioAction
             $query->where('commercial_orders.operator_id', $filters['operator_id']);
         }
 
+        if (($filters['renewal_state'] ?? 'available') === 'in_progress') {
+            $query->whereExists(function ($q) use ($tenantId) {
+                $q->selectRaw('1')->from('contract_renewal_opportunities as cro')
+                    ->join('opportunities as ro', 'ro.id', '=', 'cro.opportunity_id')
+                    ->whereColumn('cro.source_order_id', 'commercial_orders.id')
+                    ->where('cro.tenant_id', $tenantId)->whereNull('ro.deleted_at')
+                    ->where('ro.status', 'open');
+            });
+        } elseif (($filters['renewal_state'] ?? 'available') === 'available') {
+            $query->whereNotExists(function ($q) use ($tenantId) {
+                $q->selectRaw('1')->from('contract_renewal_opportunities as cro')
+                    ->join('opportunities as ro', 'ro.id', '=', 'cro.opportunity_id')
+                    ->whereColumn('cro.source_order_id', 'commercial_orders.id')
+                    ->where('cro.tenant_id', $tenantId)->whereNull('ro.deleted_at')
+                    ->whereIn('ro.status', ['open', 'won']);
+            });
+        }
+
         $paginator = $query
             ->orderByDesc('commercial_orders.administratively_completed_at')
             ->orderByDesc('commercial_orders.id')
