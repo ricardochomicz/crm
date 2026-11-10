@@ -17,6 +17,8 @@ class CommercialGoalResource extends JsonResource
             'operator_id' => $attributes['operator_id'] ?? null,
             'order_type' => $attributes['order_type'] ?? null,
             'category' => $attributes['category'] ?? null,
+            'target_scope' => $attributes['target_scope'] ?? 'COMPANY',
+            'responsible_membership_id' => $attributes['responsible_membership_id'] ?? null,
             'negotiation_type_ids' => $this->negotiation_type_ids ?? [],
             'commercial_role' => $attributes['commercial_role'] ?? null,
             'metric' => $attributes['metric'] ?? null,
