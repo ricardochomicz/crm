@@ -12,9 +12,9 @@ class CommercialGoal extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['tenant_id', 'operator_id', 'order_type', 'commercial_role', 'metric', 'starts_on', 'ends_on', 'is_active'];
+    protected $fillable = ['tenant_id', 'operator_id', 'order_type', 'category', 'negotiation_type_ids', 'commercial_role', 'metric', 'starts_on', 'ends_on', 'is_active'];
 
-    protected $casts = ['is_active' => 'boolean', 'starts_on' => 'date:Y-m-d', 'ends_on' => 'date:Y-m-d'];
+    protected $casts = ['negotiation_type_ids' => 'array', 'is_active' => 'boolean', 'starts_on' => 'date:Y-m-d', 'ends_on' => 'date:Y-m-d'];
 
     public function tiers(): HasMany
     {
