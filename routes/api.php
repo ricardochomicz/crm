@@ -198,6 +198,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/opportunity-funnel-stages', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'stages']);
                 Route::get('/timeline/{type}/{id}', [\App\Http\Controllers\Timeline\TimelineController::class, 'index'])->whereUuid('id')->whereIn('type', ['opportunity', 'client', 'commercial_order']);
                 Route::get('/timeline/attachments/{id}/download', [\App\Http\Controllers\Timeline\TimelineController::class, 'download'])->whereUuid('id');
+                Route::get('/opportunities/funnel-overview', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'funnelOverview'])->name('opportunities.funnel-overview');
                 Route::get('/opportunities/overview', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'overview'])->name('opportunities.overview');
                 Route::get('/opportunities', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'index']);
                 Route::get('/opportunities/highlights', [\App\Http\Controllers\Opportunity\OpportunityHighlightController::class, 'index']);
