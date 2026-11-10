@@ -198,6 +198,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/timeline/attachments/{id}/download', [\App\Http\Controllers\Timeline\TimelineController::class, 'download'])->whereUuid('id');
                 Route::get('/opportunities/overview', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'overview'])->name('opportunities.overview');
                 Route::get('/opportunities', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'index']);
+                Route::get('/opportunities/highlights', [\App\Http\Controllers\Opportunity\OpportunityHighlightController::class, 'index']);
+                Route::put('/opportunities/{opportunityId}/highlight', [\App\Http\Controllers\Opportunity\OpportunityHighlightController::class, 'update'])->whereUuid('opportunityId');
                 Route::get('/opportunities/{opportunityId}', [\App\Http\Controllers\Opportunity\OpportunityController::class, 'show'])->whereUuid('opportunityId');
                 Route::get('/opportunities/{opportunityId}/comparisons', [\App\Http\Controllers\Opportunity\OpportunityComparisonController::class, 'index'])->whereUuid('opportunityId');
                 Route::get('/after-sales/protocols', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'index']);
