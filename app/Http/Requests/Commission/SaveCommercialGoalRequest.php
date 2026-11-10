@@ -28,6 +28,9 @@ class SaveCommercialGoalRequest extends FormRequest
                     $fail('Selecione um tipo de negociação válido e ativo.');
                 }
             }],
+            'category' => ['nullable', 'string', 'max:80'],
+            'negotiation_type_ids' => ['nullable', 'array', 'min:1', 'max:30'],
+            'negotiation_type_ids.*' => ['required', 'string', 'distinct', Rule::exists('order_types', 'id')->where('is_active', true)],
             'commercial_role' => ['required', Rule::enum(CommercialRole::class)],
             'metric' => ['required', Rule::in(['QUANTITY', 'REVENUE'])],
             'starts_on' => ['required', 'date_format:Y-m-d'],
