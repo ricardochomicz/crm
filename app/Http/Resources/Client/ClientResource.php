@@ -15,6 +15,12 @@ class ClientResource extends JsonResource {
    'contract_renewals'=>$this->when($this->resource->getAttributes()['contract_renewals'] ?? false, fn()=> $this->resource->getAttribute('contract_renewals')),
    'operator'=>$this->whenLoaded('operator',fn()=> $this->operator?->only(['id','name'])),
    'classification'=>$this->whenLoaded('classification',fn()=> $this->classification?->only(['id','code','name'])),
+   'operator_classifications'=>$this->whenLoaded('operatorClassifications',fn()=> $this->operatorClassifications->map(fn($entry)=>[
+     'operator_id'=>$entry->operator_id,
+     'operator_name'=>$entry->operator?->name,
+     'classification_id'=>$entry->classification_id,
+     'classification_name'=>$entry->classification?->name,
+   ])),
    'contacts'=>ClientContactResource::collection($this->whenLoaded('contacts')),
    'sellers'=>ClientSellerResource::collection($this->whenLoaded('sellers')),
    'operator_history'=>ClientOperatorHistoryResource::collection($this->whenLoaded('operatorHistory')),
