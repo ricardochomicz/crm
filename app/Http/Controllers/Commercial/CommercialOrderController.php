@@ -23,7 +23,7 @@ class CommercialOrderController extends Controller
     private function tenant(Request $request, bool $write = false): Tenant
     {
         $tenant = $request->attributes->get('active_tenant');
-        abort_unless($request->user()->can($write ? 'manageCommissions' : 'viewCommissions', $tenant), 403);
+        abort_unless($request->user()->can($write ? 'manageOrders' : 'viewOrders', $tenant), 403);
 
         return $tenant;
     }
@@ -42,7 +42,7 @@ class CommercialOrderController extends Controller
 
         return [
             'data' => CommercialOrderResource::collection($filter->execute($tenant->id, $request->validated(), $visibleIds)),
-            'meta' => ['can_manage' => $request->user()->can('manageCommissions', $tenant)],
+            'meta' => ['can_manage' => $request->user()->can('manageOrders', $tenant)],
         ];
     }
 
