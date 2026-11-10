@@ -51,6 +51,22 @@ class OpportunityAction
         return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType', 'assignee.user'])->latest()->paginate(20);
     }
 
+    public function highlightedIds(Tenant $tenant, User $user): array
+    {
+        $actor = $this->actor($tenant, $user);
+        $ids = DB::table('opportunity_highlights')
+            ->where('tenant_id', $tenant->id)
+            ->where('tenant_user_id', $actor->id)
+            ->pluck('opportunity_id');
+
+        if ($ids->isEmpty()) return [];
+
+        return $this->visible(Opportunity::query(), $tenant, $actor)
+            ->whereIn('id', $ids)
+            ->pluck('id')
+            ->all();
+    }
+
     public function overview(Tenant $tenant, User $user, array $filters): array
     {
         $start = $filters['date_from'];
