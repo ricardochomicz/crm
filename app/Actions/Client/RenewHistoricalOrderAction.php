@@ -6,6 +6,9 @@ use App\Actions\Opportunity\OpportunityAction;
 use App\Models\Client;
 use App\Models\CommercialOrder;
 use App\Models\OrderType;
+use App\Models\ClientOperatorClassification;
+use App\Models\ClassificationRenewalRule;
+use Carbon\CarbonImmutable;
 use App\Models\Opportunity;
 use App\Models\Tenant;
 use App\Models\User;
@@ -17,6 +20,7 @@ class RenewHistoricalOrderAction
     public function __construct(
         private ScopeVisibleClientsAction $visibility,
         private OpportunityAction $opportunities,
+        private CalculateContractRenewalAction $calculator,
     ) {}
 
     public function execute(Tenant $tenant, User $user, string $orderId, array $lineIds): Opportunity
@@ -29,6 +33,21 @@ class RenewHistoricalOrderAction
                 ? $this->visibility->execute(Client::query(), $tenant->id, $user->id)->findOrFail($order->client_id)
                 : $this->visibility->execute(Client::query(), $tenant->id, $user->id)
                     ->where('document', $order->customer_document)->firstOrFail();
+            $classificationId = ClientOperatorClassification::query()->where('tenant_id', $tenant->id)
+                ->where('client_id', $client->id)->where('operator_id', $order->operator_id)->value('classification_id');
+            $today = CarbonImmutable::today();
+            $rule = ClassificationRenewalRule::query()->where('classification_id', $classificationId)
+                ->where(fn ($q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id))
+                ->where('is_active', true)->whereDate('valid_from', '<=', $today->toDateString())
+                ->where(fn ($q) => $q->whereNull('valid_until')->orWhereDate('valid_until', '>=', $today->toDateString()))
+                ->orderByRaw('CASE WHEN tenant_id IS NULL THEN 1 ELSE 0 END')->orderByDesc('valid_from')->first();
+            if (! $rule || $order->items->isEmpty() || $order->items->contains(
+                fn ($item) => $item->status !== 'ACTIVE' || ! $item->activated_at || $item->quantity < 1
+            )) throw ValidationException::withMessages(['order' => 'O pedido não possui dados completos para calcular a renovação.']);
+            $calculated = $this->calculator->execute($order->items, $rule->minimum_months);
+            if (CarbonImmutable::parse($calculated['renewal_date'])->greaterThanOrEqualTo($today)) {
+                throw ValidationException::withMessages(['order' => 'Este pedido ainda não está vencido.']);
+            }
             $existing = DB::table('contract_renewal_opportunities')->where('tenant_id', $tenant->id)
                 ->where('source_order_id', $order->id)->pluck('opportunity_id');
             if ($existing->isNotEmpty() && Opportunity::query()->whereIn('id', $existing)
