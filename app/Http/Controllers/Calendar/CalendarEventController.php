@@ -21,6 +21,11 @@ class CalendarEventController extends Controller
         return CalendarEventResource::collection($action->list($request->attributes->get('active_tenant'), $request->user(), $request->validated()));
     }
 
+    public function activitiesOverview(CalendarEventRequest $request, string $tenantId, CalendarEventAction $action): array
+    {
+        return ['data' => $action->activitiesOverview($request->attributes->get('active_tenant'), $request->user(), $request->validated())];
+    }
+
     public function activities(CalendarEventRequest $request, string $tenantId, CalendarEventAction $action): AnonymousResourceCollection
     {
         return CalendarEventResource::collection($action->activities($request->attributes->get('active_tenant'), $request->user(), $request->validated()));
