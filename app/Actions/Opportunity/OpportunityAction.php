@@ -151,7 +151,7 @@ class OpportunityAction
     public function find(Tenant $tenant, User $user, string $id): Opportunity
     {
         return $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user))
-            ->with(['items.orderType', 'client', 'stage', 'operator', 'orderType', 'assignee.user'])->findOrFail($id);
+            ->with(['items.orderType', 'client.contacts', 'stage', 'operator', 'orderType', 'assignee.user'])->findOrFail($id);
     }
 
     private function validateRelations(Tenant $tenant, array $data): void
