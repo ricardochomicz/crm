@@ -66,6 +66,7 @@ class CalendarEventRequest extends FormRequest
             'tenant_user_id' => ['sometimes', 'uuid'],
             'client_id' => ['nullable', 'uuid'],
             'opportunity_id' => ['nullable', 'uuid'],
+            'protocol_id' => ['nullable', 'uuid'],
         ];
     }
 }
