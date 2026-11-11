@@ -74,9 +74,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->name('logout');
     });
 
+    Route::post('/public/customer-portal/request-code', [\App\Http\Controllers\CustomerPortal\CustomerPortalController::class, 'requestCode'])->middleware('throttle:5,1');
+    Route::post('/public/customer-portal/verify', [\App\Http\Controllers\CustomerPortal\CustomerPortalController::class, 'verify'])->middleware('throttle:10,1');
+
     Route::prefix('public/customer-portal/{tenantId}')->where(['tenantId' => '[0-9a-fA-F-]{36}'])->group(function (): void {
-        Route::post('/request-code', [\App\Http\Controllers\CustomerPortal\CustomerPortalController::class, 'requestCode'])->middleware('throttle:5,1');
-        Route::post('/verify', [\App\Http\Controllers\CustomerPortal\CustomerPortalController::class, 'verify'])->middleware('throttle:10,1');
         Route::get('/orders', [\App\Http\Controllers\CustomerPortal\CustomerPortalController::class, 'orders'])->middleware('throttle:30,1');
         Route::get('/orders/{orderId}', [\App\Http\Controllers\CustomerPortal\CustomerPortalController::class, 'showOrder'])->whereUuid('orderId')->middleware('throttle:30,1');
         Route::post('/logout', [\App\Http\Controllers\CustomerPortal\CustomerPortalController::class, 'logout'])->middleware('throttle:10,1');
