@@ -83,9 +83,52 @@ class CalendarEventAction
             ->orderBy('starts_at')->limit(1000)->get();
     }
 
+    /** Paginated task inbox; shares the same tenant and team visibility rules as the calendar. */
+    public function activities(Tenant $tenant, User $user, array $filters): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        $actor = $this->member($user, $tenant);
+        $team = ($filters['scope'] ?? 'mine') === 'team';
+        if ($team && ! $user->can('viewTeamCalendar', $tenant)) abort(403);
+
+        $isManager = in_array($actor->role->value, ['OWNER', 'MANAGER'], true);
+        $query = CalendarEvent::query()
+            ->with(['client', 'opportunity.client', 'assignee.user'])
+            ->where('tenant_id', $tenant->getKey())
+            ->whereIn('type', ['task', 'reminder']);
+
+        if (! $team) {
+            $query->where('tenant_user_id', $actor->getKey());
+        } elseif (! $isManager) {
+            $supervised = $actor->supervisedTeams()->where('tenant_id', $tenant->getKey())->pluck('id');
+            $members = TenantUser::query()->where('tenant_id', $tenant->getKey())
+                ->whereIn('team_id', $supervised)->where('status', 'ACTIVE')->pluck('id');
+            $query->whereIn('tenant_user_id', $members->push($actor->getKey())->unique());
+        }
+
+        $status = $filters['status'] ?? 'pending';
+        if ($status === 'overdue') {
+            $query->where('status', 'pending')->where('ends_at', '<', now());
+        } elseif ($status !== 'all') {
+            $query->where('status', $status);
+        }
+        if (! empty($filters['search'])) {
+            $term = '%'.addcslashes($filters['search'], '%_\\').'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('title', 'like', $term)
+                    ->orWhere('description', 'like', $term)
+                    ->orWhereHas('client', fn ($client) => $client->where('company_name', 'like', $term))
+                    ->orWhereHas('opportunity', fn ($opportunity) => $opportunity->where('title', 'like', $term));
+            });
+        }
+        return $query->orderBy('ends_at')->orderBy('id')
+            ->paginate(min((int) ($filters['per_page'] ?? 20), 100));
+    }
+
     public function create(Tenant $tenant, User $user, array $data): CalendarEvent
     {
         $actor = $this->member($user, $tenant);
+        $data['status'] = $data['status'] ?? 'pending';
+        $data['priority'] = $data['priority'] ?? 'normal';
         $data = $this->prepare($tenant, $actor, $data);
         $this->checkDates($data, true);
         return CalendarEvent::create([...$data, 'tenant_id' => $tenant->getKey(), 'created_by_tenant_user_id' => $actor->getKey()]);
@@ -106,6 +149,11 @@ class CalendarEventAction
         $datesChanged = (array_key_exists('starts_at', $data) && ! Carbon::parse($data['starts_at'])->equalTo($event->starts_at))
             || (array_key_exists('ends_at', $data) && ! Carbon::parse($data['ends_at'])->equalTo($event->ends_at));
         $this->checkDates([...$event->only(['starts_at', 'ends_at']), ...$data], $datesChanged);
+        if (($data['status'] ?? null) === 'completed' && $event->status !== 'completed') {
+            $data['completed_at'] = now();
+        } elseif (isset($data['status']) && $data['status'] !== 'completed' && $event->status === 'completed') {
+            $data['completed_at'] = null;
+        }
         $event->update($data);
         return $event->refresh();
     }

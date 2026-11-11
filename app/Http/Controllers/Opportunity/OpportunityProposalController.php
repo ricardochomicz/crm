@@ -44,13 +44,17 @@ class OpportunityProposalController extends Controller
         $proposal = DB::transaction(function () use ($tenant, $opportunityId, $data) {
             $opportunity = Opportunity::query()->where('tenant_id', $tenant->id)
                 ->whereKey($opportunityId)->lockForUpdate()->firstOrFail();
-            $opportunity->load(['client', 'operator', 'assignee.user', 'items']);
+            $opportunity->load(['client', 'operator', 'assignee.user', 'items', 'client.contacts']);
             abort_unless($opportunity->items->isNotEmpty(), 422, 'Adicione serviços antes de gerar a proposta.');
             $version = (int) OpportunityProposal::query()->where('opportunity_id', $opportunityId)->max('version') + 1;
+            $contact = $opportunity->client?->contacts
+                ->where('is_active', true)->sortByDesc('is_primary')->first();
             $snapshot = [
                 'title' => 'Proposta Comercial '.($opportunity->operator?->name ?? 'Operadora').' Empresas',
                 'company_name' => $tenant->name,
                 'client_name' => $opportunity->client?->company_name ?? 'Cliente',
+                'client_contact_name' => $contact?->name,
+                'consultant_phone' => $opportunity->assignee?->mobile_phone ?: $opportunity->assignee?->secondary_phone,
                 'consultant_name' => $opportunity->assignee?->user?->name ?? 'Não informado',
                 'opportunity_code' => $opportunity->code,
                 'conditions' => $data['conditions'],

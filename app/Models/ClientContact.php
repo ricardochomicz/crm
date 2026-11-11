@@ -13,6 +13,6 @@ class ClientContact extends Model
     {
         return $query->when($filters['search'] ?? null, fn(Builder $q, $v) => $q->whereAny(['name', 'email', 'phone'], 'LIKE', '%' . $v . '%'))->when(isset($filters['is_active']), fn(Builder $q) => $q->where('is_active', $filters['is_active']));
     }
-    protected $fillable = ['tenant_id', 'client_id', 'name', 'position', 'phone', 'email', 'is_primary', 'is_active', 'notes'];
-    protected $casts = ['is_primary' => 'boolean', 'is_active' => 'boolean'];
+    protected $fillable = ['tenant_id', 'client_id', 'name', 'cpf', 'birth_date', 'position', 'phone', 'email', 'is_primary', 'is_active', 'portal_access_enabled', 'notes'];
+    protected $casts = ['birth_date' => 'date:Y-m-d', 'is_primary' => 'boolean', 'is_active' => 'boolean', 'portal_access_enabled' => 'boolean'];
 }

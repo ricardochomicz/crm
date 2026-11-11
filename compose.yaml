@@ -149,7 +149,7 @@ services:
         logging: *logging
 
     reverb:
-        profiles: [realtime]
+        restart: unless-stopped
         image: telecomhub-php:8.5-dev
         init: true
         working_dir: /var/www/html

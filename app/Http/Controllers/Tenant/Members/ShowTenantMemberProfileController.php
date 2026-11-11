@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\ShowTenantMemberProfileRequest;
 use App\Http\Resources\Tenant\TenantMemberProfileResource;
 use App\Models\Tenant;
+use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Enums\TenantUserRole;
 
 class ShowTenantMemberProfileController extends Controller
 {
@@ -19,6 +21,16 @@ class ShowTenantMemberProfileController extends Controller
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('active_tenant');
 
-        return new TenantMemberProfileResource($action->execute($tenant, $membershipId));
+        $member = $action->execute($tenant, $membershipId);
+        $permissions = app(ResolveTenantPermissionsAction::class);
+        $actor = $permissions->membership($request->user(), $tenant);
+        $isSelf = $member->user_id === $request->user()->getKey();
+        $canViewOthers = $actor !== null
+            && in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)
+            && $permissions->canManageMember($request->user(), $tenant, $member);
+
+        abort_unless($isSelf || $canViewOthers, 403, 'Você só pode consultar seu próprio cadastro.');
+
+        return new TenantMemberProfileResource($member);
     }
 }
