@@ -16,61 +16,80 @@ use Illuminate\Support\Str;
 
 class CustomerPortalController extends Controller
 {
-    public function requestCode(Request $request, string $tenantId): JsonResponse
+    public function requestCode(Request $request): JsonResponse
     {
         $data = $request->validate(['document' => ['required', 'string', 'max:32']]);
-        $document = preg_replace('/\D/', '', $data['document']);
+        $document = preg_replace('/\\D/', '', $data['document']);
         $challenge = Str::random(64);
-        $generic = ['message' => 'Se houver um contato autorizado, enviaremos um código ao e-mail cadastrado.', 'challenge' => $challenge];
-        if (!in_array(strlen($document), [11, 14], true) || !Tenant::query()->whereKey($tenantId)->exists()) {
-            return response()->json($generic);
-        }
-        $client = Client::query()->where('tenant_id', $tenantId)->where('document', $document)->where('is_active', true)->first();
-        if (!$client) return response()->json($generic);
+        $generic = [
+            'message' => 'Se houver um contato autorizado, enviaremos um código ao e-mail cadastrado.',
+            'challenge' => $challenge,
+        ];
+        if (!in_array(strlen($document), [11, 14], true)) return response()->json($generic);
 
-        $contact = ClientContact::query()->where('tenant_id', $tenantId)->where('client_id', $client->id)
-            ->where('is_active', true)->where('portal_access_enabled', true)->whereNotNull('email')
-            ->orderByDesc('is_primary')->first();
-        if (!$contact || !filter_var($contact->email, FILTER_VALIDATE_EMAIL)) return response()->json($generic);
+        // Um documento pode existir em mais de um tenant. Cada contato autorizado
+        // recebe seu próprio código, associado ao tenant correto.
+        $clients = Client::query()->where('document', $document)->where('is_active', true)
+            ->whereHas('contacts', fn ($query) => $query->where('is_active', true)
+                ->where('portal_access_enabled', true)->whereNotNull('email'))
+            ->limit(5)->get();
 
-        // One active challenge per contact; a new code invalidates all previous sessions.
-        CustomerPortalAccess::query()->where('tenant_id', $tenantId)->where('client_contact_id', $contact->id)->delete();
-        $code = (string) random_int(100000, 999999);
-        CustomerPortalAccess::query()->create([
-            'tenant_id' => $tenantId, 'client_id' => $client->id, 'client_contact_id' => $contact->id,
-            'challenge_hash' => hash('sha256', $challenge), 'code_hash' => Hash::make($code),
-            'code_expires_at' => now()->addMinutes(5),
-        ]);
-        try {
-            Mail::raw("Seu código de acesso ao Portal do Cliente é: {$code}. Válido por 5 minutos. Se você não solicitou, ignore esta mensagem.", function ($mail) use ($contact) {
-            $mail->to($contact->email)->subject('Código de acesso ao Portal do Cliente');
-        });
-        } catch (\Throwable $exception) {
-            \Illuminate\Support\Facades\Log::warning('Falha ao enviar código do portal do cliente', ['tenant_id' => $tenantId, 'exception' => $exception::class]);
-            CustomerPortalAccess::query()->where('challenge_hash', hash('sha256', $challenge))->delete();
+        foreach ($clients as $client) {
+            $contact = ClientContact::query()->where('tenant_id', $client->tenant_id)
+                ->where('client_id', $client->id)->where('is_active', true)
+                ->where('portal_access_enabled', true)->whereNotNull('email')
+                ->orderByDesc('is_primary')->first();
+            if (!$contact || !filter_var($contact->email, FILTER_VALIDATE_EMAIL)) continue;
+            $code = (string) random_int(100000, 999999);
+            $access = CustomerPortalAccess::query()->create([
+                'tenant_id' => $client->tenant_id, 'client_id' => $client->id,
+                'client_contact_id' => $contact->id,
+                'challenge_hash' => hash('sha256', $challenge . ':' . $client->id),
+                'code_hash' => Hash::make($code),
+                'code_expires_at' => now()->addMinutes(5),
+            ]);
+            try {
+                Mail::raw("Seu código de acesso ao Portal do Cliente é: {$code}. Válido por 5 minutos. Se você não solicitou, ignore esta mensagem.", function ($mail) use ($contact) {
+                    $mail->to($contact->email)->subject('Código de acesso ao Portal do Cliente');
+                });
+            } catch (\\Throwable $exception) {
+                \\Illuminate\\Support\\Facades\\Log::warning('Falha no envio do código do portal', [
+                    'tenant_id' => $client->tenant_id, 'exception' => $exception::class,
+                ]);
+                $access->delete();
+            }
         }
-        // Do not disclose whether the document or email exists. The challenge is only useful with the email code.
-        return response()->json($generic + ['challenge' => $challenge]);
+        return response()->json($generic);
     }
 
-    public function verify(Request $request, string $tenantId): JsonResponse
+    public function verify(Request $request): JsonResponse
     {
         $data = $request->validate([
             'challenge' => ['required', 'string', 'size:64'],
             'code' => ['required', 'digits:6'],
         ]);
-        $access = CustomerPortalAccess::query()->where('tenant_id', $tenantId)
-            ->where('challenge_hash', hash('sha256', $data['challenge']))->first();
-        if (!$access || $access->used_at || $access->code_expires_at->isPast() || $access->attempts >= 5) {
-            return response()->json(['message' => 'Código inválido ou expirado.'], 422);
+        $accesses = CustomerPortalAccess::query()
+            ->where('created_at', '>=', now()->subMinutes(5))
+            ->whereNull('used_at')->where('code_expires_at', '>', now())
+            ->where('attempts', '<', 5)->get();
+        $match = null;
+        foreach ($accesses as $candidate) {
+            if (!hash_equals($candidate->challenge_hash, hash('sha256', $data['challenge'] . ':' . $candidate->client_id))) continue;
+            $candidate->increment('attempts');
+            if (Hash::check($data['code'], $candidate->code_hash)) { $match = $candidate; break; }
         }
-        $access->increment('attempts');
-        if (!Hash::check($data['code'], $access->code_hash)) {
-            return response()->json(['message' => 'Código inválido ou expirado.'], 422);
-        }
+        if (!$match) return response()->json(['message' => 'Código inválido ou expirado.'], 422);
         $session = Str::random(64);
-        $access->forceFill(['used_at' => now(), 'session_hash' => hash('sha256', $session), 'session_expires_at' => now()->addMinutes(30)])->save();
-        return response()->json(['data' => ['token' => $session, 'expires_at' => $access->session_expires_at]]);
+        $match->forceFill([
+            'used_at' => now(), 'session_hash' => hash('sha256', $session),
+            'session_expires_at' => now()->addMinutes(30),
+        ])->save();
+        CustomerPortalAccess::query()->where('client_contact_id', $match->client_contact_id)
+            ->whereKeyNot($match->id)->whereNull('used_at')->delete();
+        return response()->json(['data' => [
+            'tenant_id' => $match->tenant_id, 'token' => $session,
+            'expires_at' => $match->session_expires_at,
+        ]]);
     }
 
     private function access(Request $request, string $tenantId): CustomerPortalAccess
