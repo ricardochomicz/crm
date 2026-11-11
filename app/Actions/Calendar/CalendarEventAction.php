@@ -147,6 +147,11 @@ class CalendarEventAction
         $datesChanged = (array_key_exists('starts_at', $data) && ! Carbon::parse($data['starts_at'])->equalTo($event->starts_at))
             || (array_key_exists('ends_at', $data) && ! Carbon::parse($data['ends_at'])->equalTo($event->ends_at));
         $this->checkDates([...$event->only(['starts_at', 'ends_at']), ...$data], $datesChanged);
+        if (($data['status'] ?? null) === 'completed' && $event->status !== 'completed') {
+            $data['completed_at'] = now();
+        } elseif (isset($data['status']) && $data['status'] !== 'completed' && $event->status === 'completed') {
+            $data['completed_at'] = null;
+        }
         $event->update($data);
         return $event->refresh();
     }
