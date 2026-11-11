@@ -87,8 +87,10 @@ class CustomerPortalController extends Controller
         ])->save();
         CustomerPortalAccess::query()->where('client_contact_id', $match->client_contact_id)
             ->whereKeyNot($match->id)->whereNull('used_at')->delete();
+        $clientName = Client::query()->where('tenant_id', $match->tenant_id)
+            ->whereKey($match->client_id)->value('company_name');
         return response()->json(['data' => [
-            'tenant_id' => $match->tenant_id, 'token' => $session,
+            'tenant_id' => $match->tenant_id, 'client_name' => $clientName, 'token' => $session,
             'expires_at' => $match->session_expires_at,
         ]]);
     }
@@ -112,7 +114,9 @@ class CustomerPortalController extends Controller
         $orders = CommercialOrder::query()->where('tenant_id', $tenantId)->where('client_id', $access->client_id)
             ->with(['operator:id,name', 'orderStatus:id,name', 'consultant.user:id,name'])
             ->orderByDesc('created_at')->paginate(15);
-        return response()->json(['data' => $orders->getCollection()->map(fn ($order) => [
+        $clientName = Client::query()->where('tenant_id', $tenantId)
+            ->whereKey($access->client_id)->value('company_name');
+        return response()->json(['client_name' => $clientName, 'data' => $orders->getCollection()->map(fn ($order) => [
             'id' => $order->id, 'code' => $order->code, 'created_at' => $order->created_at,
             'operator' => $order->operator?->name, 'status' => $order->orderStatus?->name ?? $order->status,
             'order_type' => $order->order_type, 'line_quantity' => $order->line_quantity,
