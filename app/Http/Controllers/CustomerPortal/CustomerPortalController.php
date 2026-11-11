@@ -20,7 +20,8 @@ class CustomerPortalController extends Controller
     {
         $data = $request->validate(['document' => ['required', 'string', 'max:32']]);
         $document = preg_replace('/\D/', '', $data['document']);
-        $generic = ['message' => 'Se houver um contato autorizado, enviaremos um código ao e-mail cadastrado.'];
+        $challenge = Str::random(64);
+        $generic = ['message' => 'Se houver um contato autorizado, enviaremos um código ao e-mail cadastrado.', 'challenge' => $challenge];
         if (!in_array(strlen($document), [11, 14], true) || !Tenant::query()->whereKey($tenantId)->exists()) {
             return response()->json($generic);
         }
@@ -34,7 +35,6 @@ class CustomerPortalController extends Controller
 
         // One active challenge per contact; a new code invalidates all previous sessions.
         CustomerPortalAccess::query()->where('tenant_id', $tenantId)->where('client_contact_id', $contact->id)->delete();
-        $challenge = Str::random(64);
         $code = (string) random_int(100000, 999999);
         CustomerPortalAccess::query()->create([
             'tenant_id' => $tenantId, 'client_id' => $client->id, 'client_contact_id' => $contact->id,
