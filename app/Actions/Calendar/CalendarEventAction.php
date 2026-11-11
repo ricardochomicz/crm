@@ -32,8 +32,14 @@ class CalendarEventAction
     private function prepare(Tenant $tenant, TenantUser $actor, array $data): array
     {
         $assigneeId = $data['tenant_user_id'] ?? $actor->getKey();
-        if ($assigneeId !== $actor->getKey() && ! $actor->user->can('viewTeamCalendar', $tenant)) {
-            abort(403);
+        if ($assigneeId !== $actor->getKey()) {
+            abort_unless($actor->user->can('viewTeamCalendar', $tenant), 403);
+            $manager = in_array($actor->role->value, ['OWNER', 'MANAGER'], true);
+            if (! $manager) {
+                $teamIds = $actor->supervisedTeams()->where('tenant_id', $tenant->getKey())->pluck('id');
+                abort_unless(TenantUser::query()->where('tenant_id', $tenant->getKey())
+                    ->whereIn('team_id', $teamIds)->whereKey($assigneeId)->exists(), 403);
+            }
         }
         $this->assignee($tenant, $assigneeId);
         if (! empty($data['client_id']) && ! DB::table('clients')->where('tenant_id', $tenant->getKey())->where('id', $data['client_id'])->exists()) {
