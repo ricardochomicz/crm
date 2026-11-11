@@ -218,6 +218,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/after-sales/protocols', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'index']);
                 Route::get('/after-sales/options', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'options']);
                 Route::get('/after-sales/protocols/{protocolId}', [\App\Http\Controllers\AfterSales\ProtocolController::class, 'show'])->whereUuid('protocolId');
+                Route::get('/activities', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'activities']);
                 Route::get('/calendar/events', [\App\Http\Controllers\Calendar\CalendarEventController::class, 'index']);
                 Route::get('/clients', [\App\Http\Controllers\Client\ClientController::class, 'index']);
                 Route::get('/clients/portfolio-redistributions', [\App\Http\Controllers\Client\ClientPortfolioRedistributionController::class, 'index']);
