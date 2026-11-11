@@ -113,7 +113,8 @@ class CustomerPortalController extends Controller
         $access = $this->access($request, $tenantId);
         $orders = CommercialOrder::query()->where('tenant_id', $tenantId)->where('client_id', $access->client_id)
             ->with(['operator:id,name', 'orderStatus:id,name', 'consultant.user:id,name'])
-            ->orderByDesc('created_at')->paginate(15);
+            ->orderByRaw('CASE WHEN activated_at IS NULL THEN 0 ELSE 1 END ASC')
+            ->orderByDesc('activated_at')->orderByDesc('created_at')->orderByDesc('id')->paginate(15);
         $clientName = Client::query()->where('tenant_id', $tenantId)
             ->whereKey($access->client_id)->value('company_name');
         return response()->json(['client_name' => $clientName, 'data' => $orders->getCollection()->map(fn ($order) => [
