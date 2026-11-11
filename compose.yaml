@@ -111,8 +111,8 @@ services:
             SESSION_DOMAIN: ""
             SESSION_SECURE_COOKIE: "false"
             CACHE_STORE: file
-            QUEUE_CONNECTION: sync
-            BROADCAST_CONNECTION: "${BROADCAST_CONNECTION:-log}"
+            QUEUE_CONNECTION: database
+            BROADCAST_CONNECTION: "${BROADCAST_CONNECTION:-reverb}"
             REVERB_APP_ID: "${REVERB_APP_ID:-telecomhub}"
             REVERB_APP_KEY: "${REVERB_APP_KEY:-telecomhub-local-key}"
             REVERB_APP_SECRET: "${REVERB_APP_SECRET:-telecomhub-local-secret}"
@@ -148,6 +148,58 @@ services:
         pids_limit: 64
         logging: *logging
 
+    # Dedicated workers restart with Docker and do not block the HTTP process.
+    queue:
+        restart: unless-stopped
+        image: telecomhub-php:8.5-dev
+        init: true
+        user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+        working_dir: /var/www/html
+        volumes:
+            - .:/var/www/html
+        environment: &worker-environment
+            APP_ENV: local
+            APP_KEY: "${APP_KEY:-}"
+            APP_CONFIG_CACHE: /tmp/telecomhub-config.php
+            DB_URL: ""
+            DB_CONNECTION: mysql
+            DB_HOST: mysql
+            DB_PORT: "3306"
+            DB_DATABASE: "${DOCKER_DB_DATABASE:-telecomhub}"
+            DB_USERNAME: "${DOCKER_DB_USERNAME:-telecomhub}"
+            DB_PASSWORD: "${DOCKER_DB_PASSWORD:-telecomhub_local}"
+            CACHE_STORE: file
+            QUEUE_CONNECTION: database
+            BROADCAST_CONNECTION: "${BROADCAST_CONNECTION:-reverb}"
+            REVERB_APP_ID: "${REVERB_APP_ID:-telecomhub}"
+            REVERB_APP_KEY: "${REVERB_APP_KEY:-telecomhub-local-key}"
+            REVERB_APP_SECRET: "${REVERB_APP_SECRET:-telecomhub-local-secret}"
+            REVERB_HOST: reverb
+            REVERB_PORT: "8080"
+            REVERB_SCHEME: http
+        command: ["php", "artisan", "queue:work", "--sleep=2", "--tries=3", "--timeout=90", "--max-time=3600"]
+        depends_on:
+            mysql:
+                condition: service_healthy
+        mem_limit: 192m
+        logging: *logging
+
+    scheduler:
+        restart: unless-stopped
+        image: telecomhub-php:8.5-dev
+        init: true
+        user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+        working_dir: /var/www/html
+        volumes:
+            - .:/var/www/html
+        environment: *worker-environment
+        command: ["php", "artisan", "schedule:work"]
+        depends_on:
+            mysql:
+                condition: service_healthy
+        mem_limit: 128m
+        logging: *logging
+
     reverb:
         restart: unless-stopped
         image: telecomhub-php:8.5-dev
@@ -157,16 +209,16 @@ services:
         volumes:
             - .:/var/www/html
         environment:
-            APP_ENV: local
-            APP_KEY: "${APP_KEY:-}"
-            REVERB_APP_ID: "${REVERB_APP_ID:-telecomhub}"
-            REVERB_APP_KEY: "${REVERB_APP_KEY:-telecomhub-local-key}"
-            REVERB_APP_SECRET: "${REVERB_APP_SECRET:-telecomhub-local-secret}"
+            <<: *worker-environment
             REVERB_SERVER_HOST: 0.0.0.0
             REVERB_SERVER_PORT: "8080"
         command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+        depends_on:
+            mysql:
+                condition: service_healthy
         ports:
             - "127.0.0.1:${DOCKER_REVERB_PORT:-8086}:8080"
+        mem_limit: 192m
         logging: *logging
 
     mysql:
