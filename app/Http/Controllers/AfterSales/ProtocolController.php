@@ -4,6 +4,7 @@ namespace App\Http\Controllers\AfterSales;
 
 use App\Http\Controllers\Controller;
 use App\Models\TenantUser;
+use App\Models\CalendarEvent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,7 +52,22 @@ class ProtocolController extends Controller
             $join->on('tu.id', '=', 'h.tenant_user_id')->on('tu.tenant_id', '=', 'h.tenant_id');
         })->leftJoin('users as u', 'u.id', '=', 'tu.user_id')->where('h.tenant_id', $protocol->tenant_id)->where('h.protocol_id', $id)
             ->orderBy('h.created_at')->get(['h.id', 'h.action', 'h.from_status', 'h.to_status', 'h.note', 'h.created_at', 'u.name as actor_name']);
-        return response()->json(['data' => $protocol, 'history' => $history]);
+        $tasks = collect();
+        if ($request->user()->can('viewCalendar', $request->attributes->get('active_tenant'))) {
+            $taskQuery = CalendarEvent::query()->where('tenant_id', $protocol->tenant_id)
+                ->where('protocol_id', $protocol->id)->whereIn('type', ['task', 'reminder']);
+            if (! $request->user()->can('viewTeamCalendar', $request->attributes->get('active_tenant'))) {
+                $taskQuery->where('tenant_user_id', $actor->id);
+            } elseif (! in_array($actor->role->value, ['OWNER', 'MANAGER'], true)) {
+                $teams = $actor->supervisedTeams()->where('tenant_id', $protocol->tenant_id)->pluck('id');
+                $memberIds = TenantUser::query()->where('tenant_id', $protocol->tenant_id)
+                    ->where('status', 'ACTIVE')->whereIn('team_id', $teams)->pluck('id')->push($actor->id)->unique();
+                $taskQuery->whereIn('tenant_user_id', $memberIds);
+            }
+            $tasks = $taskQuery->orderBy('ends_at')->limit(100)
+                ->get(['id', 'title', 'type', 'status', 'priority', 'ends_at', 'tenant_user_id']);
+        }
+        return response()->json(['data' => $protocol, 'history' => $history, 'activities' => $tasks]);
     }
 
     public function index(Request $request): JsonResponse
