@@ -24,6 +24,13 @@ class CalendarEventRequest extends FormRequest
     public function rules(): array
     {
         if ($this->isMethod('DELETE')) return [];
+        if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities')) return [
+            'scope' => ['sometimes', Rule::in(['mine', 'team'])],
+            'status' => ['sometimes', Rule::in(['pending', 'overdue', 'completed', 'cancelled', 'all'])],
+            'search' => ['sometimes', 'string', 'max:120'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+        ];
         if ($this->isMethod('GET')) return [
             'from' => ['required', 'date'],
             'to' => ['required', 'date', 'after:from'],
