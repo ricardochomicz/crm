@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->foreignUuid('client_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('client_contact_id')->constrained()->cascadeOnDelete();
             $table->string('challenge_hash', 64)->unique();
+            $table->string('request_hash', 64)->index();
             $table->string('code_hash');
             $table->timestamp('code_expires_at');
             $table->unsignedTinyInteger('attempts')->default(0);
