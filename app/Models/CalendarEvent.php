@@ -13,7 +13,7 @@ class CalendarEvent extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'tenant_id', 'tenant_user_id', 'created_by_tenant_user_id', 'client_id', 'opportunity_id',
+        'tenant_id', 'tenant_user_id', 'created_by_tenant_user_id', 'client_id', 'opportunity_id', 'protocol_id',
         'title', 'description', 'type', 'status', 'priority', 'all_day',
         'starts_at', 'ends_at', 'completed_at',
     ];
