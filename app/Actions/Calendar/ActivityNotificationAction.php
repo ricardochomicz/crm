@@ -11,7 +11,7 @@ class ActivityNotificationAction
 {
     public function notify(CalendarEvent $event, string $kind): void
     {
-        if (! in_array($kind, ['assigned', 'due_soon', 'overdue'], true) || $event->status !== 'pending') return;
+        if (! in_array($kind, ['assigned', 'due_soon', 'overdue'], true) || $event->status !== 'pending' || ! in_array($event->type, ['task', 'reminder'], true)) return;
 
         $member = DB::table('tenant_users')->where('tenant_id', $event->tenant_id)
             ->where('id', $event->tenant_user_id)->where('status', 'ACTIVE')->first();
