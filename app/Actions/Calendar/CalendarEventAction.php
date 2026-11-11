@@ -78,6 +78,17 @@ class CalendarEventAction
             }
             $data['client_id'] = $opportunity->client_id;
         }
+        if (! empty($data['protocol_id'])) {
+            $protocol = DB::table('after_sales_protocols')
+                ->where('tenant_id', $tenant->getKey())->where('id', $data['protocol_id'])->first();
+            if (! $protocol) {
+                throw ValidationException::withMessages(['protocol_id' => 'Protocolo não encontrado nesta empresa.']);
+            }
+            if (! empty($data['client_id']) && $data['client_id'] !== $protocol->client_id) {
+                throw ValidationException::withMessages(['client_id' => 'O cliente deve ser o mesmo do protocolo.']);
+            }
+            $data['client_id'] = $protocol->client_id;
+        }
         $data['tenant_user_id'] = $assigneeId;
 
         return $data;
@@ -238,7 +249,7 @@ class CalendarEventAction
     {
         $event = $this->owned($tenant, $user, $id);
         $actor = $this->member($user, $tenant);
-        $data = $this->prepare($tenant, $actor, [...$event->only(['tenant_user_id', 'client_id', 'opportunity_id']), ...$data]);
+        $data = $this->prepare($tenant, $actor, [...$event->only(['tenant_user_id', 'client_id', 'opportunity_id', 'protocol_id']), ...$data]);
         $datesChanged = (array_key_exists('starts_at', $data) && ! Carbon::parse($data['starts_at'])->equalTo($event->starts_at))
             || (array_key_exists('ends_at', $data) && ! Carbon::parse($data['ends_at'])->equalTo($event->ends_at));
         $this->checkDates([...$event->only(['starts_at', 'ends_at']), ...$data], $datesChanged);
@@ -248,7 +259,7 @@ class CalendarEventAction
             $data['completed_at'] = null;
         }
         return DB::transaction(function () use ($event, $data, $actor) {
-            $before = $event->only(['title', 'type', 'status', 'priority', 'tenant_user_id', 'client_id', 'opportunity_id', 'starts_at', 'ends_at']);
+            $before = $event->only(['title', 'type', 'status', 'priority', 'tenant_user_id', 'client_id', 'opportunity_id', 'protocol_id', 'starts_at', 'ends_at']);
             $event->update($data);
             $after = $event->refresh()->only(array_keys($before));
             $changes = [];
