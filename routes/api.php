@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Calendar\CalendarEventController;
+use App\Http\Controllers\Calendar\ActivityNotificationController;
 use App\Http\Controllers\Client\ClientContractConsolidationOptionsController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\ClientDocumentController;
@@ -256,6 +257,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/after-sales/options', [ProtocolController::class, 'options']);
                 Route::get('/after-sales/protocols/{protocolId}', [ProtocolController::class, 'show'])->whereUuid('protocolId');
                 Route::get('/activities', [CalendarEventController::class, 'activities']);
+                Route::get('/activity-notifications', [ActivityNotificationController::class, 'index']);
+                Route::patch('/activity-notifications/{notificationId}/read', [ActivityNotificationController::class, 'read'])->whereUuid('notificationId');
                 Route::get('/activities/overview', [CalendarEventController::class, 'activitiesOverview']);
                 Route::get('/calendar/assignees', [CalendarEventController::class, 'assignees']);
                 Route::get('/calendar/events/{eventId}/history', [CalendarEventController::class, 'history'])->whereUuid('eventId');
