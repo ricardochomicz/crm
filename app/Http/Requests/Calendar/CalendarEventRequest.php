@@ -30,6 +30,12 @@ class CalendarEventRequest extends FormRequest
             return [];
         }
         if ($this->isMethod('GET') && ($this->is('api/v1/tenants/*/calendar/assignees') || $this->is('api/v1/tenants/*/calendar/events/*/history'))) return [];
+        if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities/overview')) {
+            return [
+                'scope' => ['sometimes', Rule::in(['mine', 'team'])],
+                'search' => ['sometimes', 'string', 'max:120'],
+            ];
+        }
         if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities')) {
             return [
                 'scope' => ['sometimes', Rule::in(['mine', 'team'])],
