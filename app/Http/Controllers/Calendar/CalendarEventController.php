@@ -36,6 +36,11 @@ class CalendarEventController extends Controller
         return new CalendarEventResource($action->update($request->attributes->get('active_tenant'), $request->user(), $eventId, $request->validated()));
     }
 
+    public function history(CalendarEventRequest $request, string $tenantId, string $eventId, CalendarEventAction $action): array
+    {
+        return ['data' => $action->history($request->attributes->get('active_tenant'), $request->user(), $eventId)];
+    }
+
     public function destroy(CalendarEventRequest $request, string $tenantId, string $eventId, CalendarEventAction $action): Response
     {
         $action->delete($request->attributes->get('active_tenant'), $request->user(), $eventId);
