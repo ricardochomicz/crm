@@ -23,6 +23,28 @@ class CalendarEventAction
         return $this->permissions->membership($user, $tenant) ?? abort(403);
     }
 
+
+    /** Members the actor is authorized to assign activities to. */
+    public function assignableMembers(Tenant $tenant, User $user): array
+    {
+        $actor = $this->member($user, $tenant);
+        $query = TenantUser::query()->with('user')
+            ->where('tenant_id', $tenant->getKey())->where('status', 'ACTIVE');
+
+        if (! $user->can('viewTeamCalendar', $tenant)) {
+            $query->whereKey($actor->getKey());
+        } elseif (! in_array($actor->role->value, ['OWNER', 'MANAGER'], true)) {
+            $teamIds = $actor->supervisedTeams()->where('tenant_id', $tenant->getKey())->pluck('id');
+            $query->where(function ($members) use ($actor, $teamIds) {
+                $members->whereKey($actor->getKey())->orWhereIn('team_id', $teamIds);
+            });
+        }
+
+        return $query->get()->sortBy(fn ($member) => $member->user?->name ?? '')
+            ->map(fn ($member) => ['id' => $member->id, 'name' => $member->user?->name ?? 'Membro'])
+            ->values()->all();
+    }
+
     private function assignee(Tenant $tenant, string $id): TenantUser
     {
         return TenantUser::query()->where('tenant_id', $tenant->getKey())
