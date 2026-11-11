@@ -50,6 +50,7 @@ class OpportunityAction
     {
         $query = $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user));
         $query = OpportunityFilters::apply($query, $filters);
+        if (! empty($filters['client_id'])) $query->where('client_id', $filters['client_id']);
 
         return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType', 'assignee.user'])->latest()->paginate(20);
     }
