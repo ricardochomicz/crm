@@ -110,13 +110,15 @@ class CustomerPortalController extends Controller
     {
         $access = $this->access($request, $tenantId);
         $orders = CommercialOrder::query()->where('tenant_id', $tenantId)->where('client_id', $access->client_id)
-            ->with(['operator:id,name', 'orderStatus:id,name'])
+            ->with(['operator:id,name', 'orderStatus:id,name', 'consultant.user:id,name'])
             ->orderByDesc('created_at')->paginate(15);
         return response()->json(['data' => $orders->getCollection()->map(fn ($order) => [
             'id' => $order->id, 'code' => $order->code, 'created_at' => $order->created_at,
             'operator' => $order->operator?->name, 'status' => $order->orderStatus?->name ?? $order->status,
             'order_type' => $order->order_type, 'line_quantity' => $order->line_quantity,
             'monthly_amount' => $order->monthly_amount, 'activated_at' => $order->activated_at,
+            'expected_activation_at' => $order->expected_activation_at,
+            'consultant_name' => $order->consultant?->user?->name,
         ]), 'meta' => ['current_page' => $orders->currentPage(), 'last_page' => $orders->lastPage(), 'total' => $orders->total()]]);
     }
 
@@ -125,7 +127,7 @@ class CustomerPortalController extends Controller
         $access = $this->access($request, $tenantId);
         $order = CommercialOrder::query()->where('tenant_id', $tenantId)
             ->where('client_id', $access->client_id)->whereKey($orderId)
-            ->with(['operator:id,name', 'orderStatus:id,name', 'items'])->firstOrFail();
+            ->with(['operator:id,name', 'orderStatus:id,name', 'consultant.user:id,name', 'items'])->firstOrFail();
         return response()->json(['data' => [
             'id' => $order->id, 'code' => $order->code, 'created_at' => $order->created_at,
             'operator' => $order->operator?->name, 'status' => $order->orderStatus?->name ?? $order->status,
