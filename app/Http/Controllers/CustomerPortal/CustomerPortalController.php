@@ -45,6 +45,7 @@ class CustomerPortalController extends Controller
                 'tenant_id' => $client->tenant_id, 'client_id' => $client->id,
                 'client_contact_id' => $contact->id,
                 'challenge_hash' => hash('sha256', $challenge . ':' . $client->id),
+                'request_hash' => hash('sha256', $challenge),
                 'code_hash' => Hash::make($code),
                 'code_expires_at' => now()->addMinutes(5),
             ]);
@@ -69,7 +70,7 @@ class CustomerPortalController extends Controller
             'code' => ['required', 'digits:6'],
         ]);
         $accesses = CustomerPortalAccess::query()
-            ->where('created_at', '>=', now()->subMinutes(5))
+            ->where('request_hash', hash('sha256', $data['challenge']))
             ->whereNull('used_at')->where('code_expires_at', '>', now())
             ->where('attempts', '<', 5)->get();
         $match = null;
