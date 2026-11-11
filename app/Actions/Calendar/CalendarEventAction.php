@@ -4,6 +4,7 @@ namespace App\Actions\Calendar;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Models\CalendarEvent;
+use App\Models\CalendarEventHistory;
 use App\Models\Opportunity;
 use App\Models\Tenant;
 use App\Models\TenantUser;
@@ -172,7 +173,11 @@ class CalendarEventAction
         $data = $this->prepare($tenant, $actor, $data);
         $this->checkDates($data, true);
 
-        return CalendarEvent::create([...$data, 'tenant_id' => $tenant->getKey(), 'created_by_tenant_user_id' => $actor->getKey()]);
+        return DB::transaction(function () use ($tenant, $actor, $data) {
+            $event = CalendarEvent::create([...$data, 'tenant_id' => $tenant->getKey(), 'created_by_tenant_user_id' => $actor->getKey()]);
+            $this->record($event, $actor, 'created', []);
+            return $event;
+        });
     }
 
     private function owned(Tenant $tenant, User $user, string $id): CalendarEvent
@@ -196,13 +201,57 @@ class CalendarEventAction
         } elseif (isset($data['status']) && $data['status'] !== 'completed' && $event->status === 'completed') {
             $data['completed_at'] = null;
         }
-        $event->update($data);
+        return DB::transaction(function () use ($event, $data, $actor) {
+            $before = $event->only(['title', 'type', 'status', 'priority', 'tenant_user_id', 'client_id', 'opportunity_id', 'starts_at', 'ends_at']);
+            $event->update($data);
+            $after = $event->refresh()->only(array_keys($before));
+            $changes = [];
+            foreach ($before as $field => $value) {
+                $previous = $value instanceof \DateTimeInterface ? $value->format('c') : $value;
+                $current = $after[$field] instanceof \DateTimeInterface ? $after[$field]->format('c') : $after[$field];
+                if ($previous != $current) $changes[$field] = ['from' => $previous, 'to' => $current];
+            }
+            if ($changes) {
+                $action = isset($changes['tenant_user_id']) ? 'reassigned' : (isset($changes['status']) && $after['status'] === 'completed' ? 'completed' : 'updated');
+                $this->record($event, $actor, $action, $changes);
+            }
+            return $event;
+        });
+    }
 
-        return $event->refresh();
+    private function record(CalendarEvent $event, TenantUser $actor, string $action, array $changes): void
+    {
+        CalendarEventHistory::create([
+            'tenant_id' => $event->tenant_id,
+            'calendar_event_id' => $event->id,
+            'actor_tenant_user_id' => $actor->id,
+            'action' => $action,
+            'changes' => $changes ?: null,
+        ]);
+    }
+
+    public function history(Tenant $tenant, User $user, string $id): array
+    {
+        $event = $this->owned($tenant, $user, $id);
+        return CalendarEventHistory::query()->with('actor.user')
+            ->where('tenant_id', $tenant->id)->where('calendar_event_id', $event->id)
+            ->orderByDesc('created_at')->limit(100)->get()
+            ->map(fn ($entry) => [
+                'id' => $entry->id,
+                'action' => $entry->action,
+                'changes' => $entry->changes,
+                'actor_name' => $entry->actor?->user?->name ?? 'Usuário removido',
+                'created_at' => $entry->created_at?->toIso8601String(),
+            ])->all();
     }
 
     public function delete(Tenant $tenant, User $user, string $id): void
     {
-        $this->owned($tenant, $user, $id)->delete();
+        $event = $this->owned($tenant, $user, $id);
+        $actor = $this->member($user, $tenant);
+        DB::transaction(function () use ($event, $actor) {
+            $this->record($event, $actor, 'deleted', []);
+            $event->delete();
+        });
     }
 }
