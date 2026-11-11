@@ -12,7 +12,8 @@ class IndexOperatorClassificationRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
 
         if ($tenant instanceof Tenant) {
-            return ($this->user()?->can('viewOperatorClassifications', $tenant) ?? false);
+            return (bool) ($this->user()?->can('viewOperatorClassifications', $tenant)
+                || $this->user()?->can('viewClients', $tenant));
         }
 
         return (bool) $this->user()?->is_platform_admin;
