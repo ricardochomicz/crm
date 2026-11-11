@@ -72,6 +72,7 @@ class CreateTenantAction
             ]);
 
             app(SeedTenantRolesAction::class)->execute($tenant);
+            app(SeedOpportunityFunnelStagesAction::class)->execute($tenant);
 
             $tenant->units()->create(['name' => 'Matriz', 'is_headquarters' => true, 'email' => $tenant->email, 'phone' => $tenant->phone]);
 
