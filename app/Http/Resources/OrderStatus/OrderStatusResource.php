@@ -12,6 +12,7 @@ class OrderStatusResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'code' => $this->code?->value,
             'is_initial' => (bool) $this->is_initial,
         ];
     }

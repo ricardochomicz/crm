@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\OrderStatusCode;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -17,20 +19,39 @@ class OrderStatusSeeder extends Seeder
             'PENDENTE BIOMETRIA', 'PENDENTE SMS',
         ];
 
+        $codes = [
+            'TRIAGEM' => OrderStatusCode::Triage->value,
+            'ATIVO' => OrderStatusCode::Active->value,
+            'CONCLUIDO' => OrderStatusCode::Completed->value,
+            'PARA CORREÇÃO' => OrderStatusCode::Correction->value,
+            'PARCIALMENTE ATIVADO' => OrderStatusCode::PartiallyActivated->value,
+        ];
+
         foreach ($names as $name) {
-            $exists = DB::table('order_statuses')->where('name', $name)->exists();
-            if (! $exists) {
+            $code = $codes[$name] ?? null;
+            $status = DB::table('order_statuses')
+                ->where(function (Builder $query) use ($name, $code): void {
+                    $query->where('name', $name);
+                    if ($code !== null) {
+                        $query->orWhere('code', $code);
+                    }
+                })->first();
+
+            if ($status === null) {
                 DB::table('order_statuses')->insert([
                     'id' => (string) Str::uuid(),
                     'name' => $name,
-                    'is_initial' => $name === 'TRIAGEM',
+                    'code' => $code,
+                    'is_initial' => $code === OrderStatusCode::Triage->value,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+            } elseif ($code !== null && $status->code === null) {
+                DB::table('order_statuses')->where('id', $status->id)->update(['code' => $code]);
             }
         }
 
-        DB::table('order_statuses')->where('name', '!=', 'TRIAGEM')->update(['is_initial' => false]);
-        DB::table('order_statuses')->where('name', 'TRIAGEM')->update(['is_initial' => true]);
+        DB::table('order_statuses')->update(['is_initial' => false]);
+        DB::table('order_statuses')->where('code', OrderStatusCode::Triage->value)->update(['is_initial' => true]);
     }
 }

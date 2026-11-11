@@ -108,6 +108,17 @@ class CommercialOrderController extends Controller
                 ? CommercialOrder::where('tenant_id', $tenant->id)->lockForUpdate()->findOrFail($orderId)
                 : new CommercialOrder(['tenant_id' => $tenant->id]);
             abort_unless($order->status === null || $order->status === 'DRAFT', 422, 'Somente pedidos em rascunho podem ser editados.');
+            if ($order->exists && (
+                $order->administratively_completed_at !== null
+                || $order->activated_at !== null
+                || $order->order_status_id !== null
+                || $order->opportunity_id !== null
+                || $order->items()->exists()
+            )) {
+                throw ValidationException::withMessages([
+                    'order' => 'Pedidos no fluxo operacional não podem ser editados como rascunho. Utilize o fluxo de correção da oportunidade.',
+                ]);
+            }
             $order->fill($data);
             $order->status = 'DRAFT';
             $order->save();

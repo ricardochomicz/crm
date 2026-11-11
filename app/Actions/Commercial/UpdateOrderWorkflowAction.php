@@ -3,16 +3,16 @@
 namespace App\Actions\Commercial;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
-use App\Enums\TenantUserRole;
+use App\Enums\OrderStatusCode;
+use App\Events\CommercialOrdersChanged;
 use App\Models\Comment;
 use App\Models\CommercialOrder;
-use App\Models\OrderStatus;
 use App\Models\OpportunityFunnelStage;
+use App\Models\OrderStatus;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use App\Events\CommercialOrdersChanged;
 use Illuminate\Validation\ValidationException;
 
 class UpdateOrderWorkflowAction
@@ -22,7 +22,7 @@ class UpdateOrderWorkflowAction
     public function execute(Tenant $tenant, User $user, string $id, array $data): CommercialOrder
     {
         $actor = $this->permissions->membership($user, $tenant) ?? abort(403);
-        abort_unless(in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
+        abort_unless($user->can('manageOrders', $tenant), 403);
 
         return DB::transaction(function () use ($tenant, $actor, $id, $data): CommercialOrder {
             $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
@@ -33,7 +33,7 @@ class UpdateOrderWorkflowAction
                 throw ValidationException::withMessages(['order' => 'Pedido concluído. Reabertura administrativa necessária.']);
             }
 
-            if (in_array(mb_strtolower(trim($status->name)), ['ativo', 'parcialmente ativado', 'concluido'], true)) {
+            if ($status->code?->requiresActivation()) {
                 throw ValidationException::withMessages(['order_status_id' => 'Utilize as ações de ativação de linhas ou conclusão administrativa.']);
             }
 
@@ -41,7 +41,7 @@ class UpdateOrderWorkflowAction
             $previousDate = $order->expected_activation_at ? Carbon::parse($order->expected_activation_at)->format('d/m/Y') : null;
             $newDate = isset($data['expected_activation_at']) ? Carbon::parse($data['expected_activation_at'])->format('d/m/Y') : null;
 
-            $returnForCorrection = mb_strtolower(trim($status->name)) === 'para correção';
+            $returnForCorrection = $status->code === OrderStatusCode::Correction;
             if ($returnForCorrection && $order->order_status_id !== $status->id && blank($data['correction_reason'] ?? null)) {
                 throw ValidationException::withMessages(['correction_reason' => 'Informe o motivo da devolução ao consultor.']);
             }
@@ -71,7 +71,7 @@ class UpdateOrderWorkflowAction
 
             $changes = [];
             if ($returnForCorrection && $order->wasChanged('order_status_id')) {
-                $changes[] = 'Motivo da devolução ao consultor: ' . trim($data['correction_reason']);
+                $changes[] = 'Motivo da devolução ao consultor: '.trim($data['correction_reason']);
             }
             if ($returnForCorrection && $order->wasChanged('order_status_id')) {
                 Comment::create([
@@ -104,7 +104,10 @@ class UpdateOrderWorkflowAction
                 ]);
             }
 
-            if ($changes) DB::afterCommit(fn () => CommercialOrdersChanged::dispatch($tenant->id));
+            if ($changes) {
+                DB::afterCommit(fn () => CommercialOrdersChanged::dispatch($tenant->id));
+            }
+
             return $order->load(['orderStatus:id,name', 'items']);
         });
     }

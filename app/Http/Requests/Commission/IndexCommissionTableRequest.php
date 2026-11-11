@@ -2,9 +2,8 @@
 
 namespace App\Http\Requests\Commission;
 
-use App\Enums\OrderType;
+use App\Rules\ValidCommissionOrderType;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class IndexCommissionTableRequest extends FormRequest
 {
@@ -20,7 +19,7 @@ class IndexCommissionTableRequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:200'],
             'operator_id' => ['nullable', 'integer'],
-            'order_type' => ['nullable', Rule::enum(OrderType::class)],
+            'order_type' => ['nullable', 'string', new ValidCommissionOrderType(activeOnly: false)],
             'is_active' => ['nullable', 'boolean'],
         ];
     }

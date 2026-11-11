@@ -3,12 +3,12 @@
 namespace App\Actions\Opportunity;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Enums\OrderStatusCode;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
-use App\Models\Opportunity;
 use App\Models\Comment;
+use App\Models\Opportunity;
 use App\Models\OpportunityFunnelStage;
-use App\Actions\Opportunity\OpportunityFilters;
 use App\Models\OrderType;
 use App\Models\Product;
 use App\Models\Tenant;
@@ -30,7 +30,9 @@ class OpportunityAction
     private function visible(Builder $query, Tenant $tenant, TenantUser $actor): Builder
     {
         $query->where('tenant_id', $tenant->id);
-        if (in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) return $query;
+        if (in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
+            return $query;
+        }
 
         $teams = DB::table('teams')->where('tenant_id', $tenant->id)
             ->where('supervisor_membership_id', $actor->id)->pluck('id');
@@ -48,6 +50,7 @@ class OpportunityAction
     {
         $query = $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user));
         $query = OpportunityFilters::apply($query, $filters);
+
         return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType', 'assignee.user'])->latest()->paginate(20);
     }
 
@@ -59,7 +62,9 @@ class OpportunityAction
             ->where('tenant_user_id', $actor->id)
             ->pluck('opportunity_id');
 
-        if ($ids->isEmpty()) return [];
+        if ($ids->isEmpty()) {
+            return [];
+        }
 
         return $this->visible(Opportunity::query(), $tenant, $actor)
             ->whereIn('id', $ids)
@@ -79,10 +84,11 @@ class OpportunityAction
         $overdue = (clone $open)->whereDate('expected_close_at', '<', $today);
         $future = (clone $open)->whereDate('expected_close_at', '>', $end);
         $unscheduled = (clone $open)->whereNull('expected_close_at');
-        $closed = (clone $base)->whereBetween('closed_at', [$start . ' 00:00:00', $end . ' 23:59:59']);
+        $closed = (clone $base)->whereBetween('closed_at', [$start.' 00:00:00', $end.' 23:59:59']);
 
         $summarize = static function (Builder $query): array {
             $totals = $query->selectRaw('COUNT(*) as quantity, COALESCE(SUM(estimated_monthly_amount), 0) as monthly')->first();
+
             return ['count' => (int) $totals->quantity, 'monthly' => (string) $totals->monthly];
         };
 
@@ -114,6 +120,7 @@ class OpportunityAction
         return [
             'stages' => $stages->map(static function ($stage) use ($totals): array {
                 $row = $totals->get($stage->id);
+
                 return [
                     'id' => $stage->id,
                     'name' => $stage->name,
@@ -131,6 +138,7 @@ class OpportunityAction
     public function stages(Tenant $tenant, User $user)
     {
         $this->actor($tenant, $user);
+
         return OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->orderBy('position')->get();
     }
 
@@ -140,11 +148,12 @@ class OpportunityAction
         $opportunity = $this->find($tenant, $user, $id);
         abort_unless($opportunity->tenant_user_id === $actor->id || in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
         abort_unless($opportunity->status === 'open', 422, 'Somente oportunidades abertas podem mudar de etapa.');
-        if ($opportunity->commercialOrder()->whereHas('orderStatus', fn (Builder $query) => $query->where('name', 'Para Correção'))->exists()) {
+        if ($opportunity->commercialOrder()->whereHas('orderStatus', fn (Builder $query) => $query->where('code', OrderStatusCode::Correction->value))->exists()) {
             throw ValidationException::withMessages(['funnel_stage_id' => 'Reenvie a correção ao Backoffice antes de mover a oportunidade.']);
         }
         $stage = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($stageId);
         $opportunity->update(['funnel_stage_id' => $stage->id]);
+
         return $opportunity->refresh()->load(['client', 'stage', 'orderType']);
     }
 
@@ -170,7 +179,10 @@ class OpportunityAction
     private function resolveType(string $id, string $field): OrderType
     {
         $type = OrderType::query()->find($id);
-        if (! $type) throw ValidationException::withMessages([$field => 'Tipo de pedido inválido.']);
+        if (! $type) {
+            throw ValidationException::withMessages([$field => 'Tipo de pedido inválido.']);
+        }
+
         return $type;
     }
 
@@ -198,7 +210,9 @@ class OpportunityAction
             if ($number !== '' && in_array($number, $numbers, true)) {
                 throw ValidationException::withMessages(["items.$index.line_number" => 'Esta linha já foi adicionada.']);
             }
-            if ($number !== '') $numbers[] = $number;
+            if ($number !== '') {
+                $numbers[] = $number;
+            }
             if ($number !== '' && (int) $item['quantity'] !== 1) {
                 throw ValidationException::withMessages(["items.$index.quantity" => 'Uma linha identificada deve ter quantidade 1.']);
             }
@@ -210,6 +224,7 @@ class OpportunityAction
                 'one_time_unit_amount' => $item['one_time_unit_amount'] ?? 0, 'notes' => $item['notes'] ?? null,
             ];
         }
+
         return $resolved;
     }
 
@@ -221,6 +236,7 @@ class OpportunityAction
             $monthly += (int) round((float) $item['monthly_unit_amount'] * 100) * $item['quantity'];
             $once += (int) round((float) $item['one_time_unit_amount'] * 100) * $item['quantity'];
         }
+
         return ['estimated_monthly_amount' => number_format($monthly / 100, 2, '.', ''),
             'estimated_one_time_amount' => number_format($once / 100, 2, '.', '')];
     }
@@ -231,7 +247,9 @@ class OpportunityAction
         $this->validateRelations($tenant, $data);
         $type = $this->resolveType($data['order_type_id'], 'order_type_id');
         $data['order_type'] = mb_substr($type->name, 0, 40);
-        if (empty($data['operator_id'])) throw ValidationException::withMessages(['operator_id' => 'Selecione a operadora da oportunidade.']);
+        if (empty($data['operator_id'])) {
+            throw ValidationException::withMessages(['operator_id' => 'Selecione a operadora da oportunidade.']);
+        }
         $items = $this->validatedItems($tenant, $data['items'], (int) $data['operator_id']);
         $prospecting = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->where('is_active', true)->whereRaw('LOWER(name) LIKE ?', ['prospec%'])->orderBy('position')->first();
         if (! $prospecting) {
@@ -253,12 +271,13 @@ class OpportunityAction
         }
         abort_unless(TenantUser::query()->where('tenant_id', $tenant->id)
             ->where('status', TenantUserStatus::Active->value)->whereKey($assignee)->exists(), 422);
+
         return DB::transaction(function () use ($tenant, $data, $assignee, $items, $actor) {
             $opportunity = Opportunity::create([...$data, 'tenant_id' => $tenant->id, 'tenant_user_id' => $assignee]);
             $opportunity->items()->createMany($items);
 
             $quantity = array_sum(array_map(static fn (array $item): int => (int) $item['quantity'], $items));
-            $monthly = 'R$ ' . number_format((float) $opportunity->estimated_monthly_amount, 2, ',', '.');
+            $monthly = 'R$ '.number_format((float) $opportunity->estimated_monthly_amount, 2, ',', '.');
             $createdAt = $opportunity->created_at->format('d/m/Y \\à\\s H:i');
             $content = sprintf(
                 'Oportunidade criada em %s. Código: %s. Título: %s. Tipo de negociação: %s. Quantidade de linhas: %d. Valor mensal estimado: %s.',
@@ -295,19 +314,24 @@ class OpportunityAction
             $data['order_type'] = mb_substr($type->name, 0, 40);
         }
         $operatorId = (int) ($data['operator_id'] ?? $event->operator_id);
-        if (! $operatorId) throw ValidationException::withMessages(['operator_id' => 'Selecione a operadora da oportunidade.']);
+        if (! $operatorId) {
+            throw ValidationException::withMessages(['operator_id' => 'Selecione a operadora da oportunidade.']);
+        }
         $items = array_key_exists('items', $data) ? $this->validatedItems($tenant, $data['items'], $operatorId) : null;
         if ($items === null && $event->items()->where('operator_id', '!=', $operatorId)->exists()) {
             throw ValidationException::withMessages(['operator_id' => 'Os itens existentes pertencem a outra operadora.']);
         }
         unset($data['items']);
-        if ($items !== null) $data = [...$data, ...$this->totals($items)];
+        if ($items !== null) {
+            $data = [...$data, ...$this->totals($items)];
+        }
+
         return DB::transaction(function () use ($event, $data, $items) {
             $opportunity = Opportunity::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
             $order = $opportunity->commercialOrder()->lockForUpdate()->first();
 
             if ($order) {
-                if (mb_strtolower(trim($order->orderStatus?->name ?? '')) !== 'para correção') {
+                if ($order->orderStatus?->code !== OrderStatusCode::Correction) {
                     throw ValidationException::withMessages([
                         'opportunity' => 'Este pedido não está em correção. Solicite a devolução ao Backoffice antes de editar.',
                     ]);
@@ -335,6 +359,7 @@ class OpportunityAction
                 $opportunity->items()->delete();
                 $opportunity->items()->createMany($items);
             }
+
             return $opportunity->refresh()->load('items');
         });
     }

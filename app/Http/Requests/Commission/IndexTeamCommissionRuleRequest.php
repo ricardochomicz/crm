@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Commission;
 
 use App\Enums\CommercialRole;
-use App\Enums\OrderType;
+use App\Rules\ValidCommissionOrderType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +22,7 @@ class IndexTeamCommissionRuleRequest extends FormRequest
 
         return [
             'operator_id' => ['nullable', 'integer'],
-            'order_type' => ['nullable', Rule::enum(OrderType::class)],
+            'order_type' => ['nullable', 'string', new ValidCommissionOrderType(activeOnly: false)],
             'commercial_role' => ['nullable', Rule::enum(CommercialRole::class)],
             'is_active' => ['nullable', 'boolean'],
         ];

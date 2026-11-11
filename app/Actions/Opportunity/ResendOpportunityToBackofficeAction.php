@@ -2,8 +2,11 @@
 
 namespace App\Actions\Opportunity;
 
+use App\Actions\Commission\CaptureOrderCommissionsAction;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Enums\OrderStatusCode;
 use App\Enums\TenantUserRole;
+use App\Events\CommercialOrdersChanged;
 use App\Models\Comment;
 use App\Models\CommercialOrder;
 use App\Models\Opportunity;
@@ -11,12 +14,14 @@ use App\Models\OrderStatus;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use App\Events\CommercialOrdersChanged;
 use Illuminate\Validation\ValidationException;
 
 class ResendOpportunityToBackofficeAction
 {
-    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+    public function __construct(
+        private ResolveTenantPermissionsAction $permissions,
+        private CaptureOrderCommissionsAction $commissions,
+    ) {}
 
     public function execute(Tenant $tenant, User $user, string $id): Opportunity
     {
@@ -30,7 +35,7 @@ class ResendOpportunityToBackofficeAction
             $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
                 ->where('opportunity_id', $opportunity->id)->lockForUpdate()->firstOrFail();
             $currentStatus = $order->orderStatus;
-            if ($opportunity->status !== 'open' || mb_strtolower(trim($currentStatus?->name ?? '')) !== 'para correção') {
+            if ($opportunity->status !== 'open' || $currentStatus?->code !== OrderStatusCode::Correction) {
                 throw ValidationException::withMessages(['opportunity' => 'A oportunidade não está aguardando correção.']);
             }
             if ($order->administratively_completed_at) {
@@ -79,6 +84,7 @@ class ResendOpportunityToBackofficeAction
                 'line_quantity' => count($lines),
                 'activated_at' => null,
             ]);
+            $this->commissions->execute($order, $actor->id, 'correction');
             $opportunity->update(['status' => 'won', 'closed_at' => now()]);
 
             $message = sprintf(
@@ -94,6 +100,7 @@ class ResendOpportunityToBackofficeAction
                 ]);
             }
             DB::afterCommit(fn () => CommercialOrdersChanged::dispatch($tenant->id));
+
             return $opportunity->refresh()->load(['items', 'stage', 'client']);
         });
     }

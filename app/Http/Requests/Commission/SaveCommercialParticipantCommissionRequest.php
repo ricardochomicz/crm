@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Commission;
 
-use App\Enums\OrderType;
+use App\Rules\ValidCommissionOrderType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,7 +21,7 @@ class SaveCommercialParticipantCommissionRequest extends FormRequest
 
         return [
             'operator_id' => ['required', 'integer', Rule::exists('tenant_operators', 'operator_id')->where('tenant_id', $tenant->id)],
-            'order_type' => ['required', Rule::enum(OrderType::class)],
+            'order_type' => ['required', 'string', new ValidCommissionOrderType],
             'percentage' => ['required', 'numeric', 'min:0', 'max:9999.99', 'decimal:0,2'],
             'starts_on' => ['required', 'date_format:Y-m-d'],
             'ends_on' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:starts_on'],

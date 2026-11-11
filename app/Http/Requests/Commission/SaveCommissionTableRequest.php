@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Commission;
 
-use App\Enums\OrderType;
+use App\Rules\ValidCommissionOrderType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,12 +20,7 @@ class SaveCommissionTableRequest extends FormRequest
         $tenant = $this->attributes->get('active_tenant');
 
         return [
-            'order_type' => ['required', 'string', function (string $attribute, mixed $value, \Closure $fail): void {
-                if (OrderType::tryFrom((string) $value) !== null) return;
-                if (! \App\Models\OrderType::query()->whereKey($value)->where('is_active', true)->exists()) {
-                    $fail('Selecione um tipo de pedido válido e ativo.');
-                }
-            }],
+            'order_type' => ['required', 'string', new ValidCommissionOrderType],
             'operator_id' => ['required', 'integer', Rule::exists('tenant_operators', 'operator_id')->where('tenant_id', $tenant->id)],
             'percentage' => ['required', 'numeric', 'min:0', 'max:9999.99', 'decimal:0,2'],
             'deduction_percentage' => ['nullable', 'numeric', 'min:0', 'max:100', 'decimal:0,2'],

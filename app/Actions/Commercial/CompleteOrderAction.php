@@ -3,7 +3,7 @@
 namespace App\Actions\Commercial;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
-use App\Enums\TenantUserRole;
+use App\Enums\OrderStatusCode;
 use App\Models\Comment;
 use App\Models\CommercialOrder;
 use App\Models\OrderStatus;
@@ -19,7 +19,7 @@ class CompleteOrderAction
     public function execute(Tenant $tenant, User $user, string $orderId): CommercialOrder
     {
         $actor = $this->permissions->membership($user, $tenant) ?? abort(403);
-        abort_unless(in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
+        abort_unless($user->can('manageOrders', $tenant), 403);
 
         return DB::transaction(function () use ($tenant, $actor, $orderId): CommercialOrder {
             $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
@@ -35,7 +35,7 @@ class CompleteOrderAction
                 throw ValidationException::withMessages(['items' => 'Todas as linhas precisam estar ativas e possuir data de ativação.']);
             }
 
-            $status = OrderStatus::query()->where('name', 'CONCLUIDO')->first();
+            $status = OrderStatus::query()->where('code', OrderStatusCode::Completed->value)->first();
 
             if (! $status) {
                 throw ValidationException::withMessages(['order_status' => 'Cadastre o status Concluído antes de finalizar pedidos.']);

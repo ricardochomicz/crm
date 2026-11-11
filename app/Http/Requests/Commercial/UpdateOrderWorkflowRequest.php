@@ -8,7 +8,9 @@ class UpdateOrderWorkflowRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $tenant = $this->attributes->get('active_tenant');
+
+        return $tenant !== null && (bool) $this->user()?->can('manageOrders', $tenant);
     }
 
     public function rules(): array

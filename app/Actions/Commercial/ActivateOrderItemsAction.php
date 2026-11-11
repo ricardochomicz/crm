@@ -2,24 +2,29 @@
 
 namespace App\Actions\Commercial;
 
+use App\Actions\Commission\CaptureOrderCommissionsAction;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
-use App\Enums\TenantUserRole;
+use App\Enums\OrderStatusCode;
 use App\Models\Comment;
 use App\Models\CommercialOrder;
 use App\Models\OrderStatus;
 use App\Models\Tenant;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ActivateOrderItemsAction
 {
-    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+    public function __construct(
+        private ResolveTenantPermissionsAction $permissions,
+        private CaptureOrderCommissionsAction $commissions,
+    ) {}
 
     public function execute(Tenant $tenant, User $user, string $orderId, array $data): CommercialOrder
     {
         $actor = $this->permissions->membership($user, $tenant) ?? abort(403);
-        abort_unless(in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
+        abort_unless($user->can('manageOrders', $tenant), 403);
 
         return DB::transaction(function () use ($tenant, $actor, $orderId, $data): CommercialOrder {
             $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
@@ -55,11 +60,13 @@ class ActivateOrderItemsAction
                 $item->update(['status' => 'ACTIVE', 'activated_at' => $data['activated_at']]);
             }
 
-            $name = $remaining === 0 ? 'CONCLUIDO' : 'PARCIALMENTE ATIVADO';
-            $status = OrderStatus::query()->where('name', $name)->first();
+            $this->commissions->activate($order, $selected->pluck('id')->values()->all(), $data['activated_at']);
+
+            $code = $remaining === 0 ? OrderStatusCode::Completed : OrderStatusCode::PartiallyActivated;
+            $status = OrderStatus::query()->where('code', $code->value)->first();
 
             if (! $status) {
-                throw ValidationException::withMessages(['order_status' => "Cadastre o status {$name} antes de ativar linhas."]);
+                throw ValidationException::withMessages(['order_status' => 'Configure os status de conclusão e ativação parcial antes de ativar linhas.']);
             }
 
             $order->update([
@@ -76,9 +83,9 @@ class ActivateOrderItemsAction
                 'content' => sprintf(
                     'Status do pedido: %s → %s. %d linha(s) ativada(s) em %s. Linhas: %s.',
                     $previousStatus,
-                    $name,
+                    $status->name,
                     $selected->count(),
-                    \Carbon\Carbon::parse($data['activated_at'])->format('d/m/Y'),
+                    Carbon::parse($data['activated_at'])->format('d/m/Y'),
                     $selected->map(fn ($item) => $item->line_number ?: ($item->description ?: 'Linha sem número'))->implode(', ')
                 ),
             ]);

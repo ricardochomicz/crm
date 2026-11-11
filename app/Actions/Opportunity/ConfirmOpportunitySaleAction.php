@@ -2,20 +2,24 @@
 
 namespace App\Actions\Opportunity;
 
+use App\Actions\Commission\CaptureOrderCommissionsAction;
+use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Models\CommercialOrder;
 use App\Models\Opportunity;
 use App\Models\OrderStatus;
-use Illuminate\Support\Str;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ConfirmOpportunitySaleAction
 {
-    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+    public function __construct(
+        private ResolveTenantPermissionsAction $permissions,
+        private CaptureOrderCommissionsAction $commissions,
+    ) {}
 
     public function execute(Tenant $tenant, User $user, string $id): CommercialOrder
     {
@@ -65,7 +69,7 @@ class ConfirmOpportunitySaleAction
             }
 
             $order = CommercialOrder::create([
-                'code' => 'PED-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
+                'code' => 'PED-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
                 'order_status_id' => $initialStatus->id,
                 'tenant_user_id' => $opportunity->tenant_user_id,
                 'client_id' => $opportunity->client_id,
@@ -102,6 +106,7 @@ class ConfirmOpportunitySaleAction
                 }
             }
             $order->items()->createMany($orderLines);
+            $this->commissions->execute($order, $actor->id, 'sale');
 
             $opportunity->update(['status' => 'won', 'closed_at' => now()]);
 
