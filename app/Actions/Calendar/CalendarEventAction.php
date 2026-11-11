@@ -165,6 +165,52 @@ class CalendarEventAction
             ->paginate(min((int) ($filters['per_page'] ?? 20), 100));
     }
 
+
+    /** Aggregate all visible tasks without depending on the current page or status filter. */
+    public function activitiesOverview(Tenant $tenant, User $user, array $filters): array
+    {
+        $actor = $this->member($user, $tenant);
+        $team = ($filters['scope'] ?? 'mine') === 'team';
+        abort_if($team && ! $user->can('viewTeamCalendar', $tenant), 403);
+
+        $query = CalendarEvent::query()->where('tenant_id', $tenant->getKey())
+            ->whereIn('type', ['task', 'reminder']);
+
+        if (! $team) {
+            $query->where('tenant_user_id', $actor->getKey());
+        } elseif (! in_array($actor->role->value, ['OWNER', 'MANAGER'], true)) {
+            $teams = $actor->supervisedTeams()->where('tenant_id', $tenant->getKey())->pluck('id');
+            $members = TenantUser::query()->where('tenant_id', $tenant->getKey())
+                ->whereIn('team_id', $teams)->where('status', 'ACTIVE')->pluck('id');
+            $query->whereIn('tenant_user_id', $members->push($actor->getKey())->unique());
+        }
+
+        if (! empty($filters['search'])) {
+            $term = '%'.addcslashes($filters['search'], '%_\\').'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('title', 'like', $term)
+                    ->orWhere('description', 'like', $term)
+                    ->orWhereHas('client', fn ($client) => $client->where('company_name', 'like', $term))
+                    ->orWhereHas('opportunity', fn ($opportunity) => $opportunity->where('title', 'like', $term));
+            });
+        }
+
+        $counts = $query->selectRaw("COUNT(*) AS total")
+            ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending")
+            ->selectRaw("SUM(CASE WHEN status = 'pending' AND ends_at < ? THEN 1 ELSE 0 END) AS overdue", [now()])
+            ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed")
+            ->selectRaw("SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled")
+            ->first();
+
+        return [
+            'total' => (int) ($counts->total ?? 0),
+            'pending' => (int) ($counts->pending ?? 0),
+            'overdue' => (int) ($counts->overdue ?? 0),
+            'completed' => (int) ($counts->completed ?? 0),
+            'cancelled' => (int) ($counts->cancelled ?? 0),
+        ];
+    }
+
     public function create(Tenant $tenant, User $user, array $data): CalendarEvent
     {
         $actor = $this->member($user, $tenant);
