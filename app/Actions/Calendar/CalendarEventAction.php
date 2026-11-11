@@ -209,6 +209,7 @@ class CalendarEventAction
         $counts = $query->selectRaw("COUNT(*) AS total")
             ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending")
             ->selectRaw("SUM(CASE WHEN status = 'pending' AND ends_at < ? THEN 1 ELSE 0 END) AS overdue", [now()])
+            ->selectRaw("SUM(CASE WHEN status = 'pending' AND ends_at >= ? AND ends_at <= ? THEN 1 ELSE 0 END) AS due_soon", [now(), now()->addDay()])
             ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed")
             ->selectRaw("SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled")
             ->first();
@@ -217,6 +218,7 @@ class CalendarEventAction
             'total' => (int) ($counts->total ?? 0),
             'pending' => (int) ($counts->pending ?? 0),
             'overdue' => (int) ($counts->overdue ?? 0),
+            'due_soon' => (int) ($counts->due_soon ?? 0),
             'completed' => (int) ($counts->completed ?? 0),
             'cancelled' => (int) ($counts->cancelled ?? 0),
         ];
