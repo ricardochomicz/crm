@@ -95,6 +95,25 @@ class CustomerPortalController extends Controller
         ]), 'meta' => ['current_page' => $orders->currentPage(), 'last_page' => $orders->lastPage(), 'total' => $orders->total()]]);
     }
 
+    public function showOrder(Request $request, string $tenantId, string $orderId): JsonResponse
+    {
+        $access = $this->access($request, $tenantId);
+        $order = CommercialOrder::query()->where('tenant_id', $tenantId)
+            ->where('client_id', $access->client_id)->whereKey($orderId)
+            ->with(['operator:id,name', 'orderStatus:id,name', 'items'])->firstOrFail();
+        return response()->json(['data' => [
+            'id' => $order->id, 'code' => $order->code, 'created_at' => $order->created_at,
+            'operator' => $order->operator?->name, 'status' => $order->orderStatus?->name ?? $order->status,
+            'order_type' => $order->order_type, 'line_quantity' => $order->line_quantity,
+            'monthly_amount' => $order->monthly_amount, 'activated_at' => $order->activated_at,
+            'items' => $order->items->map(fn ($item) => [
+                'description' => $item->description, 'quantity' => $item->quantity,
+                'monthly_unit_amount' => $item->monthly_unit_amount,
+                'status' => $item->status, 'activated_at' => $item->activated_at,
+            ]),
+        ]]);
+    }
+
     public function logout(Request $request, string $tenantId): JsonResponse
     {
         $access = $this->access($request, $tenantId);
