@@ -5,6 +5,9 @@ use Illuminate\Support\Facades\Artisan;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schedule;
+use App\Models\CalendarEvent;
+use App\Actions\Calendar\ActivityNotificationAction;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -60,3 +63,15 @@ Artisan::command(
         return 0;
     },
 )->purpose('Conceder ou revogar acesso administrativo da plataforma');
+
+Artisan::command('activities:notify-due', function (ActivityNotificationAction $notifications): void {
+    CalendarEvent::query()->whereIn('type', ['task', 'reminder'])
+        ->where('status', 'pending')->where('ends_at', '<=', now()->addDay())
+        ->orderBy('id')->chunkById(200, function ($events) use ($notifications): void {
+            foreach ($events as $event) {
+                $notifications->notify($event, $event->ends_at->isPast() ? 'overdue' : 'due_soon');
+            }
+        });
+})->purpose('Notificar tarefas próximas do vencimento ou atrasadas');
+
+Schedule::command('activities:notify-due')->everyFiveMinutes()->withoutOverlapping();
