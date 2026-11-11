@@ -24,6 +24,7 @@ class ActivityNotificationController extends Controller
         $tenantId = $request->attributes->get('active_tenant')->id;
         $query = DB::table('activity_notifications')->where('tenant_id', $tenantId)->where('tenant_user_id', $member->id);
         return response()->json([
+            'membership_id' => $member->id,
             'unread' => (clone $query)->whereNull('read_at')->count(),
             'data' => $query->orderByDesc('created_at')->limit(50)->get(['id', 'kind', 'title', 'message', 'calendar_event_id', 'read_at', 'created_at']),
         ]);
