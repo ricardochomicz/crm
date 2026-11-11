@@ -39,7 +39,8 @@ class UpdateOrderWorkflowAction
 
             $previousStatus = $order->orderStatus?->name ?? 'Sem status';
             $previousDate = $order->expected_activation_at ? Carbon::parse($order->expected_activation_at)->format('d/m/Y') : null;
-            $newDate = isset($data['expected_activation_at']) ? Carbon::parse($data['expected_activation_at'])->format('d/m/Y') : null;
+            $expectedActivationAt = array_key_exists('expected_activation_at', $data) ? $data['expected_activation_at'] : $order->expected_activation_at;
+            $newDate = $expectedActivationAt !== null ? Carbon::parse($expectedActivationAt)->format('d/m/Y') : null;
 
             $returnForCorrection = $status->code === OrderStatusCode::Correction;
             if ($returnForCorrection && $order->order_status_id !== $status->id && blank($data['correction_reason'] ?? null)) {
@@ -51,7 +52,7 @@ class UpdateOrderWorkflowAction
 
             $order->update([
                 'order_status_id' => $data['order_status_id'],
-                'expected_activation_at' => $data['expected_activation_at'] ?? null,
+                'expected_activation_at' => $expectedActivationAt,
             ]);
 
             if ($returnForCorrection && $order->wasChanged('order_status_id')) {

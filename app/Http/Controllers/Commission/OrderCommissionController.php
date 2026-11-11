@@ -33,7 +33,7 @@ class OrderCommissionController extends Controller
         $tenant = $request->attributes->get('active_tenant');
         $order = $filter->findOrder($tenant, $request->user(), $orderId);
         $actor = $permissions->membership($request->user(), $tenant) ?? abort(403);
-        $revision = $capture->execute($order, $actor->id, 'manual_review', $request->validated('reason'));
+        $revision = $capture->execute($order, $actor->id, 'manual_review', $request->validated('reason'), $request->validated('participants'));
 
         return response()->json(['data' => ['order_id' => $order->id, 'revision' => $revision]], 201);
     }

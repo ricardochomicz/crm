@@ -4,6 +4,7 @@ namespace App\Actions\Client;
 
 use App\Models\Client;
 use App\Models\ClientContact;
+use App\Models\CustomerPortalAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -21,7 +22,7 @@ class SaveClientContactAction
             if ($data['is_primary']) {
                 ClientContact::where('tenant_id', $tenantId)->where('client_id', $client->id)->update(['is_primary' => false]);
             }
-            $contact = $contactId ? ClientContact::where('tenant_id', $tenantId)->where('client_id', $client->id)->findOrFail($contactId) : new ClientContact(['tenant_id' => $tenantId, 'client_id' => $client->id]);
+            $contact = $contactId ? ClientContact::where('tenant_id', $tenantId)->where('client_id', $client->id)->lockForUpdate()->findOrFail($contactId) : new ClientContact(['tenant_id' => $tenantId, 'client_id' => $client->id]);
             if (array_key_exists('portal_access_enabled', $data) && $data['portal_access_enabled'] && (! $data['is_active'] || empty($data['email']))) {
                 throw ValidationException::withMessages(['portal_access_enabled' => 'Informe um e-mail e mantenha o contato ativo para habilitar o portal.']);
             }
@@ -30,6 +31,9 @@ class SaveClientContactAction
                 $data['portal_access_enabled'] = false;
             }
             $contact->fill($data);
+            if ($contact->exists && $contact->isDirty(['email', 'is_active', 'portal_access_enabled'])) {
+                CustomerPortalAccess::query()->where('tenant_id', $tenantId)->where('client_contact_id', $contact->id)->delete();
+            }
             $contact->save();
             if ($client->contact_pending && $contact->is_active && $contact->is_primary && $contact->name && $contact->position && ($contact->phone || $contact->email)) {
                 $client->contact_pending = false;

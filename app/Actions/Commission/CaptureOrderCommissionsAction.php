@@ -2,6 +2,7 @@
 
 namespace App\Actions\Commission;
 
+use App\Actions\Commercial\ResolveOrderParticipantsAction;
 use App\Models\CommercialOrder;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -15,19 +16,40 @@ class CaptureOrderCommissionsAction
     public function __construct(
         private ResolveOrderCommissionRulesAction $rules,
         private CalculateSaleCommissionAction $calculator,
+        private ResolveOrderParticipantsAction $participants,
     ) {}
 
-    public function execute(CommercialOrder $order, string $actorId, string $source, ?string $reason = null): int
+    /**
+     * @param  array<int, array{role: string, tenant_user_id?: ?string, commercial_participant_id?: ?string}>|null  $participants
+     */
+    public function execute(CommercialOrder $order, string $actorId, string $source, ?string $reason = null, ?array $participants = null): int
     {
         if (! in_array($source, ['sale', 'correction', 'manual_review'], true)) {
             throw new InvalidArgumentException('Origem da apuração inválida.');
         }
 
-        return DB::transaction(function () use ($order, $actorId, $source, $reason): int {
+        if ($source === 'manual_review' && (mb_strlen(trim($reason ?? '')) < 10 || mb_strlen($reason ?? '') > 1000)) {
+            throw ValidationException::withMessages(['reason' => 'Informe um motivo entre 10 e 1000 caracteres para a revisão.']);
+        }
+
+        if ($participants !== null && $source !== 'manual_review') {
+            throw new InvalidArgumentException('Participantes somente podem ser alterados por revisão auditada.');
+        }
+
+        return DB::transaction(function () use ($order, $actorId, $source, $reason, $participants): int {
             $order = CommercialOrder::query()->where('tenant_id', $order->tenant_id)->lockForUpdate()->findOrFail($order->id);
             $items = $order->items()->lockForUpdate()->get();
             if ($items->isEmpty()) {
                 throw ValidationException::withMessages(['order' => 'O pedido precisa possuir linhas para apurar comissões.']);
+            }
+            if ($participants !== null) {
+                $resolved = $this->participants->execute($order->tenant_id, $participants);
+                $consultant = collect($resolved)->firstWhere('role', 'CONSULTANT');
+                if ($order->tenant_user_id !== null && ($consultant['tenant_user_id'] ?? null) !== $order->tenant_user_id) {
+                    throw ValidationException::withMessages(['participants' => 'Mantenha o consultor responsável pela venda na composição da comissão.']);
+                }
+                $order->participants()->delete();
+                $order->participants()->createMany($resolved);
             }
             $query = DB::table('order_commission_accruals')->where('tenant_id', $order->tenant_id)
                 ->where('commercial_order_id', $order->id);
@@ -43,7 +65,7 @@ class CaptureOrderCommissionsAction
                     $snapshots[$this->rules->key((int) $previous->operator_id, $previous->order_type)] = json_decode($previous->rule_snapshot, true, flags: JSON_THROW_ON_ERROR);
                 }
             } else {
-                $referenceDate = $source === 'sale' ? $order->sold_on->toDateString() : now()->toDateString();
+                $referenceDate = $order->sold_on->toDateString();
                 $snapshots = $this->rules->execute($order, $items, $referenceDate);
             }
 

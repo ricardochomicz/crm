@@ -4,6 +4,7 @@ namespace App\Actions\Opportunity;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
+use App\Models\CommercialOrder;
 use App\Models\Opportunity;
 use App\Models\Tenant;
 use App\Models\User;
@@ -29,6 +30,10 @@ class RecoverOpportunityAction
                 403
             );
 
+            if (CommercialOrder::query()->where('tenant_id', $tenant->id)->where('opportunity_id', $original->id)->exists()) {
+                throw ValidationException::withMessages(['opportunity' => 'Esta oportunidade possui pedido vinculado. Resolva o pedido pelo fluxo operacional antes de encerrar ou recuperar a oportunidade.']);
+            }
+
             if ($original->status !== 'lost') {
                 throw ValidationException::withMessages(['opportunity' => 'Somente oportunidades perdidas podem ser recuperadas.']);
             }
@@ -42,14 +47,14 @@ class RecoverOpportunityAction
                 'code', 'status', 'closed_at', 'lost_reason', 'expected_close_at',
                 'funnel_stage_id', 'parent_opportunity_id',
             ]);
-            $copy->code = 'OP-' . now()->format('YmdHis') . '-' . strtoupper(Str::random(6));
+            $copy->code = 'OP-'.now()->format('YmdHis').'-'.strtoupper(Str::random(6));
             $copy->status = 'open';
             $copy->closed_at = null;
             $copy->lost_reason = null;
             $copy->expected_close_at = null;
             $copy->funnel_stage_id = null;
             $copy->parent_opportunity_id = $original->id;
-            $copy->title = 'Retomada - ' . $original->title;
+            $copy->title = 'Retomada - '.$original->title;
             $copy->save();
 
             foreach ($original->items as $item) {

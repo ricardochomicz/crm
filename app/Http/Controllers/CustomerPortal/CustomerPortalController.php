@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\CustomerPortal;
 
+use App\Enums\TenantStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ClientContact;
@@ -10,6 +11,7 @@ use App\Models\CustomerPortalAccess;
 use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -38,22 +40,33 @@ class CustomerPortalController extends Controller
             ->limit(5)->get();
 
         foreach ($clients as $client) {
-            $contact = ClientContact::query()->where('tenant_id', $client->tenant_id)
-                ->where('client_id', $client->id)->where('is_active', true)
-                ->where('portal_access_enabled', true)->whereNotNull('email')
-                ->orderByDesc('is_primary')->first();
-            if (! $contact || ! filter_var($contact->email, FILTER_VALIDATE_EMAIL)) {
+            if (! Tenant::query()->whereKey($client->tenant_id)->where('status', TenantStatus::Active)->exists()) {
                 continue;
             }
             $code = (string) random_int(100000, 999999);
-            $access = CustomerPortalAccess::query()->create([
-                'tenant_id' => $client->tenant_id, 'client_id' => $client->id,
-                'client_contact_id' => $contact->id,
-                'challenge_hash' => hash('sha256', $challenge.':'.$client->id),
-                'request_hash' => hash('sha256', $challenge),
-                'code_hash' => Hash::make($code),
-                'code_expires_at' => now()->addMinutes(5),
-            ]);
+            $issued = DB::transaction(function () use ($client, $challenge, $code): ?array {
+                $contact = ClientContact::query()->where('tenant_id', $client->tenant_id)
+                    ->where('client_id', $client->id)->where('is_active', true)
+                    ->where('portal_access_enabled', true)->whereNotNull('email')
+                    ->orderByDesc('is_primary')->orderBy('id')->lockForUpdate()->first();
+                if (! $contact || ! filter_var($contact->email, FILTER_VALIDATE_EMAIL)) {
+                    return null;
+                }
+                $access = CustomerPortalAccess::query()->create([
+                    'tenant_id' => $client->tenant_id, 'client_id' => $client->id,
+                    'client_contact_id' => $contact->id,
+                    'challenge_hash' => hash('sha256', $challenge.':'.$client->id),
+                    'request_hash' => hash('sha256', $challenge),
+                    'code_hash' => Hash::make($code),
+                    'code_expires_at' => now()->addMinutes(5),
+                ]);
+
+                return ['contact' => $contact, 'access' => $access];
+            }, attempts: 3);
+            if ($issued === null) {
+                continue;
+            }
+            ['contact' => $contact, 'access' => $access] = $issued;
             try {
                 Mail::raw("Seu código de acesso ao Portal do Cliente é: {$code}. Válido por 5 minutos. Se você não solicitou, ignore esta mensagem.", function ($mail) use ($contact) {
                     $mail->to($contact->email)->subject('Código de acesso ao Portal do Cliente');
@@ -75,38 +88,44 @@ class CustomerPortalController extends Controller
             'challenge' => ['required', 'string', 'size:64'],
             'code' => ['required', 'digits:6'],
         ]);
-        $accesses = CustomerPortalAccess::query()
-            ->where('request_hash', hash('sha256', $data['challenge']))
-            ->whereNull('used_at')->where('code_expires_at', '>', now())
-            ->where('attempts', '<', 5)->get();
-        $match = null;
-        foreach ($accesses as $candidate) {
-            if (! hash_equals($candidate->challenge_hash, hash('sha256', $data['challenge'].':'.$candidate->client_id))) {
-                continue;
-            }
-            $candidate->increment('attempts');
-            if (Hash::check($data['code'], $candidate->code_hash)) {
-                $match = $candidate;
-                break;
-            }
-        }
-        if (! $match) {
-            return response()->json(['message' => 'Código inválido ou expirado.'], 422);
-        }
-        $session = Str::random(64);
-        $match->forceFill([
-            'used_at' => now(), 'session_hash' => hash('sha256', $session),
-            'session_expires_at' => now()->addMinutes(30),
-        ])->save();
-        CustomerPortalAccess::query()->where('client_contact_id', $match->client_contact_id)
-            ->whereKeyNot($match->id)->whereNull('used_at')->delete();
-        $clientName = Client::query()->where('tenant_id', $match->tenant_id)
-            ->whereKey($match->client_id)->value('company_name');
 
-        return response()->json(['data' => [
-            'tenant_id' => $match->tenant_id, 'client_name' => $clientName, 'token' => $session,
-            'expires_at' => $match->session_expires_at,
-        ]]);
+        return DB::transaction(function () use ($data): JsonResponse {
+            $accesses = CustomerPortalAccess::query()
+                ->where('request_hash', hash('sha256', $data['challenge']))
+                ->whereNull('used_at')->where('code_expires_at', '>', now())
+                ->where('attempts', '<', 5)->orderBy('id')->lockForUpdate()->get();
+            $match = null;
+            foreach ($accesses as $candidate) {
+                if (! $candidate->code_expires_at?->isFuture()) {
+                    continue;
+                }
+                if (! hash_equals($candidate->challenge_hash, hash('sha256', $data['challenge'].':'.$candidate->client_id))) {
+                    continue;
+                }
+                $candidate->increment('attempts');
+                if (Hash::check($data['code'], $candidate->code_hash) && $this->isAuthorized($candidate)) {
+                    $match = $candidate;
+                    break;
+                }
+            }
+            if (! $match) {
+                return response()->json(['message' => 'Código inválido ou expirado.'], 422);
+            }
+            $session = Str::random(64);
+            $match->forceFill([
+                'used_at' => now(), 'session_hash' => hash('sha256', $session),
+                'session_expires_at' => now()->addMinutes(30),
+            ])->save();
+            CustomerPortalAccess::query()->where('client_contact_id', $match->client_contact_id)
+                ->whereKeyNot($match->id)->whereNull('used_at')->delete();
+            $clientName = Client::query()->where('tenant_id', $match->tenant_id)
+                ->whereKey($match->client_id)->value('company_name');
+
+            return response()->json(['data' => [
+                'tenant_id' => $match->tenant_id, 'client_name' => $clientName, 'token' => $session,
+                'expires_at' => $match->session_expires_at,
+            ]]);
+        }, attempts: 3);
     }
 
     private function access(Request $request, string $tenantId): CustomerPortalAccess
@@ -116,11 +135,18 @@ class CustomerPortalController extends Controller
         $access = CustomerPortalAccess::query()->where('tenant_id', $tenantId)
             ->where('session_hash', hash('sha256', $token))->first();
         abort_unless($access && $access->session_expires_at?->isFuture(), 401);
-        abort_unless(ClientContact::query()->whereKey($access->client_contact_id)
-            ->where('tenant_id', $tenantId)->where('client_id', $access->client_id)
-            ->where('is_active', true)->where('portal_access_enabled', true)->exists(), 403);
+        abort_unless($this->isAuthorized($access), 403);
 
         return $access;
+    }
+
+    private function isAuthorized(CustomerPortalAccess $access): bool
+    {
+        return Tenant::query()->whereKey($access->tenant_id)->where('status', TenantStatus::Active)->exists()
+            && Client::query()->whereKey($access->client_id)->where('tenant_id', $access->tenant_id)->where('is_active', true)->exists()
+            && ClientContact::query()->whereKey($access->client_contact_id)
+                ->where('tenant_id', $access->tenant_id)->where('client_id', $access->client_id)
+                ->where('is_active', true)->where('portal_access_enabled', true)->exists();
     }
 
     public function orders(Request $request, string $tenantId): JsonResponse
