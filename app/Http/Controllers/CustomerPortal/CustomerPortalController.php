@@ -53,8 +53,8 @@ class CustomerPortalController extends Controller
                 Mail::raw("Seu código de acesso ao Portal do Cliente é: {$code}. Válido por 5 minutos. Se você não solicitou, ignore esta mensagem.", function ($mail) use ($contact) {
                     $mail->to($contact->email)->subject('Código de acesso ao Portal do Cliente');
                 });
-            } catch (\\Throwable $exception) {
-                \\Illuminate\\Support\\Facades\\Log::warning('Falha no envio do código do portal', [
+            } catch (\Throwable $exception) {
+                \Illuminate\Support\Facades\Log::warning('Falha no envio do código do portal', [
                     'tenant_id' => $client->tenant_id, 'exception' => $exception::class,
                 ]);
                 $access->delete();
