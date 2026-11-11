@@ -18,6 +18,7 @@ class OpportunityProposalController extends Controller
     {
         $tenant = $request->attributes->get('active_tenant');
         abort_unless($tenant instanceof Tenant, 403);
+
         return $tenant;
     }
 
@@ -28,6 +29,7 @@ class OpportunityProposalController extends Controller
         $action->find($tenant, $request->user(), $opportunityId);
         $proposals = OpportunityProposal::query()->where('tenant_id', $tenant->id)
             ->where('opportunity_id', $opportunityId)->orderByDesc('version')->get();
+
         return response()->json(['data' => $proposals->map(fn ($proposal) => $this->present($proposal))]);
     }
 
@@ -66,6 +68,7 @@ class OpportunityProposalController extends Controller
                     'one_time_unit_amount' => (string) $item->one_time_unit_amount,
                 ])->values()->all(),
             ];
+
             return OpportunityProposal::query()->create([
                 'tenant_id' => $tenant->id,
                 'opportunity_id' => $opportunityId,
@@ -75,6 +78,7 @@ class OpportunityProposalController extends Controller
                 'expires_at' => now()->addDays((int) $data['validity_days']),
             ]);
         });
+
         return response()->json(['data' => $this->present($proposal)], 201);
     }
 
@@ -86,6 +90,7 @@ class OpportunityProposalController extends Controller
         $proposal = OpportunityProposal::query()->where('tenant_id', $tenant->id)
             ->where('opportunity_id', $opportunityId)->findOrFail($proposalId);
         $proposal->update(['revoked_at' => $proposal->revoked_at ?? now()]);
+
         return response()->json(['data' => $this->present($proposal)]);
     }
 
@@ -93,6 +98,7 @@ class OpportunityProposalController extends Controller
     {
         $proposal = OpportunityProposal::query()->where('public_token', $token)
             ->whereNull('revoked_at')->where('expires_at', '>', now())->firstOrFail();
+
         return response()->json(['data' => [
             'version' => $proposal->version,
             'expires_at' => $proposal->expires_at,

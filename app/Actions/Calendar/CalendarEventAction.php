@@ -8,6 +8,7 @@ use App\Models\Opportunity;
 use App\Models\Tenant;
 use App\Models\TenantUser;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -31,20 +32,25 @@ class CalendarEventAction
     private function prepare(Tenant $tenant, TenantUser $actor, array $data): array
     {
         $assigneeId = $data['tenant_user_id'] ?? $actor->getKey();
-        if ($assigneeId !== $actor->getKey() && ! $actor->user->can('viewTeamCalendar', $tenant)) abort(403);
+        if ($assigneeId !== $actor->getKey() && ! $actor->user->can('viewTeamCalendar', $tenant)) {
+            abort(403);
+        }
         $this->assignee($tenant, $assigneeId);
         if (! empty($data['client_id']) && ! DB::table('clients')->where('tenant_id', $tenant->getKey())->where('id', $data['client_id'])->exists()) {
             throw ValidationException::withMessages(['client_id' => 'Cliente não pertence a esta empresa.']);
         }
         if (! empty($data['opportunity_id'])) {
             $opportunity = Opportunity::query()->where('tenant_id', $tenant->getKey())->findOrFail($data['opportunity_id']);
-            if ($opportunity->tenant_user_id !== $assigneeId && ! $actor->user->can('viewTeamCalendar', $tenant)) abort(403);
+            if ($opportunity->tenant_user_id !== $assigneeId && ! $actor->user->can('viewTeamCalendar', $tenant)) {
+                abort(403);
+            }
             if (! empty($data['client_id']) && $data['client_id'] !== $opportunity->client_id) {
                 throw ValidationException::withMessages(['client_id' => 'O cliente deve ser o mesmo da oportunidade.']);
             }
             $data['client_id'] = $opportunity->client_id;
         }
         $data['tenant_user_id'] = $assigneeId;
+
         return $data;
     }
 
@@ -63,9 +69,12 @@ class CalendarEventAction
     {
         $actor = $this->member($user, $tenant);
         $team = ($filters['scope'] ?? 'mine') === 'team';
-        if ($team && ! $user->can('viewTeamCalendar', $tenant)) abort(403);
+        if ($team && ! $user->can('viewTeamCalendar', $tenant)) {
+            abort(403);
+        }
         $isManager = in_array($actor->role->value, ['OWNER', 'MANAGER'], true);
         $supervisedTeamIds = $actor->supervisedTeams()->where('tenant_id', $tenant->getKey())->pluck('id');
+
         return CalendarEvent::query()->where('tenant_id', $tenant->getKey())
             ->when(! $team, fn ($q) => $q->where('tenant_user_id', $actor->getKey()))
             ->when($team && ! $isManager, function ($q) use ($tenant, $supervisedTeamIds, $actor) {
@@ -84,11 +93,13 @@ class CalendarEventAction
     }
 
     /** Paginated task inbox; shares the same tenant and team visibility rules as the calendar. */
-    public function activities(Tenant $tenant, User $user, array $filters): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function activities(Tenant $tenant, User $user, array $filters): LengthAwarePaginator
     {
         $actor = $this->member($user, $tenant);
         $team = ($filters['scope'] ?? 'mine') === 'team';
-        if ($team && ! $user->can('viewTeamCalendar', $tenant)) abort(403);
+        if ($team && ! $user->can('viewTeamCalendar', $tenant)) {
+            abort(403);
+        }
 
         $isManager = in_array($actor->role->value, ['OWNER', 'MANAGER'], true);
         $query = CalendarEvent::query()
@@ -120,6 +131,7 @@ class CalendarEventAction
                     ->orWhereHas('opportunity', fn ($opportunity) => $opportunity->where('title', 'like', $term));
             });
         }
+
         return $query->orderBy('ends_at')->orderBy('id')
             ->paginate(min((int) ($filters['per_page'] ?? 20), 100));
     }
@@ -131,12 +143,14 @@ class CalendarEventAction
         $data['priority'] = $data['priority'] ?? 'normal';
         $data = $this->prepare($tenant, $actor, $data);
         $this->checkDates($data, true);
+
         return CalendarEvent::create([...$data, 'tenant_id' => $tenant->getKey(), 'created_by_tenant_user_id' => $actor->getKey()]);
     }
 
     private function owned(Tenant $tenant, User $user, string $id): CalendarEvent
     {
         $actor = $this->member($user, $tenant);
+
         return CalendarEvent::query()->where('tenant_id', $tenant->getKey())
             ->where('tenant_user_id', $actor->getKey())->findOrFail($id);
     }
@@ -155,6 +169,7 @@ class CalendarEventAction
             $data['completed_at'] = null;
         }
         $event->update($data);
+
         return $event->refresh();
     }
 

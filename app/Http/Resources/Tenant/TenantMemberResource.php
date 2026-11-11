@@ -3,8 +3,8 @@
 namespace App\Http\Resources\Tenant;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
-use App\Enums\TenantUserRole;
 use App\Enums\TenantPermission;
+use App\Enums\TenantUserRole;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 

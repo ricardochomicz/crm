@@ -34,6 +34,7 @@ class CalendarEventController extends Controller
     public function destroy(CalendarEventRequest $request, string $tenantId, string $eventId, CalendarEventAction $action): Response
     {
         $action->delete($request->attributes->get('active_tenant'), $request->user(), $eventId);
+
         return response()->noContent();
     }
 }

@@ -11,32 +11,42 @@ class CalendarEventRequest extends FormRequest
     public function authorize(): bool
     {
         $tenant = $this->attributes->get('active_tenant');
-        if (! $tenant instanceof Tenant) return false;
+        if (! $tenant instanceof Tenant) {
+            return false;
+        }
         $ability = match ($this->method()) {
             'POST' => 'createCalendarEvents',
             'PATCH' => 'updateCalendarEvents',
             'DELETE' => 'deleteCalendarEvents',
             default => 'viewCalendar',
         };
+
         return $this->user()?->can($ability, $tenant) ?? false;
     }
 
     public function rules(): array
     {
-        if ($this->isMethod('DELETE')) return [];
-        if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities')) return [
-            'scope' => ['sometimes', Rule::in(['mine', 'team'])],
-            'status' => ['sometimes', Rule::in(['pending', 'overdue', 'completed', 'cancelled', 'all'])],
-            'search' => ['sometimes', 'string', 'max:120'],
-            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'page' => ['sometimes', 'integer', 'min:1'],
-        ];
-        if ($this->isMethod('GET')) return [
-            'from' => ['required', 'date'],
-            'to' => ['required', 'date', 'after:from'],
-            'scope' => ['sometimes', Rule::in(['mine', 'team'])],
-            'opportunity_id' => ['sometimes', 'uuid'],
-        ];
+        if ($this->isMethod('DELETE')) {
+            return [];
+        }
+        if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities')) {
+            return [
+                'scope' => ['sometimes', Rule::in(['mine', 'team'])],
+                'status' => ['sometimes', Rule::in(['pending', 'overdue', 'completed', 'cancelled', 'all'])],
+                'search' => ['sometimes', 'string', 'max:120'],
+                'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+                'page' => ['sometimes', 'integer', 'min:1'],
+            ];
+        }
+        if ($this->isMethod('GET')) {
+            return [
+                'from' => ['required', 'date'],
+                'to' => ['required', 'date', 'after:from'],
+                'scope' => ['sometimes', Rule::in(['mine', 'team'])],
+                'opportunity_id' => ['sometimes', 'uuid'],
+            ];
+        }
+
         return [
             'title' => [$this->isMethod('POST') ? 'required' : 'sometimes', 'string', 'max:200'],
             'description' => ['nullable', 'string', 'max:10000'],

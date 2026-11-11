@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Tenant\Members;
 
 use App\Actions\Tenant\FindTenantMemberProfileAction;
+use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Actions\Tenant\UpdateTenantMemberProfileAction;
+use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\UpdateTenantMemberProfileRequest;
 use App\Http\Resources\Tenant\TenantMemberProfileResource;
 use App\Models\Tenant;
-use App\Actions\Tenant\ResolveTenantPermissionsAction;
-use App\Enums\TenantUserRole;
 
 class UpdateTenantMemberProfileController extends Controller
 {

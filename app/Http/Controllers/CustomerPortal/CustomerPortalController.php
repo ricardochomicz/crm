@@ -11,6 +11,7 @@ use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -25,7 +26,9 @@ class CustomerPortalController extends Controller
             'message' => 'Se houver um contato autorizado, enviaremos um código ao e-mail cadastrado.',
             'challenge' => $challenge,
         ];
-        if (!in_array(strlen($document), [11, 14], true)) return response()->json($generic);
+        if (! in_array(strlen($document), [11, 14], true)) {
+            return response()->json($generic);
+        }
 
         // Um documento pode existir em mais de um tenant. Cada contato autorizado
         // recebe seu próprio código, associado ao tenant correto.
@@ -39,12 +42,14 @@ class CustomerPortalController extends Controller
                 ->where('client_id', $client->id)->where('is_active', true)
                 ->where('portal_access_enabled', true)->whereNotNull('email')
                 ->orderByDesc('is_primary')->first();
-            if (!$contact || !filter_var($contact->email, FILTER_VALIDATE_EMAIL)) continue;
+            if (! $contact || ! filter_var($contact->email, FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
             $code = (string) random_int(100000, 999999);
             $access = CustomerPortalAccess::query()->create([
                 'tenant_id' => $client->tenant_id, 'client_id' => $client->id,
                 'client_contact_id' => $contact->id,
-                'challenge_hash' => hash('sha256', $challenge . ':' . $client->id),
+                'challenge_hash' => hash('sha256', $challenge.':'.$client->id),
                 'request_hash' => hash('sha256', $challenge),
                 'code_hash' => Hash::make($code),
                 'code_expires_at' => now()->addMinutes(5),
@@ -54,12 +59,13 @@ class CustomerPortalController extends Controller
                     $mail->to($contact->email)->subject('Código de acesso ao Portal do Cliente');
                 });
             } catch (\Throwable $exception) {
-                \Illuminate\Support\Facades\Log::warning('Falha no envio do código do portal', [
+                Log::warning('Falha no envio do código do portal', [
                     'tenant_id' => $client->tenant_id, 'exception' => $exception::class,
                 ]);
                 $access->delete();
             }
         }
+
         return response()->json($generic);
     }
 
@@ -75,11 +81,18 @@ class CustomerPortalController extends Controller
             ->where('attempts', '<', 5)->get();
         $match = null;
         foreach ($accesses as $candidate) {
-            if (!hash_equals($candidate->challenge_hash, hash('sha256', $data['challenge'] . ':' . $candidate->client_id))) continue;
+            if (! hash_equals($candidate->challenge_hash, hash('sha256', $data['challenge'].':'.$candidate->client_id))) {
+                continue;
+            }
             $candidate->increment('attempts');
-            if (Hash::check($data['code'], $candidate->code_hash)) { $match = $candidate; break; }
+            if (Hash::check($data['code'], $candidate->code_hash)) {
+                $match = $candidate;
+                break;
+            }
         }
-        if (!$match) return response()->json(['message' => 'Código inválido ou expirado.'], 422);
+        if (! $match) {
+            return response()->json(['message' => 'Código inválido ou expirado.'], 422);
+        }
         $session = Str::random(64);
         $match->forceFill([
             'used_at' => now(), 'session_hash' => hash('sha256', $session),
@@ -89,6 +102,7 @@ class CustomerPortalController extends Controller
             ->whereKeyNot($match->id)->whereNull('used_at')->delete();
         $clientName = Client::query()->where('tenant_id', $match->tenant_id)
             ->whereKey($match->client_id)->value('company_name');
+
         return response()->json(['data' => [
             'tenant_id' => $match->tenant_id, 'client_name' => $clientName, 'token' => $session,
             'expires_at' => $match->session_expires_at,
@@ -105,6 +119,7 @@ class CustomerPortalController extends Controller
         abort_unless(ClientContact::query()->whereKey($access->client_contact_id)
             ->where('tenant_id', $tenantId)->where('client_id', $access->client_id)
             ->where('is_active', true)->where('portal_access_enabled', true)->exists(), 403);
+
         return $access;
     }
 
@@ -117,6 +132,7 @@ class CustomerPortalController extends Controller
             ->orderByDesc('activated_at')->orderByDesc('created_at')->orderByDesc('id')->paginate(15);
         $clientName = Client::query()->where('tenant_id', $tenantId)
             ->whereKey($access->client_id)->value('company_name');
+
         return response()->json(['client_name' => $clientName, 'data' => $orders->getCollection()->map(fn ($order) => [
             'id' => $order->id, 'code' => $order->code, 'created_at' => $order->created_at,
             'operator' => $order->operator?->name, 'status' => $order->orderStatus?->name ?? $order->status,
@@ -133,6 +149,7 @@ class CustomerPortalController extends Controller
         $order = CommercialOrder::query()->where('tenant_id', $tenantId)
             ->where('client_id', $access->client_id)->whereKey($orderId)
             ->with(['operator:id,name', 'orderStatus:id,name', 'consultant.user:id,name', 'items'])->firstOrFail();
+
         return response()->json(['data' => [
             'id' => $order->id, 'code' => $order->code, 'created_at' => $order->created_at,
             'operator' => $order->operator?->name, 'status' => $order->orderStatus?->name ?? $order->status,
@@ -152,6 +169,7 @@ class CustomerPortalController extends Controller
     {
         $access = $this->access($request, $tenantId);
         $access->forceFill(['session_hash' => null, 'session_expires_at' => null])->save();
+
         return response()->json(['message' => 'Sessão encerrada.']);
     }
 }
