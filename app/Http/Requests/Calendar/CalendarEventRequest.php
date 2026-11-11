@@ -29,6 +29,7 @@ class CalendarEventRequest extends FormRequest
         if ($this->isMethod('DELETE')) {
             return [];
         }
+        if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/calendar/assignees')) return [];
         if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities')) {
             return [
                 'scope' => ['sometimes', Rule::in(['mine', 'team'])],
