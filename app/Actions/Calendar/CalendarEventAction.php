@@ -127,6 +127,8 @@ class CalendarEventAction
     public function create(Tenant $tenant, User $user, array $data): CalendarEvent
     {
         $actor = $this->member($user, $tenant);
+        $data['status'] = $data['status'] ?? 'pending';
+        $data['priority'] = $data['priority'] ?? 'normal';
         $data = $this->prepare($tenant, $actor, $data);
         $this->checkDates($data, true);
         return CalendarEvent::create([...$data, 'tenant_id' => $tenant->getKey(), 'created_by_tenant_user_id' => $actor->getKey()]);
