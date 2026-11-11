@@ -41,9 +41,14 @@ class CustomerPortalController extends Controller
             'challenge_hash' => hash('sha256', $challenge), 'code_hash' => Hash::make($code),
             'code_expires_at' => now()->addMinutes(5),
         ]);
-        Mail::raw("Seu código de acesso ao Portal do Cliente é: {$code}. Válido por 5 minutos. Se você não solicitou, ignore esta mensagem.", function ($mail) use ($contact) {
+        try {
+            Mail::raw("Seu código de acesso ao Portal do Cliente é: {$code}. Válido por 5 minutos. Se você não solicitou, ignore esta mensagem.", function ($mail) use ($contact) {
             $mail->to($contact->email)->subject('Código de acesso ao Portal do Cliente');
         });
+        } catch (\Throwable $exception) {
+            \Illuminate\Support\Facades\Log::warning('Falha ao enviar código do portal do cliente', ['tenant_id' => $tenantId, 'exception' => $exception::class]);
+            CustomerPortalAccess::query()->where('challenge_hash', hash('sha256', $challenge))->delete();
+        }
         // Do not disclose whether the document or email exists. The challenge is only useful with the email code.
         return response()->json($generic + ['challenge' => $challenge]);
     }
