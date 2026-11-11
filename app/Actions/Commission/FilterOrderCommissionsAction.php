@@ -6,7 +6,6 @@ use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Models\CommercialOrder;
 use App\Models\Tenant;
-use App\Models\TenantUser;
 use App\Models\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -18,16 +17,9 @@ class FilterOrderCommissionsAction
     public function findOrder(Tenant $tenant, User $user, string $orderId): CommercialOrder
     {
         $actor = $this->permissions->membership($user, $tenant) ?? abort(403);
-        $query = CommercialOrder::query()->where('tenant_id', $tenant->id);
-        if (! in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
-            $teamIds = DB::table('teams')->where('tenant_id', $tenant->id)
-                ->where('supervisor_membership_id', $actor->id)->select('id');
-            $memberIds = TenantUser::query()->where('tenant_id', $tenant->id)
-                ->where('status', 'ACTIVE')->whereIn('team_id', $teamIds)->pluck('id')->push($actor->id);
-            $query->whereIn('tenant_user_id', $memberIds);
-        }
+        abort_unless(in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
 
-        return $query->findOrFail($orderId);
+        return CommercialOrder::query()->where('tenant_id', $tenant->id)->findOrFail($orderId);
     }
 
     /** @param array{revision?: ?int, status?: ?string, per_page?: ?int, page?: ?int} $filters */
