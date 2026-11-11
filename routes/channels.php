@@ -11,3 +11,9 @@ Broadcast::channel('tenant.{tenantId}.orders', function ($user, string $tenantId
         $user->can('viewCommissions', $tenant)
     );
 });
+
+Broadcast::channel('tenant.{tenantId}.member.{membershipId}.notifications', function ($user, string $tenantId, string $membershipId): bool {
+    return \App\Models\TenantUser::query()->where('tenant_id', $tenantId)
+        ->where('id', $membershipId)->where('user_id', $user->id)
+        ->where('status', 'ACTIVE')->exists();
+});
