@@ -30,6 +30,7 @@ class OpportunityRequest extends FormRequest
         ];
         if ($this->isMethod('GET')) return [
             'search' => ['sometimes', 'string', 'max:100'],
+            'client_id' => ['sometimes', 'uuid'],
             'status' => ['sometimes', Rule::in(['open', 'won', 'lost', 'cancelled', 'all'])],
             'period' => ['sometimes', Rule::in(['current', 'overdue', 'future', 'all', 'custom', 'closed'])],
             'order_type_id' => ['sometimes', 'uuid'],
