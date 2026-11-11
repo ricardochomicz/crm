@@ -133,8 +133,10 @@ class CustomerPortalController extends Controller
             'operator' => $order->operator?->name, 'status' => $order->orderStatus?->name ?? $order->status,
             'order_type' => $order->order_type, 'line_quantity' => $order->line_quantity,
             'monthly_amount' => $order->monthly_amount, 'activated_at' => $order->activated_at,
+            'consultant_name' => $order->consultant?->user?->name,
             'items' => $order->items->map(fn ($item) => [
                 'description' => $item->description, 'quantity' => $item->quantity,
+                'line_number' => $item->line_number,
                 'monthly_unit_amount' => $item->monthly_unit_amount,
                 'status' => $item->status, 'activated_at' => $item->activated_at,
             ]),
