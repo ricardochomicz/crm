@@ -12,7 +12,10 @@ class SaveClientAction {
  public function execute(string $tenantId,int $userId,array $data,?string $clientId=null):Client {
   $membership=TenantUser::where('tenant_id',$tenantId)->where('user_id',$userId)->where('status','ACTIVE')->first();
   $canAssign=$membership && (in_array($membership->role->value,['OWNER','MANAGER'],true)||$membership->supervisedTeams()->exists());
-  $sellerId=$data['seller_membership_id']??null;$reason=$data['seller_reason']??null;
+  // Todo cliente novo pertence inicialmente ao usuário que realizou o cadastro.
+  // Reatribuições posteriores seguem o fluxo de Transferência de Carteira.
+  $sellerId=$clientId?($data['seller_membership_id']??null):$membership?->id;
+  $reason=$clientId?($data['seller_reason']??null):null;
   if(!$canAssign){
    abort_unless($membership,403,'Usuário sem vínculo ativo com a empresa.');
    $sellerId=$clientId?ClientSeller::where('tenant_id',$tenantId)->where('client_id',$clientId)->whereNull('ended_at')->value('tenant_user_id'):$membership->id;
