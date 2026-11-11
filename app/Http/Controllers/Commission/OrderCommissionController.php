@@ -9,11 +9,35 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Commission\CaptureOrderCommissionRequest;
 use App\Http\Requests\Commission\IndexOrderCommissionRequest;
 use App\Http\Resources\Commission\OrderCommissionResource;
+use App\Models\CommercialParticipant;
+use App\Models\TenantUser;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class OrderCommissionController extends Controller
 {
+    public function options(Request $request, string $tenantId, string $orderId, FilterOrderCommissionsAction $filter): JsonResponse
+    {
+        $tenant = $request->attributes->get('active_tenant');
+        abort_unless($request->user()->can('manageCommissions', $tenant), 403);
+        $order = $filter->findOrder($tenant, $request->user(), $orderId);
+        $participants = $order->participants()->get(['role', 'tenant_user_id', 'commercial_participant_id', 'participant_name'])->toArray();
+        if ($participants === [] && $order->tenant_user_id !== null) {
+            $order->loadMissing('consultant.user');
+            $participants[] = ['role' => 'CONSULTANT', 'tenant_user_id' => $order->tenant_user_id, 'commercial_participant_id' => null, 'participant_name' => $order->consultant?->user?->name];
+        }
+
+        return response()->json(['data' => [
+            'consultant_id' => $order->tenant_user_id,
+            'participants' => $participants,
+            'members' => TenantUser::query()->where('tenant_id', $tenant->id)->where('status', 'ACTIVE')
+                ->with('user:id,name')->get()->map(fn (TenantUser $member): array => ['id' => $member->id, 'name' => $member->user?->name ?? $member->id])->values(),
+            'externals' => CommercialParticipant::query()->where('tenant_id', $tenant->id)->where('is_active', true)
+                ->orderBy('name')->get(['id', 'name', 'role']),
+        ]]);
+    }
+
     public function index(IndexOrderCommissionRequest $request, string $tenantId, string $orderId, FilterOrderCommissionsAction $filter): AnonymousResourceCollection
     {
         $order = $filter->findOrder($request->attributes->get('active_tenant'), $request->user(), $orderId);

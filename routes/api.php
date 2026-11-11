@@ -272,6 +272,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/operator-classifications', [OperatorClassificationController::class, 'index']);
                 Route::get('/order-statuses', [OrderStatusController::class, 'index']);
                 Route::get('/commercial-orders/{orderId}/commissions', [OrderCommissionController::class, 'index'])->whereUuid('orderId')->name('order-commissions.index');
+                Route::get('/commercial-orders/{orderId}/commissions/options', [OrderCommissionController::class, 'options'])->whereUuid('orderId');
                 Route::get('/commercial-orders', [CommercialOrderController::class, 'index']);
                 Route::get('/commercial-orders/{orderId}', [OrderWorkflowController::class, 'show'])->whereUuid('orderId');
                 Route::get('/commercial-orders/options', [CommercialOrderController::class, 'options']);
