@@ -8,16 +8,22 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('customer_portal_accesses', function (Blueprint $table): void {
-            $table->string('request_hash', 64)->nullable()->index();
-        });
+        if (! Schema::hasColumn('customer_portal_accesses', 'request_hash')) {
+            Schema::table('customer_portal_accesses', function (Blueprint $table): void {
+                $table->string('request_hash', 64)->nullable();
+            });
+        }
+
+        if (! Schema::hasIndex('customer_portal_accesses', ['request_hash'])) {
+            Schema::table('customer_portal_accesses', function (Blueprint $table): void {
+                $table->index('request_hash');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('customer_portal_accesses', function (Blueprint $table): void {
-            $table->dropIndex(['request_hash']);
-            $table->dropColumn('request_hash');
-        });
+        // A coluna também pertence à migration de criação; o rollback desta
+        // compatibilidade deve preservá-la. A migration inicial remove a tabela.
     }
 };
