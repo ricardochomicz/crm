@@ -39,4 +39,14 @@ class ActivityNotificationController extends Controller
         if ($updated) ActivityNotificationChanged::dispatch($tenantId, $member->id);
         return response()->json(['ok' => true]);
     }
+    public function readAll(Request $request, string $tenantId): JsonResponse
+    {
+        $member = $this->membership($request);
+        $updated = DB::table('activity_notifications')->where('tenant_id', $tenantId)
+            ->where('tenant_user_id', $member->id)->whereNull('read_at')
+            ->update(['read_at' => now(), 'updated_at' => now()]);
+        if ($updated) ActivityNotificationChanged::dispatch($tenantId, $member->id);
+        return response()->json(['ok' => true, 'updated' => $updated]);
+    }
+
 }
