@@ -11,6 +11,11 @@ use Illuminate\Http\Response;
 
 class CalendarEventController extends Controller
 {
+    public function assignees(CalendarEventRequest $request, string $tenantId, CalendarEventAction $action): array
+    {
+        return ['data' => $action->assignableMembers($request->attributes->get('active_tenant'), $request->user())];
+    }
+
     public function index(CalendarEventRequest $request, string $tenantId, CalendarEventAction $action): AnonymousResourceCollection
     {
         return CalendarEventResource::collection($action->list($request->attributes->get('active_tenant'), $request->user(), $request->validated()));
