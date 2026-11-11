@@ -235,6 +235,7 @@ class CalendarEventAction
         return DB::transaction(function () use ($tenant, $actor, $data) {
             $event = CalendarEvent::create([...$data, 'tenant_id' => $tenant->getKey(), 'created_by_tenant_user_id' => $actor->getKey()]);
             $this->record($event, $actor, 'created', []);
+            app(ActivityNotificationAction::class)->notify($event, 'assigned');
             return $event;
         });
     }
@@ -271,6 +272,9 @@ class CalendarEventAction
                 if ($previous != $current) $changes[$field] = ['from' => $previous, 'to' => $current];
             }
             if ($changes) {
+                if (isset($changes['tenant_user_id'])) {
+                    app(ActivityNotificationAction::class)->notify($event, 'assigned');
+                }
                 $action = isset($changes['tenant_user_id']) ? 'reassigned' : (isset($changes['status']) && $after['status'] === 'completed' ? 'completed' : 'updated');
                 $this->record($event, $actor, $action, $changes);
             }
