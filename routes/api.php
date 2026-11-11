@@ -19,6 +19,7 @@ use App\Http\Controllers\Client\HistoricalOrderRenewalController;
 use App\Http\Controllers\Client\OperatorClassificationController;
 use App\Http\Controllers\Client\UpdateClientContractClassificationController;
 use App\Http\Controllers\Commercial\CommercialOrderController;
+use App\Http\Controllers\Commercial\ConsultantProductivityController;
 use App\Http\Controllers\Commercial\OrderActivationController;
 use App\Http\Controllers\Commercial\OrderWorkflowController;
 use App\Http\Controllers\Commission\CommercialGoalController;
@@ -234,6 +235,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
                 Route::get('/units/{unitId}/assignments', ListTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.index');
                 Route::get('/units', ListTenantUnitsController::class)->name('tenant-units.index');
+                Route::get('/consultants/productivity', ConsultantProductivityController::class);
                 Route::get('/commercial-participants', [CommercialParticipantController::class, 'index']);
                 Route::get('/commercial-participants/{participantId}/commissions', [CommercialParticipantController::class, 'commissions'])->whereUuid('participantId');
                 Route::get('/commercial-goals', [CommercialGoalController::class, 'index']);
