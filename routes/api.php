@@ -256,6 +256,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/after-sales/options', [ProtocolController::class, 'options']);
                 Route::get('/after-sales/protocols/{protocolId}', [ProtocolController::class, 'show'])->whereUuid('protocolId');
                 Route::get('/activities', [CalendarEventController::class, 'activities']);
+                Route::get('/calendar/assignees', [CalendarEventController::class, 'assignees']);
                 Route::get('/calendar/events', [CalendarEventController::class, 'index']);
                 Route::get('/clients', [ClientController::class, 'index']);
                 Route::get('/clients/portfolio-redistributions', [ClientPortfolioRedistributionController::class, 'index']);
