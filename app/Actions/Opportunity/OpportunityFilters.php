@@ -34,7 +34,15 @@ final class OpportunityFilters
         }
 
         if (! empty($filters['funnel_stage_id'])) {
-            $query->where('funnel_stage_id', $filters['funnel_stage_id']);
+            $stageId = $filters['funnel_stage_id'];
+            if (! empty($filters['include_unassigned'])) {
+                $query->where(function (Builder $builder) use ($stageId) {
+                    $builder->where('funnel_stage_id', $stageId)
+                        ->orWhereNull('funnel_stage_id');
+                });
+            } else {
+                $query->where('funnel_stage_id', $stageId);
+            }
         }
 
         $today = Carbon::today()->toDateString();
