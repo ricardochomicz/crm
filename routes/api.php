@@ -20,6 +20,7 @@ use App\Http\Controllers\Client\OperatorClassificationController;
 use App\Http\Controllers\Client\UpdateClientContractClassificationController;
 use App\Http\Controllers\Commercial\CommercialOrderController;
 use App\Http\Controllers\Commercial\ConsultantProductivityController;
+use App\Http\Controllers\Commercial\ConsultantPrioritiesController;
 use App\Http\Controllers\Commercial\OrderActivationController;
 use App\Http\Controllers\Commercial\OrderWorkflowController;
 use App\Http\Controllers\Commission\CommercialGoalController;
@@ -252,6 +253,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/timeline/attachments/{id}/download', [TimelineController::class, 'download'])->whereUuid('id');
                 Route::get('/opportunities/funnel-overview', [OpportunityController::class, 'funnelOverview'])->name('opportunities.funnel-overview');
                 Route::get('/opportunities/overview', [OpportunityController::class, 'overview'])->name('opportunities.overview');
+                Route::get('/commercial-priorities', [ConsultantPrioritiesController::class, 'index']);
+                Route::put('/commercial-priorities/{opportunityId}/acknowledge', [ConsultantPrioritiesController::class, 'acknowledge'])->whereUuid('opportunityId')->middleware('subscription.writable');
                 Route::get('/opportunities', [OpportunityController::class, 'index']);
                 Route::get('/opportunities/highlights', [OpportunityHighlightController::class, 'index']);
                 Route::put('/opportunities/{opportunityId}/highlight', [OpportunityHighlightController::class, 'update'])->whereUuid('opportunityId')->middleware('subscription.writable');
