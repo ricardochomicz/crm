@@ -91,6 +91,61 @@ class ConsultantPrioritiesController extends Controller
         ]]);
     }
 
+    public function acknowledgeAll(
+        Request $request,
+        string $tenantId,
+        ListConsultantRenewalPrioritiesAction $renewalAction
+    ): JsonResponse {
+        [$tenant, $membership] = $this->context($request);
+        $data = $request->validate([
+            'type' => ['required', 'in:opportunities,renewals'],
+        ]);
+
+        if ($data['type'] === 'renewals') {
+            $renewals = $renewalAction->execute($tenant->id, $membership->id, $request->user()->id);
+            abort_if($renewals['truncated'], 409, 'A lista de renovações está incompleta. Confirme individualmente.');
+            $ids = array_column($renewals['items'], 'id');
+            $table = 'commercial_renewal_acknowledgements';
+            $column = 'client_contract_id';
+        } else {
+            $ids = Opportunity::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('tenant_user_id', $membership->id)
+                ->where('status', 'open')
+                ->where(function ($query): void {
+                    $query->whereDate('expected_close_at', '<', now()->startOfWeek()->toDateString())
+                        ->orWhereBetween('expected_close_at', [
+                            now()->startOfWeek()->toDateString(),
+                            now()->endOfWeek()->toDateString(),
+                        ]);
+                })
+                ->pluck('id')
+                ->all();
+            $table = 'commercial_priority_acknowledgements';
+            $column = 'opportunity_id';
+        }
+
+        $now = now();
+        $rows = array_map(static fn (string $id): array => [
+            'tenant_id' => $tenant->id,
+            'tenant_user_id' => $membership->id,
+            $column => $id,
+            'acknowledged_on' => $now->toDateString(),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $ids);
+
+        if ($rows) {
+            DB::table($table)->upsert(
+                $rows,
+                ['tenant_id', 'tenant_user_id', $column, 'acknowledged_on'],
+                ['updated_at']
+            );
+        }
+
+        return response()->json(['data' => ['acknowledged' => count($ids)]]);
+    }
+
     public function acknowledgeRenewal(
         Request $request,
         string $tenantId,
