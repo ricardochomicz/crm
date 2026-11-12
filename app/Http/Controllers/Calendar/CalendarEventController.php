@@ -41,6 +41,11 @@ class CalendarEventController extends Controller
         return new CalendarEventResource($action->update($request->attributes->get('active_tenant'), $request->user(), $eventId, $request->validated()));
     }
 
+    public function show(CalendarEventRequest $request, string $tenantId, string $eventId, CalendarEventAction $action): CalendarEventResource
+    {
+        return new CalendarEventResource($action->show($request->attributes->get('active_tenant'), $request->user(), $eventId));
+    }
+
     public function history(CalendarEventRequest $request, string $tenantId, string $eventId, CalendarEventAction $action): array
     {
         return ['data' => $action->history($request->attributes->get('active_tenant'), $request->user(), $eventId)];
