@@ -3,6 +3,7 @@
 namespace App\Actions\Commercial;
 
 use App\Models\CalendarEvent;
+use App\Models\CommercialGoal;
 use App\Models\CommercialOrder;
 use App\Models\Opportunity;
 use App\Models\Tenant;
@@ -69,6 +70,46 @@ class ConsultantProductivityAction
         foreach ($rows as $row) foreach ($totals as $key => $value) $totals[$key] += $row[$key];
 
         return ['data' => $rows, 'totals' => $totals];
+    }
+
+    /** Existing commission goal configurations, not monthly sales targets. */
+    public function goalConfigurations(Tenant $tenant, User $user, array $filters): array
+    {
+        $overview = $this->overview($tenant, $user, $filters);
+        $memberIds = collect($overview['data'])->pluck('id')->all();
+        if ($memberIds === []) return ['data' => []];
+
+        $goals = CommercialGoal::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->where('starts_on', '<=', $filters['to'])
+            ->where(fn ($query) => $query->whereNull('ends_on')->orWhere('ends_on', '>=', $filters['from']))
+            ->where(function ($query) use ($memberIds) {
+                $query->where(function ($company) {
+                    $company->where('target_scope', 'COMPANY')->whereNull('responsible_membership_id');
+                })->orWhere(function ($personal) use ($memberIds) {
+                    $personal->where('target_scope', 'CONSULTANT')->whereIn('responsible_membership_id', $memberIds);
+                });
+            })
+            ->with('tiers')
+            ->orderBy('starts_on')
+            ->limit(500)
+            ->get();
+
+        return ['data' => $goals->map(fn (CommercialGoal $goal) => [
+            'id' => $goal->id,
+            'operator_id' => $goal->operator_id,
+            'order_type' => $goal->order_type,
+            'metric' => $goal->metric,
+            'target_scope' => $goal->target_scope,
+            'responsible_membership_id' => $goal->responsible_membership_id,
+            'starts_on' => $goal->starts_on?->format('Y-m-d'),
+            'ends_on' => $goal->ends_on?->format('Y-m-d'),
+            'tiers' => $goal->tiers->map(fn ($tier) => [
+                'minimum' => (float) $tier->minimum,
+                'percentage' => (float) $tier->percentage,
+            ])->values()->all(),
+        ])->values()->all()];
     }
 
     public function records(Tenant $tenant, User $user, array $filters): array
