@@ -293,6 +293,11 @@ class CalendarEventAction
         ]);
     }
 
+    public function show(Tenant $tenant, User $user, string $id): CalendarEvent
+    {
+        return $this->owned($tenant, $user, $id)->load(['client', 'opportunity.client', 'assignee.user']);
+    }
+
     public function history(Tenant $tenant, User $user, string $id): array
     {
         $event = $this->owned($tenant, $user, $id);
