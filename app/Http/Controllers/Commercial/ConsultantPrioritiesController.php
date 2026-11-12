@@ -60,6 +60,7 @@ class ConsultantPrioritiesController extends Controller
             return [
                 'id' => $opportunity->id,
                 'title' => $opportunity->title,
+                'created_at' => $opportunity->created_at?->toIso8601String(),
                 'client_name' => $opportunity->client?->company_name,
                 'operator_name' => $opportunity->operator?->name,
                 'expected_close_at' => $opportunity->expected_close_at?->toDateString(),
