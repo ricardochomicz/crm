@@ -40,6 +40,7 @@ class ListClientContractRenewalsAction
             $result = [
                 'order_id' => $order->id,
                 'order_code' => $order->code,
+                'order_type' => $order->order_type,
                 'operator_id' => $order->operator_id,
                 'operator_name' => $order->operator?->name,
                 'classification_id' => $assignments->get($order->operator_id),
