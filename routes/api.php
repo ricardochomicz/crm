@@ -265,6 +265,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::patch('/activity-notifications/{notificationId}/read', [ActivityNotificationController::class, 'read'])->whereUuid('notificationId');
                 Route::get('/activities/overview', [CalendarEventController::class, 'activitiesOverview']);
                 Route::get('/calendar/assignees', [CalendarEventController::class, 'assignees']);
+                Route::get('/calendar/events/{eventId}', [CalendarEventController::class, 'show'])->whereUuid('eventId');
                 Route::get('/calendar/events/{eventId}/history', [CalendarEventController::class, 'history'])->whereUuid('eventId');
                 Route::get('/calendar/events', [CalendarEventController::class, 'index']);
                 Route::get('/clients', [ClientController::class, 'index']);
