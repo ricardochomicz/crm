@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Commercial;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Actions\Commercial\ListConsultantRenewalPrioritiesAction;
 use App\Http\Controllers\Controller;
 use App\Models\Opportunity;
 use App\Models\Tenant;
@@ -25,7 +26,7 @@ class ConsultantPrioritiesController extends Controller
         return [$tenant, $membership];
     }
 
-    public function index(Request $request, string $tenantId): JsonResponse
+    public function index(Request $request, string $tenantId, ListConsultantRenewalPrioritiesAction $renewalAction): JsonResponse
     {
         [$tenant, $membership] = $this->context($request);
         $start = now()->startOfWeek()->toDateString();
@@ -68,13 +69,49 @@ class ConsultantPrioritiesController extends Controller
             ];
         });
 
+        $renewals = $renewalAction->execute($tenant->id, $membership->id, $request->user()->id);
+        $renewalAcknowledged = DB::table('commercial_renewal_acknowledgements')
+            ->where('tenant_id', $tenant->id)
+            ->where('tenant_user_id', $membership->id)
+            ->where('acknowledged_on', $today)
+            ->pluck('client_contract_id')
+            ->all();
+        $renewals['items'] = array_map(static function (array $item) use ($renewalAcknowledged): array {
+            $item['acknowledged'] = in_array($item['id'], $renewalAcknowledged, true);
+            return $item;
+        }, $renewals['items']);
+
         return response()->json(['data' => [
             'period' => ['from' => $start, 'to' => $end],
             'total_opportunities' => $items->count(),
             'total_lines' => $items->sum('lines'),
             'total_monthly' => number_format($items->sum(fn ($item) => (float) $item['monthly']), 2, '.', ''),
             'items' => $items->values()->all(),
+            'renewals' => $renewals,
         ]]);
+    }
+
+    public function acknowledgeRenewal(
+        Request $request,
+        string $tenantId,
+        string $contractId,
+        ListConsultantRenewalPrioritiesAction $renewalAction
+    ): JsonResponse {
+        [$tenant, $membership] = $this->context($request);
+        $renewals = $renewalAction->execute($tenant->id, $membership->id, $request->user()->id);
+        abort_unless(in_array($contractId, array_column($renewals['items'], 'id'), true), 404);
+
+        DB::table('commercial_renewal_acknowledgements')->updateOrInsert(
+            [
+                'tenant_id' => $tenant->id,
+                'tenant_user_id' => $membership->id,
+                'client_contract_id' => $contractId,
+                'acknowledged_on' => now()->toDateString(),
+            ],
+            ['updated_at' => now(), 'created_at' => now()]
+        );
+
+        return response()->json(['data' => ['acknowledged' => true]]);
     }
 
     public function acknowledge(Request $request, string $tenantId, string $opportunityId): JsonResponse
