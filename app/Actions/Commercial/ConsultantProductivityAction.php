@@ -71,6 +71,38 @@ class ConsultantProductivityAction
         return ['data' => $rows, 'totals' => $totals];
     }
 
+    public function records(Tenant $tenant, User $user, array $filters): array
+    {
+        // Reuse the overview's tenant, role and team visibility checks.
+        $overview = $this->overview($tenant, $user, [
+            'from' => $filters['from'], 'to' => $filters['to'],
+            'consultant_id' => $filters['consultant_id'],
+        ]);
+        abort_if(empty($overview['data']), 404, 'Consultor não encontrado ou sem acesso.');
+
+        $id = $filters['consultant_id'];
+        $from = $filters['from'].' 00:00:00';
+        $to = $filters['to'].' 23:59:59';
+        $type = $filters['type'];
+
+        $query = match ($type) {
+            'activities' => CalendarEvent::query()->where('tenant_id', $tenant->id)
+                ->where('tenant_user_id', $id)->whereIn('type', ['task', 'reminder'])
+                ->where(function ($q) use ($from, $to) {
+                    $q->whereBetween('completed_at', [$from, $to])
+                        ->orWhereBetween('ends_at', [$from, $to]);
+                })->select(['id', 'title', 'status', 'ends_at', 'completed_at', 'created_at']),
+            'opportunities' => Opportunity::query()->where('tenant_id', $tenant->id)
+                ->where('tenant_user_id', $id)->whereBetween('created_at', [$from, $to])
+                ->select(['id', 'title', 'code', 'status', 'created_at']),
+            'orders' => CommercialOrder::query()->where('tenant_id', $tenant->id)
+                ->where('tenant_user_id', $id)->whereBetween('sold_on', [$filters['from'], $filters['to']])
+                ->select(['id', 'code', 'customer_name', 'status', 'monthly_amount', 'sold_on', 'created_at']),
+        };
+
+        return $query->orderByDesc('created_at')->paginate(10)->toArray();
+    }
+
     private function emptyTotals(): array
     {
         return ['completed' => 0, 'overdue' => 0, 'opportunities' => 0, 'open_opportunities' => 0, 'orders' => 0, 'monthly_amount' => 0];
