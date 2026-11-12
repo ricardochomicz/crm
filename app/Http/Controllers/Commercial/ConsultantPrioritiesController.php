@@ -45,7 +45,6 @@ class ConsultantPrioritiesController extends Controller
             ->with(['client:id,company_name', 'operator:id,name'])
             ->withSum('items as total_lines', 'quantity')
             ->orderBy('expected_close_at')
-            ->limit(100)
             ->get();
 
         $acknowledged = DB::table('commercial_priority_acknowledgements')
