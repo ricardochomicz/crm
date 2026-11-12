@@ -21,6 +21,17 @@ class ConsultantProductivityController extends Controller
         $tenant = $request->attributes->get('active_tenant');
         return response()->json($action->overview($tenant, $request->user(), $data));
     }
+    public function goalConfigurations(Request $request, string $tenantId, ConsultantProductivityAction $action): JsonResponse
+    {
+        $data = $request->validate([
+            'from' => ['required', 'date_format:Y-m-d'],
+            'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'consultant_id' => ['sometimes', 'uuid'],
+        ]);
+        abort_if(\Carbon\Carbon::parse($data['from'])->diffInDays(\Carbon\Carbon::parse($data['to'])) > 366, 422);
+        return response()->json($action->goalConfigurations($request->attributes->get('active_tenant'), $request->user(), $data));
+    }
+
     public function records(Request $request, string $tenantId, ConsultantProductivityAction $action): JsonResponse
     {
         $data = $request->validate([
