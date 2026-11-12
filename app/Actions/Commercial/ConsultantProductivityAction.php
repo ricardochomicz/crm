@@ -31,10 +31,13 @@ class ConsultantProductivityAction
         if ($ids->isEmpty()) return ['data' => [], 'totals' => $this->emptyTotals()];
 
         $activities = CalendarEvent::query()->where('tenant_id', $tenant->id)->whereIn('tenant_user_id', $ids)
-            ->whereIn('type', ['task', 'reminder'])->where('starts_at', '<=', $to.' 23:59:59')
-            ->where('ends_at', '>=', $from.' 00:00:00')
+            ->whereIn('type', ['task', 'reminder'])
+            ->where(function ($query) use ($from, $to) {
+                $query->whereBetween('completed_at', [$from.' 00:00:00', $to.' 23:59:59'])
+                    ->orWhereBetween('ends_at', [$from.' 00:00:00', $to.' 23:59:59']);
+            })
             ->select('tenant_user_id')
-            ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at BETWEEN ? AND ? THEN 1 ELSE 0 END) AS completed", [$from.' 00:00:00', $to.' 23:59:59']")
+            ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at BETWEEN ? AND ? THEN 1 ELSE 0 END) AS completed", [$from.' 00:00:00', $to.' 23:59:59'])
             ->selectRaw("SUM(CASE WHEN status = 'pending' AND ends_at < ? AND ends_at BETWEEN ? AND ? THEN 1 ELSE 0 END) AS overdue", [now(), $from.' 00:00:00', $to.' 23:59:59'])
             ->groupBy('tenant_user_id')->get()->keyBy('tenant_user_id');
 
