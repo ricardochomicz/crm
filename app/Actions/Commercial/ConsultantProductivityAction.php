@@ -4,6 +4,7 @@ namespace App\Actions\Commercial;
 
 use App\Models\CalendarEvent;
 use App\Models\CommercialGoal;
+use App\Models\ConsultantMonthlyTarget;
 use App\Models\CommercialOrder;
 use App\Models\Opportunity;
 use App\Models\Tenant;
@@ -52,7 +53,15 @@ class ConsultantProductivityAction
             ->selectRaw('COUNT(*) AS orders_count')->selectRaw('COALESCE(SUM(monthly_amount), 0) AS monthly_amount')
             ->groupBy('tenant_user_id')->get()->keyBy('tenant_user_id');
 
-        $rows = $members->map(function ($member) use ($activities, $opportunities, $orders) {
+        // Monthly targets are comparable only when the selected range stays in one calendar month.
+        $sameMonth = substr($from, 0, 7) === substr($to, 0, 7);
+        $targets = $sameMonth
+            ? ConsultantMonthlyTarget::query()->where('tenant_id', $tenant->id)
+                ->whereIn('tenant_user_id', $ids)->where('month', substr($from, 0, 7).'-01')
+                ->get()->keyBy('tenant_user_id')
+            : collect();
+
+        $rows = $members->map(function ($member) use ($activities, $opportunities, $orders, $targets) {
             $id = $member->id;
             return [
                 'id' => $id,
@@ -63,6 +72,7 @@ class ConsultantProductivityAction
                 'open_opportunities' => (int) ($opportunities->get($id)?->open_count ?? 0),
                 'orders' => (int) ($orders->get($id)?->orders_count ?? 0),
                 'monthly_amount' => (float) ($orders->get($id)?->monthly_amount ?? 0),
+                'monthly_target' => $targets->has($id) ? (float) $targets->get($id)->amount : null,
             ];
         })->values();
 
