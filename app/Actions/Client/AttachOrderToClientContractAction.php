@@ -25,15 +25,6 @@ class AttachOrderToClientContractAction
             throw ValidationException::withMessages(['order_id' => 'O documento do pedido não corresponde ao cliente.']);
         }
 
-        if ($contract && (
-            $contract->tenant_id !== $client->tenant_id
-            || $contract->client_id !== $client->id
-            || (int) $contract->operator_id !== (int) $order->operator_id
-            || ($order->classification_id && $contract->classification_id
-                && (int) $order->classification_id !== (int) $contract->classification_id)
-        )) {
-            throw ValidationException::withMessages(['contract_id' => 'Contrato incompatível com o pedido.']);
-        }
 
         return DB::transaction(function () use ($client, $order, $contract): ClientContract {
             $lockedOrder = CommercialOrder::query()
@@ -41,12 +32,33 @@ class AttachOrderToClientContractAction
                 ->lockForUpdate()
                 ->findOrFail($order->id);
 
-            if ($lockedOrder->client_contract_id && $lockedOrder->client_contract_id !== $contract?->id) {
-                throw ValidationException::withMessages(['order_id' => 'O pedido já está associado a outro contrato.']);
+            if ($contract) {
+                $contract = ClientContract::query()
+                    ->where('tenant_id', $client->tenant_id)
+                    ->where('client_id', $client->id)
+                    ->lockForUpdate()
+                    ->findOrFail($contract->id);
+
+                if ((int) $contract->operator_id !== (int) $lockedOrder->operator_id) {
+                    throw ValidationException::withMessages([
+                        'contract_id' => 'A operadora do contrato é diferente da operadora do pedido. Não é permitido vincular pedidos de operadoras distintas.',
+                    ]);
+                }
+
+                if ($lockedOrder->classification_id && $contract->classification_id
+                    && (int) $lockedOrder->classification_id !== (int) $contract->classification_id) {
+                    throw ValidationException::withMessages([
+                        'contract_id' => 'A classificação do contrato é incompatível com a classificação do pedido.',
+                    ]);
+                }
+            }
+
+            if ($lockedOrder->client_contract_id) {
+                throw ValidationException::withMessages(['order_id' => 'O pedido já está vinculado a um contrato e não pode ser consolidado novamente.']);
             }
 
             if (! $contract) {
-                $operatorName = Operator::query()->whereKey($order->operator_id)->value('name');
+                $operatorName = Operator::query()->whereKey($lockedOrder->operator_id)->value('name');
                 $policy = mb_strtolower(trim((string) $operatorName)) === 'claro'
                     ? ClientContract::POLICY_WEIGHTED_AVERAGE
                     : ClientContract::POLICY_PENDING;
@@ -54,9 +66,9 @@ class AttachOrderToClientContractAction
                 $contract = ClientContract::query()->create([
                     'tenant_id' => $client->tenant_id,
                     'client_id' => $client->id,
-                    'operator_id' => $order->operator_id,
-                    'classification_id' => $order->classification_id
-                        ?: ((int) $client->operator_id === (int) $order->operator_id ? $client->classification_id : null),
+                    'operator_id' => $lockedOrder->operator_id,
+                    'classification_id' => $lockedOrder->classification_id
+                        ?: ((int) $client->operator_id === (int) $lockedOrder->operator_id ? $client->classification_id : null),
                     'renewal_policy' => $policy,
                     'status' => 'ACTIVE',
                 ]);
