@@ -236,6 +236,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/units/{unitId}/assignments', ListTenantUnitAssignmentsController::class)->whereUuid('unitId')->name('tenant-units.assignments.index');
                 Route::get('/units', ListTenantUnitsController::class)->name('tenant-units.index');
                 Route::get('/consultants/productivity', ConsultantProductivityController::class);
+                Route::put('/consultants/productivity/monthly-target', [ConsultantProductivityController::class, 'saveMonthlyTarget']);
                 Route::get('/consultants/productivity/goals', [ConsultantProductivityController::class, 'goalConfigurations']);
                 Route::get('/consultants/productivity/records', [ConsultantProductivityController::class, 'records']);
                 Route::get('/commercial-participants', [CommercialParticipantController::class, 'index']);
