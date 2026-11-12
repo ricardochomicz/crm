@@ -6,6 +6,9 @@ use App\Actions\Commercial\ConsultantProductivityAction;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\TenantUser;
+use App\Models\ConsultantMonthlyTarget;
+use App\Enums\TenantUserRole;
 
 class ConsultantProductivityController extends Controller
 {
@@ -21,6 +24,34 @@ class ConsultantProductivityController extends Controller
         $tenant = $request->attributes->get('active_tenant');
         return response()->json($action->overview($tenant, $request->user(), $data));
     }
+    public function saveMonthlyTarget(Request $request, string $tenantId): JsonResponse
+    {
+        $tenant = $request->attributes->get('active_tenant');
+        $actor = TenantUser::query()->where('tenant_id', $tenant->id)
+            ->where('user_id', $request->user()->id)->where('status', 'ACTIVE')->firstOrFail();
+        abort_unless(in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
+
+        $data = $request->validate([
+            'tenant_user_id' => ['required', 'uuid'],
+            'month' => ['required', 'date_format:Y-m-d'],
+            'amount' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
+        ]);
+        abort_unless(substr($data['month'], 8) === '01', 422, 'Informe o primeiro dia do mês.');
+        TenantUser::query()->where('tenant_id', $tenant->id)->where('status', 'ACTIVE')
+            ->whereKey($data['tenant_user_id'])->firstOrFail();
+
+        $target = ConsultantMonthlyTarget::query()->updateOrCreate(
+            ['tenant_id' => $tenant->id, 'tenant_user_id' => $data['tenant_user_id'], 'month' => $data['month']],
+            ['amount' => $data['amount']],
+        );
+        return response()->json(['data' => [
+            'id' => $target->id,
+            'tenant_user_id' => $target->tenant_user_id,
+            'month' => $target->month->format('Y-m-d'),
+            'amount' => (float) $target->amount,
+        ]]);
+    }
+
     public function goalConfigurations(Request $request, string $tenantId, ConsultantProductivityAction $action): JsonResponse
     {
         $data = $request->validate([
