@@ -8,7 +8,7 @@ use App\Models\Opportunity;
 use App\Models\Tenant;
 use App\Models\TenantUser;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use App\Enums\TenantUserRole;
 
 class ConsultantProductivityAction
 {
@@ -18,7 +18,7 @@ class ConsultantProductivityAction
         $actor = TenantUser::query()->where('tenant_id', $tenant->id)->where('user_id', $user->id)->where('status', 'ACTIVE')->firstOrFail();
         $from = $filters['from'];
         $to = $filters['to'];
-        $isManager = in_array($actor->role->value, ['OWNER', 'MANAGER'], true);
+        $isManager = in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true);
         $members = TenantUser::query()->with('user:id,name')->where('tenant_id', $tenant->id)->where('status', 'ACTIVE');
         if (! $isManager) {
             $teams = $actor->supervisedTeams()->where('tenant_id', $tenant->id)->pluck('id');
@@ -34,8 +34,8 @@ class ConsultantProductivityAction
             ->whereIn('type', ['task', 'reminder'])->where('starts_at', '<=', $to.' 23:59:59')
             ->where('ends_at', '>=', $from.' 00:00:00')
             ->select('tenant_user_id')
-            ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed")
-            ->selectRaw("SUM(CASE WHEN status = 'pending' AND ends_at < ? THEN 1 ELSE 0 END) AS overdue", [now()])
+            ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at BETWEEN ? AND ? THEN 1 ELSE 0 END) AS completed", [$from.' 00:00:00', $to.' 23:59:59']")
+            ->selectRaw("SUM(CASE WHEN status = 'pending' AND ends_at < ? AND ends_at BETWEEN ? AND ? THEN 1 ELSE 0 END) AS overdue", [now(), $from.' 00:00:00', $to.' 23:59:59'])
             ->groupBy('tenant_user_id')->get()->keyBy('tenant_user_id');
 
         $opportunities = Opportunity::query()->where('tenant_id', $tenant->id)->whereIn('tenant_user_id', $ids)
