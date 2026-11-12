@@ -39,6 +39,7 @@ class OpportunityRequest extends FormRequest
             'min_amount' => ['nullable', 'numeric', 'min:0'],
             'max_amount' => ['nullable', 'numeric', 'min:0', 'gte:min_amount'],
             'funnel_stage_id' => ['sometimes', 'uuid'],
+            'include_unassigned' => ['sometimes', 'boolean'],
         ];
         if ($this->routeIs('opportunities.stage.move') || $this->route()?->getActionMethod() === 'moveStage') return ['funnel_stage_id' => ['required', 'uuid']];
         $required = $this->isMethod('POST') ? 'required' : 'sometimes';
