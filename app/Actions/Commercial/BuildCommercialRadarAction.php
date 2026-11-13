@@ -20,9 +20,11 @@ class BuildCommercialRadarAction
      *
      * @return array{items: array<int, array<string, mixed>>, summary: array<string, int>}
      */
-    public function execute(Tenant $tenant, User $user, ?string $memberId = null): array
+    public function execute(Tenant $tenant, User $user, ?string $memberId = null, bool $team = false): array
     {
-        $memberIds = $this->members->execute($tenant, $user, $memberId);
+        $memberIds = $team
+            ? $this->members->selectable($tenant, $user)
+            : $this->members->execute($tenant, $user, $memberId);
 
         $now = now();
         $items = [];
@@ -109,6 +111,15 @@ class BuildCommercialRadarAction
                 ?: strcmp((string) $a['due_at'], (string) $b['due_at']);
         });
 
+        $byType = [
+            'opportunity' => 0,
+            'activity' => 0,
+            'order' => 0,
+        ];
+        foreach ($items as $item) {
+            ++$byType[$item['type']];
+        }
+
         $total = count($items);
         $urgent = count(array_filter($items, static fn (array $item): bool => $item['priority'] === 'urgent'));
         $high = $total - $urgent;
@@ -120,6 +131,7 @@ class BuildCommercialRadarAction
                 'total' => $total,
                 'urgent' => $urgent,
                 'high' => $high,
+                'by_type' => $byType,
             ],
         ];
     }
