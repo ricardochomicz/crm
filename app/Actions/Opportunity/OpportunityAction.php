@@ -143,7 +143,7 @@ class OpportunityAction
         return OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->orderBy('position')->get();
     }
 
-    public function moveStage(Tenant $tenant, User $user, string $id, string $stageId, ?string $expectedCloseAt = null): Opportunity
+    public function moveStage(Tenant $tenant, User $user, string $id, string $stageId, ?string $expectedCloseAt = null, ?string $forecastReason = null): Opportunity
     {
         $actor = $this->actor($tenant, $user);
         $opportunity = $this->find($tenant, $user, $id);
@@ -166,8 +166,15 @@ class OpportunityAction
             ]);
         }
 
+        if ($overdue && mb_strlen(trim($forecastReason ?? '')) < 10) {
+            throw ValidationException::withMessages([
+                'forecast_reason' => 'Informe uma justificativa de pelo menos 10 caracteres para prorrogar a previsão.',
+            ]);
+        }
+
         $previousStage = $opportunity->stage?->name ?? 'Sem etapa';
         $previousForecast = $forecast;
+        DB::transaction(function () use ($opportunity, $stage, $expectedCloseAt, $previousForecast, $previousStage, $tenant, $actor, $forecastReason) {
         $opportunity->update([
             'funnel_stage_id' => $stage->id,
             ...($expectedCloseAt !== null ? ['expected_close_at' => $expectedCloseAt] : []),
@@ -183,9 +190,11 @@ class OpportunityAction
                     'Etapa alterada de %s para %s. Previsão de fechamento atualizada de %s para %s.',
                     $previousStage, $stage->name, $previousForecast ?? 'Não informada',
                     $expectedCloseAt,
-                ),
+                ).($forecastReason !== null && trim($forecastReason) !== '' ? ' Justificativa: '.trim($forecastReason) : ''),
             ]);
         }
+
+        });
 
         return $opportunity->refresh()->load(['client', 'stage', 'orderType']);
     }
