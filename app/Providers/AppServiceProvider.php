@@ -8,6 +8,9 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use App\Models\User;
+use App\Models\Opportunity;
+use App\Models\CalendarEvent;
+use App\Observers\CommercialChangeObserver;
 use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +28,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Opportunity::observe(CommercialChangeObserver::class);
+        CalendarEvent::observe(CommercialChangeObserver::class);
+
         if ($this->app->runningUnitTests()) {
             $default = config('database.default');
             $connection = config("database.connections.{$default}");
