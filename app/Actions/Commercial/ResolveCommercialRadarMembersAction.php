@@ -25,6 +25,10 @@ class ResolveCommercialRadarMembersAction
         $membership = $this->permissions->membership($user, $tenant);
         abort_unless($membership, 403);
 
+        if ($memberId === null) {
+            return [$membership->id];
+        }
+
         $ids = [$membership->id];
 
         if ($membership->role === TenantUserRole::Owner) {
