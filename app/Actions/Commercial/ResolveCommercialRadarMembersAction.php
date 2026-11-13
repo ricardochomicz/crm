@@ -31,14 +31,11 @@ class ResolveCommercialRadarMembersAction
 
         $ids = $this->selectable($tenant, $user);
 
-        if ($memberId !== null) {
-            abort_unless(in_array($memberId, $ids, true), 403, 'Consultor fora do escopo autorizado.');
+        abort_unless(in_array($memberId, $ids, true), 403, 'Consultor fora do escopo autorizado.');
 
-            return [$memberId];
-        }
-
-        return $ids;
+        return [$memberId];
     }
+
     /** @return list<string> */
     public function selectable(Tenant $tenant, User $user): array
     {
@@ -46,6 +43,7 @@ class ResolveCommercialRadarMembersAction
         abort_unless($membership, 403);
 
         $ids = [$membership->id];
+
         if ($membership->role === TenantUserRole::Owner) {
             $ids = TenantUser::query()
                 ->where('tenant_id', $tenant->id)
