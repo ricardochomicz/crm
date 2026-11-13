@@ -81,7 +81,7 @@ class CommercialRadarTest extends TestCase
             ->assertUnauthorized();
     }
 
-    public function test_radar_endpoint_rejects_another_tenant(): void
+    public function test_radar_endpoint_hides_another_tenant(): void
     {
         $tenant = Tenant::factory()->create();
         $otherTenant = Tenant::factory()->create();
@@ -89,6 +89,6 @@ class CommercialRadarTest extends TestCase
 
         $this->actingAs($actor->user)
             ->getJson("/api/v1/tenants/{$otherTenant->id}/commercial-radar")
-            ->assertForbidden();
+            ->assertNotFound();
     }
 }
