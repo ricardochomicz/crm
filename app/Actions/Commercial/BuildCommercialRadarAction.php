@@ -2,7 +2,6 @@
 
 namespace App\Actions\Commercial;
 
-use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Models\CalendarEvent;
 use App\Models\CommercialOrder;
 use App\Models\Opportunity;
@@ -13,19 +12,17 @@ use Illuminate\Support\Carbon;
 class BuildCommercialRadarAction
 {
     public function __construct(
-        private readonly ResolveTenantPermissionsAction $permissions,
+        private readonly ResolveCommercialRadarMembersAction $members,
     ) {}
 
     /**
-     * Return only records assigned to the authenticated member.
-     * Managerial/team visibility can be expanded separately after a permissions review.
+     * Return only records within the authenticated user's authorized membership scope.
      *
      * @return array{items: array<int, array<string, mixed>>, summary: array<string, int>}
      */
-    public function execute(Tenant $tenant, User $user): array
+    public function execute(Tenant $tenant, User $user, ?string $memberId = null): array
     {
-        $membership = $this->permissions->membership($user, $tenant);
-        abort_unless($membership, 403);
+        $memberIds = $this->members->execute($tenant, $user, $memberId);
 
         $now = now();
         $items = [];
@@ -33,7 +30,7 @@ class BuildCommercialRadarAction
         if ($user->can('viewOpportunities', $tenant)) {
             $opportunities = Opportunity::query()
                 ->where('tenant_id', $tenant->id)
-                ->where('tenant_user_id', $membership->id)
+                ->whereIn('tenant_user_id', $memberIds)
                 ->where('status', 'open')
                 ->whereDate('expected_close_at', '<=', $now->copy()->addDays(2)->toDateString())
                 ->orderBy('expected_close_at')
@@ -58,7 +55,7 @@ class BuildCommercialRadarAction
         if ($user->can('viewCalendar', $tenant)) {
             $activities = CalendarEvent::query()
                 ->where('tenant_id', $tenant->id)
-                ->where('tenant_user_id', $membership->id)
+                ->whereIn('tenant_user_id', $memberIds)
                 ->whereIn('type', ['task', 'reminder'])
                 ->where('status', 'pending')
                 ->where('ends_at', '<=', $now->copy()->addDay())
@@ -83,7 +80,7 @@ class BuildCommercialRadarAction
         if ($user->can('viewOrders', $tenant)) {
             $orders = CommercialOrder::query()
                 ->where('tenant_id', $tenant->id)
-                ->where('tenant_user_id', $membership->id)
+                ->whereIn('tenant_user_id', $memberIds)
                 ->whereNull('administratively_completed_at')
                 ->whereNull('activated_at')
                 ->whereNotNull('expected_activation_at')
