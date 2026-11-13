@@ -29,8 +29,23 @@ class ResolveCommercialRadarMembersAction
             return [$membership->id];
         }
 
-        $ids = [$membership->id];
+        $ids = $this->selectable($tenant, $user);
 
+        if ($memberId !== null) {
+            abort_unless(in_array($memberId, $ids, true), 403, 'Consultor fora do escopo autorizado.');
+
+            return [$memberId];
+        }
+
+        return $ids;
+    }
+    /** @return list<string> */
+    public function selectable(Tenant $tenant, User $user): array
+    {
+        $membership = $this->permissions->membership($user, $tenant);
+        abort_unless($membership, 403);
+
+        $ids = [$membership->id];
         if ($membership->role === TenantUserRole::Owner) {
             $ids = TenantUser::query()
                 ->where('tenant_id', $tenant->id)
@@ -50,12 +65,6 @@ class ResolveCommercialRadarMembersAction
                 ->all();
 
             $ids = array_values(array_unique([...$ids, ...$teamMembers]));
-        }
-
-        if ($memberId !== null) {
-            abort_unless(in_array($memberId, $ids, true), 403, 'Consultor fora do escopo autorizado.');
-
-            return [$memberId];
         }
 
         return $ids;
