@@ -19,8 +19,12 @@ class CommercialRadarController extends Controller
 
         abort_unless($tenant instanceof Tenant && $tenant->id === $tenantId, 403);
 
+        $filters = $request->validate([
+            'member_id' => ['sometimes', 'nullable', 'uuid'],
+        ]);
+
         return response()->json([
-            'data' => $radar->execute($tenant, $request->user()),
+            'data' => $radar->execute($tenant, $request->user(), $filters['member_id'] ?? null),
         ]);
     }
 }
