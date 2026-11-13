@@ -143,7 +143,7 @@ class OpportunityAction
         return OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->orderBy('position')->get();
     }
 
-    public function moveStage(Tenant $tenant, User $user, string $id, string $stageId): Opportunity
+    public function moveStage(Tenant $tenant, User $user, string $id, string $stageId, ?string $expectedCloseAt = null): Opportunity
     {
         $actor = $this->actor($tenant, $user);
         $opportunity = $this->find($tenant, $user, $id);
@@ -153,7 +153,39 @@ class OpportunityAction
             throw ValidationException::withMessages(['funnel_stage_id' => 'Reenvie a correção ao Backoffice antes de mover a oportunidade.']);
         }
         $stage = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($stageId);
-        $opportunity->update(['funnel_stage_id' => $stage->id]);
+        $forecast = $opportunity->expected_close_at?->toDateString();
+        $overdue = $forecast !== null && $forecast < now()->toDateString();
+        if ($overdue && ($expectedCloseAt === null || $expectedCloseAt < now()->toDateString())) {
+            throw ValidationException::withMessages([
+                'expected_close_at' => 'A previsão está vencida. Informe uma nova data de hoje ou posterior para movimentar a oportunidade.',
+            ]);
+        }
+        if ($expectedCloseAt !== null && $expectedCloseAt < now()->toDateString()) {
+            throw ValidationException::withMessages([
+                'expected_close_at' => 'A previsão de fechamento não pode estar no passado.',
+            ]);
+        }
+
+        $previousStage = $opportunity->stage?->name ?? 'Sem etapa';
+        $previousForecast = $forecast;
+        $opportunity->update([
+            'funnel_stage_id' => $stage->id,
+            ...($expectedCloseAt !== null ? ['expected_close_at' => $expectedCloseAt] : []),
+        ]);
+
+        if ($expectedCloseAt !== null && $expectedCloseAt !== $previousForecast) {
+            Comment::create([
+                'tenant_id' => $tenant->id,
+                'tenant_user_id' => $actor->id,
+                'commentable_type' => 'opportunity',
+                'commentable_id' => $opportunity->id,
+                'content' => sprintf(
+                    'Etapa alterada de %s para %s. Previsão de fechamento atualizada de %s para %s.',
+                    $previousStage, $stage->name, $previousForecast ?? 'Não informada',
+                    $expectedCloseAt,
+                ),
+            ]);
+        }
 
         return $opportunity->refresh()->load(['client', 'stage', 'orderType']);
     }
