@@ -112,14 +112,17 @@ class BuildCommercialRadarAction
                 ?: strcmp((string) $a['due_at'], (string) $b['due_at']);
         });
 
+        $total = count($items);
+        $urgent = count(array_filter($items, static fn (array $item): bool => $item['priority'] === 'urgent'));
+        $high = $total - $urgent;
         $items = array_slice($items, 0, 30);
 
         return [
             'items' => $items,
             'summary' => [
-                'total' => count($items),
-                'urgent' => count(array_filter($items, static fn (array $item): bool => $item['priority'] === 'urgent')),
-                'high' => count(array_filter($items, static fn (array $item): bool => $item['priority'] === 'high')),
+                'total' => $total,
+                'urgent' => $urgent,
+                'high' => $high,
             ],
         ];
     }
