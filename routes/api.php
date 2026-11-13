@@ -389,6 +389,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/members/{membershipId}/profile', ShowTenantMemberProfileController::class)
                     ->whereUuid('membershipId')->name('tenant-members.profile.show');
 
+                Route::patch('/subscription/plan', \App\Http\Controllers\Tenant\Subscriptions\UpgradeTenantSubscriptionController::class)->middleware('throttle:10,1')->name('tenants.subscription.upgrade');
                 Route::get('/subscription', ShowTenantSubscriptionController::class)
                     ->name('tenants.subscription.show');
 
