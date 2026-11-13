@@ -43,8 +43,8 @@ class OpportunityController extends Controller
 
     public function moveStage(OpportunityRequest $request, string $tenantId, string $opportunityId, OpportunityAction $action): JsonResponse
     {
-        $data = $request->validate(['funnel_stage_id' => ['required', 'uuid']]);
-        return response()->json(['data' => $action->moveStage($this->tenant($request), $request->user(), $opportunityId, $data['funnel_stage_id'])]);
+        $data = $request->validate(['funnel_stage_id' => ['required', 'uuid'], 'expected_close_at' => ['nullable', 'date_format:Y-m-d']]);
+        return response()->json(['data' => $action->moveStage($this->tenant($request), $request->user(), $opportunityId, $data['funnel_stage_id'], $data['expected_close_at'] ?? null)]);
     }
 
     public function show(OpportunityRequest $request, string $tenantId, string $opportunityId, OpportunityAction $action): JsonResponse
