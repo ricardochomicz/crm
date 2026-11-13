@@ -255,6 +255,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/timeline/attachments/{id}/download', [TimelineController::class, 'download'])->whereUuid('id');
                 Route::get('/opportunities/funnel-overview', [OpportunityController::class, 'funnelOverview'])->name('opportunities.funnel-overview');
                 Route::get('/opportunities/overview', [OpportunityController::class, 'overview'])->name('opportunities.overview');
+                Route::get('/commercial-radar/members', \App\Http\Controllers\Commercial\CommercialRadarMembersController::class)->middleware('throttle:60,1');
                 Route::get('/commercial-radar', \App\Http\Controllers\Commercial\CommercialRadarController::class)->middleware('throttle:60,1');
                 Route::get('/commercial-priorities', [ConsultantPrioritiesController::class, 'index']);
                 Route::put('/commercial-priorities/acknowledge-all', [ConsultantPrioritiesController::class, 'acknowledgeAll'])->middleware('subscription.writable');
