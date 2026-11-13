@@ -19,12 +19,6 @@ class CommercialRadarMembersController extends Controller
         $tenant = $request->attributes->get('active_tenant');
         abort_unless($tenant instanceof Tenant && $tenant->id === $tenantId, 403);
 
-        $membership = $tenant->memberships()
-            ->where('user_id', $request->user()->id)
-            ->first();
-
-        abort_unless($membership, 403);
-
         $memberIds = $members->selectable($tenant, $request->user());
 
         $options = TenantUser::query()
