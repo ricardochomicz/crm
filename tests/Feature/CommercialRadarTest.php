@@ -132,4 +132,22 @@ class CommercialRadarTest extends TestCase
             ->assertJsonValidationErrors('member_id');
     }
 
+    public function test_member_options_are_limited_to_the_active_tenant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $owner = $this->member($tenant);
+        $colleague = $this->member($tenant);
+        $otherTenant = Tenant::factory()->create();
+        $foreignMember = $this->member($otherTenant);
+
+        $response = $this->actingAs($owner->user)
+            ->getJson("/api/v1/tenants/{$tenant->id}/commercial-radar/members")
+            ->assertOk();
+
+        $ids = array_column($response->json('data'), 'id');
+
+        $this->assertContains($owner->id, $ids);
+        $this->assertContains($colleague->id, $ids);
+        $this->assertNotContains($foreignMember->id, $ids);
+    }
 }
