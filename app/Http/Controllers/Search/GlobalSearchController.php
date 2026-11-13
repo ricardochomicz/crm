@@ -15,10 +15,11 @@ class GlobalSearchController extends Controller
         $tenant = $request->attributes->get('active_tenant');
         abort_unless($tenant instanceof Tenant && $tenant->id === $tenantId, 403);
 
-        $validated = $request->validate([
+        $term = trim((string) $request->query('q', ''));
+        $validated = validator(['q' => $term], [
             'q' => ['required', 'string', 'min:2', 'max:120'],
-        ]);
+        ])->validate();
 
-        return response()->json(['data' => $search->execute($tenant, $request->user(), trim($validated['q']))]);
+        return response()->json(['data' => $search->execute($tenant, $request->user(), $validated['q'])]);
     }
 }
