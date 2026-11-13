@@ -25,6 +25,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->runningUnitTests()) {
+            $default = config('database.default');
+            $connection = config("database.connections.{$default}");
+
+            if ($default !== 'sqlite'
+                || ! is_array($connection)
+                || ($connection['database'] ?? null) !== ':memory:'
+                || filled($connection['url'] ?? null)) {
+                throw new \RuntimeException(
+                    'Testes bloqueados: configure SQLite em memória e remova DB_URL antes de executar testes.'
+                );
+            }
+        }
+
         Gate::define(
             'access-platform-admin',
             fn(User $user): bool => $user->is_platform_admin === true
