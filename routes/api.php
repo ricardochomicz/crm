@@ -88,6 +88,7 @@ use App\Http\Controllers\Tenant\Units\StoreTenantUnitController;
 use App\Http\Controllers\Tenant\Units\UpdateTenantUnitAssignmentsController;
 use App\Http\Controllers\Tenant\Units\UpdateTenantUnitController;
 use App\Http\Controllers\Timeline\TimelineController;
+use App\Http\Controllers\Search\GlobalSearchController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -248,6 +249,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/commissions', [CommissionTableController::class, 'index'])->name('commissions.index');
                 Route::get('/commissions/order-types', [CommissionTableController::class, 'orderTypes']);
                 Route::get('/commissions/settings', [CommissionTableController::class, 'settings'])->name('commissions.settings.show');
+                Route::get('/global-search', GlobalSearchController::class)->middleware('throttle:60,1');
                 Route::get('/opportunity-funnel-stages', [OpportunityController::class, 'stages']);
                 Route::get('/timeline/{type}/{id}', [TimelineController::class, 'index'])->whereUuid('id')->whereIn('type', ['opportunity', 'client', 'commercial_order']);
                 Route::get('/timeline/attachments/{id}/download', [TimelineController::class, 'download'])->whereUuid('id');
