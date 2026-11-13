@@ -91,4 +91,45 @@ class CommercialRadarTest extends TestCase
             ->getJson("/api/v1/tenants/{$otherTenant->id}/commercial-radar")
             ->assertNotFound();
     }
+    public function test_owner_can_filter_radar_by_member_in_same_tenant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $owner = $this->member($tenant);
+        $colleague = $this->member($tenant);
+        $this->activity($tenant, $owner, 'Minha tarefa');
+        $colleagueActivity = $this->activity($tenant, $colleague, 'Tarefa do colega');
+
+        $result = app(BuildCommercialRadarAction::class)->execute(
+            $tenant,
+            $owner->user,
+            $colleague->id,
+        );
+
+        $this->assertSame([$colleagueActivity->id], array_column($result['items'], 'id'));
+    }
+
+    public function test_member_filter_cannot_access_another_tenant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $owner = $this->member($tenant);
+        $otherTenant = Tenant::factory()->create();
+        $foreignMember = $this->member($otherTenant);
+        $this->activity($otherTenant, $foreignMember, 'Tarefa privada');
+
+        $this->actingAs($owner->user)
+            ->getJson("/api/v1/tenants/{$tenant->id}/commercial-radar?member_id={$foreignMember->id}")
+            ->assertForbidden();
+    }
+
+    public function test_member_filter_rejects_invalid_uuid(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $owner = $this->member($tenant);
+
+        $this->actingAs($owner->user)
+            ->getJson("/api/v1/tenants/{$tenant->id}/commercial-radar?member_id=invalid")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('member_id');
+    }
+
 }
