@@ -21,10 +21,14 @@ class CommercialRadarController extends Controller
 
         $filters = $request->validate([
             'member_id' => ['sometimes', 'nullable', 'uuid'],
+            'scope' => ['sometimes', 'in:mine,team'],
         ]);
 
+        $team = ($filters['scope'] ?? 'mine') === 'team';
+        abort_if($team && ! empty($filters['member_id']), 422, 'Selecione uma equipe ou um consultor, não ambos.');
+
         return response()->json([
-            'data' => $radar->execute($tenant, $request->user(), $filters['member_id'] ?? null),
+            'data' => $radar->execute($tenant, $request->user(), $filters['member_id'] ?? null, $team),
         ]);
     }
 }
