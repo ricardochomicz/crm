@@ -298,7 +298,7 @@ class CalendarEventAction
                 [$periodFrom, $periodTo]
             )
             ->selectRaw(
-                "COUNT(DISTINCT CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? AND EXISTS (SELECT 1 FROM commercial_orders co WHERE co.opportunity_id = calendar_events.opportunity_id AND co.tenant_id = calendar_events.tenant_id) THEN opportunity_id END) AS orders_period",
+                "COUNT(DISTINCT CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? AND EXISTS (SELECT 1 FROM commercial_orders co WHERE co.opportunity_id = calendar_events.opportunity_id AND co.tenant_id = calendar_events.tenant_id) THEN opportunity_id END) AS opportunities_with_orders_period",
                 [$periodFrom, $periodTo]
             )
             ->selectRaw(
@@ -324,7 +324,7 @@ class CalendarEventAction
                 'followed_opportunities_period' => (int) ($row?->followed_opportunities_period ?? 0),
                 'won_opportunities_period' => (int) ($row?->won_opportunities_period ?? 0),
                 // This counts distinct linked opportunities with orders, not order records.
-                'opportunities_with_orders_period' => (int) ($row?->orders_period ?? 0),
+                'opportunities_with_orders_period' => (int) ($row?->opportunities_with_orders_period ?? 0),
                 'critical' => (int) ($row?->critical ?? 0),
             ];
         })->sortBy([
