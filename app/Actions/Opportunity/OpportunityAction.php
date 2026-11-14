@@ -106,6 +106,7 @@ class OpportunityAction
         $forecastChanges = DB::table('opportunity_forecast_changes')
             ->where('opportunity_forecast_changes.tenant_id', $tenant->id)
             ->whereNotNull('previous_date')
+            ->whereBetween('opportunity_forecast_changes.created_at', [$start.' 00:00:00', $end.' 23:59:59'])
             ->whereIn('opportunity_id', (clone $open)->select('opportunities.id'))
             ->selectRaw('SUM(CASE WHEN new_date > previous_date THEN 1 ELSE 0 END) as extensions')
             ->selectRaw('SUM(CASE WHEN new_date < previous_date THEN 1 ELSE 0 END) as advances')
