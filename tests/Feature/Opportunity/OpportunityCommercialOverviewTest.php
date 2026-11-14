@@ -91,6 +91,8 @@ class OpportunityCommercialOverviewTest extends TestCase
         ] as $line) {
             CommercialOrderItem::query()->create([
                 'commercial_order_id' => $order->id,
+                'product_id' => $order->product_id,
+                'operator_id' => $order->operator_id,
                 'quantity' => 1,
                 ...$line,
             ]);
