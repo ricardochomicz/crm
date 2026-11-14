@@ -158,7 +158,14 @@ class CalendarEventAction
         }
 
         $status = $filters['status'] ?? 'pending';
-        if ($status === 'overdue') {
+        if ($status === 'critical') {
+            $deadline = now()->addDay();
+            $query->where('status', 'pending')
+                ->where(function ($q) use ($deadline) {
+                    $q->where('ends_at', '<=', $deadline)
+                        ->orWhere('priority', 'high');
+                });
+        } elseif ($status === 'overdue') {
             $query->where('status', 'pending')->where('ends_at', '<', now());
         } elseif ($status !== 'all') {
             $query->where('status', $status);
