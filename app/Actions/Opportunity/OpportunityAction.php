@@ -52,7 +52,13 @@ class OpportunityAction
         $query = OpportunityFilters::apply($query, $filters);
         if (! empty($filters['client_id'])) $query->where('client_id', $filters['client_id']);
 
-        return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType', 'assignee.user'])->withCount('forecastChanges')->latest()->paginate(20);
+        return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType', 'assignee.user'])->withCount([
+                'forecastChanges',
+                'forecastChanges as forecast_extensions_count' => fn (Builder $query) => $query
+                    ->whereNotNull('previous_date')->whereColumn('new_date', '>', 'previous_date'),
+                'forecastChanges as forecast_advances_count' => fn (Builder $query) => $query
+                    ->whereNotNull('previous_date')->whereColumn('new_date', '<', 'previous_date'),
+            ])->latest()->paginate(20);
     }
 
     public function highlightedIds(Tenant $tenant, User $user): array
@@ -195,7 +201,13 @@ class OpportunityAction
     public function find(Tenant $tenant, User $user, string $id): Opportunity
     {
         return $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user))
-            ->with(['items.orderType', 'client.contacts', 'stage', 'operator', 'orderType', 'assignee.user'])->withCount('forecastChanges')->findOrFail($id);
+            ->with(['items.orderType', 'client.contacts', 'stage', 'operator', 'orderType', 'assignee.user'])->withCount([
+                'forecastChanges',
+                'forecastChanges as forecast_extensions_count' => fn (Builder $query) => $query
+                    ->whereNotNull('previous_date')->whereColumn('new_date', '>', 'previous_date'),
+                'forecastChanges as forecast_advances_count' => fn (Builder $query) => $query
+                    ->whereNotNull('previous_date')->whereColumn('new_date', '<', 'previous_date'),
+            ])->findOrFail($id);
     }
 
     private function validateRelations(Tenant $tenant, array $data): void
