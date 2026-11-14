@@ -93,6 +93,7 @@ class OpportunityCommercialOverviewTest extends TestCase
                 'commercial_order_id' => $order->id,
                 'product_id' => $order->product_id,
                 'operator_id' => $order->operator_id,
+                'description' => 'Linha de teste',
                 'quantity' => 1,
                 ...$line,
             ]);
