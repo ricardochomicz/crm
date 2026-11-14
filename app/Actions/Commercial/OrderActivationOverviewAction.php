@@ -47,6 +47,14 @@ class OrderActivationOverviewAction
             ->orderBy('types.name')
             ->get();
 
+        $previousByType = (clone $query)
+            ->whereBetween('item.activated_at', [$previousFrom->toDateString(), $previousTo->toDateString()])
+            ->select('item.order_type_id', 'types.name as order_type_name')
+            ->selectRaw('COALESCE(SUM(item.quantity), 0) as activated_lines')
+            ->selectRaw('COALESCE(SUM(item.quantity * item.monthly_unit_amount), 0) as monthly_total')
+            ->groupBy('item.order_type_id', 'types.name')
+            ->get();
+
         $previous = (clone $query)
             ->whereBetween('item.activated_at', [$previousFrom->toDateString(), $previousTo->toDateString()])
             ->selectRaw('COALESCE(SUM(item.quantity), 0) as activated_lines')
@@ -55,6 +63,12 @@ class OrderActivationOverviewAction
 
         return [
             'previous_period' => ['from' => $previousFrom->toDateString(), 'to' => $previousTo->toDateString()],
+            'previous_by_type' => $previousByType->map(fn ($row) => [
+                'order_type_id' => $row->order_type_id,
+                'name' => $row->order_type_name ?? 'Sem tipo definido',
+                'lines' => (int) $row->activated_lines,
+                'monthly' => (string) $row->monthly_total,
+            ])->values()->all(),
             'previous_total' => [
                 'lines' => (int) ($previous?->activated_lines ?? 0),
                 'monthly' => (string) ($previous?->monthly_total ?? 0),
