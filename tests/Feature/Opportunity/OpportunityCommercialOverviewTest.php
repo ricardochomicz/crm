@@ -5,6 +5,7 @@ namespace Tests\Feature\Opportunity;
 use App\Actions\Opportunity\OpportunityAction;
 use App\Models\Client;
 use App\Models\CommercialOrder;
+use App\Models\CommercialOrderItem;
 use App\Models\Opportunity;
 use App\Models\Tenant;
 use App\Models\TenantUser;
@@ -51,7 +52,7 @@ class OpportunityCommercialOverviewTest extends TestCase
         ]);
     }
 
-    private function linkOrder(Tenant $tenant, Opportunity $opportunity): void
+    private function linkOrder(Tenant $tenant, Opportunity $opportunity): CommercialOrder
     {
         $operator = OperatorFactory::new()->create();
         $product = ProductFactory::new()->create([
@@ -59,7 +60,7 @@ class OpportunityCommercialOverviewTest extends TestCase
             'operator_id' => $operator->id,
         ]);
 
-        CommercialOrder::query()->create([
+        return CommercialOrder::query()->create([
             'tenant_id' => $tenant->id,
             'opportunity_id' => $opportunity->id,
             'operator_id' => $operator->id,
@@ -82,6 +83,18 @@ class OpportunityCommercialOverviewTest extends TestCase
 
         $linked = $this->opportunity($tenant, $consultant, 'won', '2026-11-10 10:00:00');
         $this->linkOrder($tenant, $linked);
+        $order = $linked->commercialOrder;
+        foreach ([
+            ['status' => 'ACTIVE', 'activated_at' => '2026-11-10', 'monthly_unit_amount' => 80],
+            ['status' => 'ACTIVE', 'activated_at' => '2026-10-10', 'monthly_unit_amount' => 90],
+            ['status' => 'PENDING', 'activated_at' => null, 'monthly_unit_amount' => 100],
+        ] as $line) {
+            CommercialOrderItem::query()->create([
+                'commercial_order_id' => $order->id,
+                'quantity' => 1,
+                ...$line,
+            ]);
+        }
         $this->opportunity($tenant, $consultant, 'won', '2026-11-11 10:00:00');
         $outsidePeriod = $this->opportunity($tenant, $consultant, 'won', '2026-10-10 10:00:00');
         $this->linkOrder($tenant, $outsidePeriod);
@@ -102,10 +115,13 @@ class OpportunityCommercialOverviewTest extends TestCase
         $this->assertSame(2, $own['won']['count']);
         $this->assertSame(1, $own['won_with_orders']['count']);
         $this->assertEquals(150, $own['won_with_orders']['monthly']);
+        $this->assertSame(1, $own['activated_lines']['count']);
+        $this->assertEquals(80, $own['activated_lines']['monthly']);
 
         $all = $action->overview($tenant, $owner->user, $period);
         $this->assertSame(3, $all['won']['count']);
         $this->assertSame(2, $all['won_with_orders']['count']);
         $this->assertEquals(300, $all['won_with_orders']['monthly']);
+        $this->assertSame(1, $all['activated_lines']['count']);
     }
 }
