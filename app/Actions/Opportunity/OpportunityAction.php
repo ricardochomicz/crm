@@ -105,6 +105,18 @@ class OpportunityAction
         // Reuse the visibility-scoped query to prevent cross-tenant/team leakage.
         $wonWithOrders = $summarize((clone $closed)->where('status', 'won')
             ->whereHas('commercialOrder', fn (Builder $query) => $query->where('tenant_id', $tenant->id)));
+        // Activation is recorded per order line, including partially activated orders.
+        // Count only lines belonging to orders linked to opportunities visible to this actor.
+        $activatedLines = DB::table('commercial_order_items')
+            ->join('commercial_orders', 'commercial_orders.id', '=', 'commercial_order_items.commercial_order_id')
+            ->where('commercial_orders.tenant_id', $tenant->id)
+            ->where('commercial_order_items.status', 'ACTIVE')
+            ->whereBetween('commercial_order_items.activated_at', [$start, $end])
+            ->whereIn('commercial_orders.opportunity_id', (clone $base)->select('opportunities.id'))
+            ->selectRaw('COALESCE(SUM(commercial_order_items.quantity), 0) as quantity')
+            ->selectRaw('COALESCE(SUM(commercial_order_items.quantity * commercial_order_items.monthly_unit_amount), 0) as monthly')
+            ->first();
+
         $decided = $won['count'] + $lost['count'];
 
         $forecastChanges = DB::table('opportunity_forecast_changes')
@@ -127,6 +139,10 @@ class OpportunityAction
             'unscheduled' => $summarize($unscheduled),
             'won' => $won,
             'won_with_orders' => $wonWithOrders,
+            'activated_lines' => [
+                'count' => (int) ($activatedLines?->quantity ?? 0),
+                'monthly' => (string) ($activatedLines?->monthly ?? 0),
+            ],
             'lost' => $lost,
             'conversion_rate' => $decided ? round($won['count'] * 100 / $decided, 1) : null,
             'period' => ['from' => $start, 'to' => $end],
