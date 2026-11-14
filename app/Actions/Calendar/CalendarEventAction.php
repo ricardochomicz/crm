@@ -256,6 +256,58 @@ class CalendarEventAction
         ];
     }
 
+    /**
+     * Team productivity grouped by consultant. All aggregation happens in SQL;
+     * consultants without activities remain visible with zeroed counters.
+     */
+    public function activitiesTeamSummary(Tenant $tenant, User $user): array
+    {
+        abort_unless($user->can('viewTeamCalendar', $tenant), 403);
+
+        $members = $this->assignableMembers($tenant, $user);
+        $memberIds = array_column($members, 'id');
+
+        if ($memberIds === []) {
+            return [];
+        }
+
+        $now = now();
+        $deadline = $now->copy()->addDay();
+
+        $counts = CalendarEvent::query()
+            ->where('tenant_id', $tenant->getKey())
+            ->whereIn('tenant_user_id', $memberIds)
+            ->whereIn('type', ['task', 'reminder'])
+            ->select('tenant_user_id')
+            ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending")
+            ->selectRaw("SUM(CASE WHEN status = 'pending' AND ends_at < ? THEN 1 ELSE 0 END) AS overdue", [$now])
+            ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed")
+            ->selectRaw(
+                "SUM(CASE WHEN status = 'pending' AND (ends_at <= ? OR priority = 'high') THEN 1 ELSE 0 END) AS critical",
+                [$deadline]
+            )
+            ->groupBy('tenant_user_id')
+            ->get()
+            ->keyBy('tenant_user_id');
+
+        return collect($members)->map(function (array $member) use ($counts) {
+            $row = $counts->get($member['id']);
+
+            return [
+                'tenant_user_id' => $member['id'],
+                'name' => $member['name'],
+                'pending' => (int) ($row?->pending ?? 0),
+                'overdue' => (int) ($row?->overdue ?? 0),
+                'completed' => (int) ($row?->completed ?? 0),
+                'critical' => (int) ($row?->critical ?? 0),
+            ];
+        })->sortBy([
+            ['critical', 'desc'],
+            ['overdue', 'desc'],
+            ['name', 'asc'],
+        ])->values()->all();
+    }
+
     public function create(Tenant $tenant, User $user, array $data): CalendarEvent
     {
         $actor = $this->member($user, $tenant);
