@@ -31,6 +31,11 @@ class Opportunity extends Model
         ];
     }
 
+    public function forecastChanges(): HasMany
+    {
+        return $this->hasMany(OpportunityForecastChange::class);
+    }
+
     public function commercialOrder(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(CommercialOrder::class);
