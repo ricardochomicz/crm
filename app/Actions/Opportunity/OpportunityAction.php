@@ -101,6 +101,10 @@ class OpportunityAction
 
         $won = $summarize((clone $closed)->where('status', 'won'));
         $lost = $summarize((clone $closed)->where('status', 'lost'));
+        // Count only won opportunities closed in the selected period that have a linked order.
+        // Reuse the visibility-scoped query to prevent cross-tenant/team leakage.
+        $wonWithOrders = $summarize((clone $closed)->where('status', 'won')
+            ->whereHas('commercialOrder', fn (Builder $query) => $query->where('tenant_id', $tenant->id)));
         $decided = $won['count'] + $lost['count'];
 
         $forecastChanges = DB::table('opportunity_forecast_changes')
@@ -122,6 +126,7 @@ class OpportunityAction
             'future' => $summarize($future),
             'unscheduled' => $summarize($unscheduled),
             'won' => $won,
+            'won_with_orders' => $wonWithOrders,
             'lost' => $lost,
             'conversion_rate' => $decided ? round($won['count'] * 100 / $decided, 1) : null,
             'period' => ['from' => $start, 'to' => $end],
