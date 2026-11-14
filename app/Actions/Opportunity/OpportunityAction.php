@@ -103,7 +103,19 @@ class OpportunityAction
         $lost = $summarize((clone $closed)->where('status', 'lost'));
         $decided = $won['count'] + $lost['count'];
 
+        $forecastChanges = DB::table('opportunity_forecast_changes')
+            ->where('opportunity_forecast_changes.tenant_id', $tenant->id)
+            ->whereNotNull('previous_date')
+            ->whereIn('opportunity_id', (clone $open)->select('opportunities.id'))
+            ->selectRaw('SUM(CASE WHEN new_date > previous_date THEN 1 ELSE 0 END) as extensions')
+            ->selectRaw('SUM(CASE WHEN new_date < previous_date THEN 1 ELSE 0 END) as advances')
+            ->first();
+
         return [
+            'forecast_revisions' => [
+                'extensions' => (int) ($forecastChanges?->extensions ?? 0),
+                'advances' => (int) ($forecastChanges?->advances ?? 0),
+            ],
             'open_period' => $summarize($inPeriod),
             'overdue' => $summarize($overdue),
             'future' => $summarize($future),
