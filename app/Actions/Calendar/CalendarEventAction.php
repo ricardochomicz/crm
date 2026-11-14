@@ -157,6 +157,12 @@ class CalendarEventAction
             $query->whereIn('tenant_user_id', $members->push($actor->getKey())->unique());
         }
 
+        if (! empty($filters['tenant_user_id'])) {
+            $allowedIds = array_column($this->assignableMembers($tenant, $user), 'id');
+            abort_unless($team && in_array($filters['tenant_user_id'], $allowedIds, true), 403);
+            $query->where('tenant_user_id', $filters['tenant_user_id']);
+        }
+
         $status = $filters['status'] ?? 'pending';
         if ($status === 'critical') {
             $deadline = now()->addDay();
@@ -214,6 +220,12 @@ class CalendarEventAction
             $members = TenantUser::query()->where('tenant_id', $tenant->getKey())
                 ->whereIn('team_id', $teams)->where('status', 'ACTIVE')->pluck('id');
             $query->whereIn('tenant_user_id', $members->push($actor->getKey())->unique());
+        }
+
+        if (! empty($filters['tenant_user_id'])) {
+            $allowedIds = array_column($this->assignableMembers($tenant, $user), 'id');
+            abort_unless($team && in_array($filters['tenant_user_id'], $allowedIds, true), 403);
+            $query->where('tenant_user_id', $filters['tenant_user_id']);
         }
 
         if (! empty($filters['search'])) {
