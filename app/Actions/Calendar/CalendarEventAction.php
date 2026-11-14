@@ -3,6 +3,7 @@
 namespace App\Actions\Calendar;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Events\CommercialDataChanged;
 use App\Models\CalendarEvent;
 use App\Models\CalendarEventHistory;
 use App\Models\Opportunity;
@@ -236,6 +237,7 @@ class CalendarEventAction
             $event = CalendarEvent::create([...$data, 'tenant_id' => $tenant->getKey(), 'created_by_tenant_user_id' => $actor->getKey()]);
             $this->record($event, $actor, 'created', []);
             app(ActivityNotificationAction::class)->notify($event, 'assigned');
+            DB::afterCommit(fn () => CommercialDataChanged::dispatch($event->tenant_id));
             return $event;
         });
     }
@@ -277,6 +279,7 @@ class CalendarEventAction
                 }
                 $action = isset($changes['tenant_user_id']) ? 'reassigned' : (isset($changes['status']) && $after['status'] === 'completed' ? 'completed' : 'updated');
                 $this->record($event, $actor, $action, $changes);
+                DB::afterCommit(fn () => CommercialDataChanged::dispatch($event->tenant_id));
             }
             return $event;
         });
@@ -320,6 +323,7 @@ class CalendarEventAction
         DB::transaction(function () use ($event, $actor) {
             $this->record($event, $actor, 'deleted', []);
             $event->delete();
+            DB::afterCommit(fn () => CommercialDataChanged::dispatch($event->tenant_id));
         });
     }
 }
