@@ -85,6 +85,17 @@ class ActivityTeamSummaryMetricsTest extends TestCase
         $this->activity($tenant, $first, $won, 'completed', '2026-10-01 10:00:00');
         $this->activity($tenant, $second, $other, 'completed', '2026-11-13 10:00:00');
         $this->activity($tenant, $second, $other, 'pending', '2026-11-13 10:00:00');
+        // An activity for a different tenant must never appear in this team's report.
+        $foreignTenant = Tenant::factory()->create();
+        $foreignMember = $this->membership($foreignTenant, 'Consultor externo');
+        $foreignOpportunity = $this->opportunity($foreignTenant, $foreignMember, 'won');
+        $this->activity($foreignTenant, $foreignMember, $foreignOpportunity, 'completed', '2026-11-12 10:00:00');
+
+        // Deleted opportunities are excluded from won outcomes, but still count
+        // as completed activities if their event link is retained.
+        $deleted = $this->opportunity($tenant, $second, 'won');
+        $this->activity($tenant, $second, $deleted, 'completed', '2026-11-13 11:00:00');
+        $deleted->delete();
 
         $actor = User::factory()->create();
         Gate::before(fn (User $user, string $ability) => $user->is($actor) && $ability === 'viewTeamCalendar' ? true : null);
@@ -107,8 +118,9 @@ class ActivityTeamSummaryMetricsTest extends TestCase
         $this->assertSame(2, $rows['Ana']['followed_opportunities_period']);
         $this->assertSame(1, $rows['Ana']['won_opportunities_period']);
         $this->assertSame(0, $rows['Ana']['opportunities_with_orders_period']);
-        $this->assertSame(1, $rows['Bruno']['completed_period']);
-        $this->assertSame(1, $rows['Bruno']['followed_opportunities_period']);
+        $this->assertSame(2, $rows['Bruno']['completed_period']);
+        // The soft-deleted opportunity is still linked to its historical activity.
+        $this->assertSame(2, $rows['Bruno']['followed_opportunities_period']);
         $this->assertSame(1, $rows['Bruno']['won_opportunities_period']);
         $this->assertSame(0, $rows['Carla']['completed_period']);
         $this->assertSame(0, $rows['Carla']['followed_opportunities_period']);
