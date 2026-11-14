@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Opportunity\RecordOpportunityForecastChangeAction;
+use App\Models\Client;
 use App\Models\Opportunity;
 use App\Models\OpportunityForecastChange;
 use App\Models\OpportunityFunnelStage;
@@ -35,11 +36,17 @@ class OpportunityForecastAuditTest extends TestCase
             'position' => 0,
             'is_active' => true,
         ]);
-        // The action only needs an existing opportunity, not its commercial items.
-        // Disable FK checks is intentionally avoided: use a valid minimal model.
+        $client = Client::query()->create([
+            'tenant_id' => $tenant->id,
+            'person_type' => 'PJ',
+            'company_name' => 'Cliente de auditoria',
+        ]);
         $opportunity = Opportunity::query()->create([
             'tenant_id' => $tenant->id,
             'tenant_user_id' => $actor->id,
+            'client_id' => $client->id,
+            'code' => 'AUDIT-001',
+            'order_type' => 'Novo',
             'funnel_stage_id' => $stage->id,
             'title' => 'Oportunidade de auditoria',
             'status' => 'open',
