@@ -180,6 +180,18 @@ class CalendarEventAction
             });
         }
 
+        if ($status === 'critical') {
+            // Order on the database, before pagination: overdue, due in 24h,
+            // then high-priority activities with a later deadline.
+            $now = now();
+            $deadline = $now->copy()->addDay();
+
+            $query->orderByRaw(
+                'CASE WHEN ends_at < ? THEN 0 WHEN ends_at <= ? THEN 1 ELSE 2 END',
+                [$now, $deadline]
+            );
+        }
+
         return $query->orderBy('ends_at')->orderBy('id')
             ->paginate(min((int) ($filters['per_page'] ?? 20), 100));
     }
