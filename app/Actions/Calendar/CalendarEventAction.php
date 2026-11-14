@@ -279,10 +279,10 @@ class CalendarEventAction
         $periodTo = isset($filters['to']) ? Carbon::parse($filters['to'])->endOfDay() : $now;
 
         $counts = CalendarEvent::query()
-            ->where('tenant_id', $tenant->getKey())
-            ->whereIn('tenant_user_id', $memberIds)
-            ->whereIn('type', ['task', 'reminder'])
-            ->select('tenant_user_id')
+            ->where('calendar_events.tenant_id', $tenant->getKey())
+            ->whereIn('calendar_events.tenant_user_id', $memberIds)
+            ->whereIn('calendar_events.type', ['task', 'reminder'])
+            ->select('calendar_events.tenant_user_id')
             ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending")
             ->selectRaw("SUM(CASE WHEN status = 'pending' AND ends_at < ? THEN 1 ELSE 0 END) AS overdue", [$now])
             ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed")
@@ -290,10 +290,18 @@ class CalendarEventAction
             ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? THEN 1 ELSE 0 END) AS completed_30d", [$last30Days, $now])
             ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? THEN 1 ELSE 0 END) AS completed_period", [$periodFrom, $periodTo])
             ->selectRaw(
+                "COUNT(DISTINCT CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? AND EXISTS (SELECT 1 FROM opportunities o WHERE o.id = calendar_events.opportunity_id AND o.tenant_id = calendar_events.tenant_id AND o.status = 'won' AND o.deleted_at IS NULL) THEN opportunity_id END) AS won_opportunities_period",
+                [$periodFrom, $periodTo]
+            )
+            ->selectRaw(
+                "COUNT(DISTINCT CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? AND EXISTS (SELECT 1 FROM commercial_orders co WHERE co.opportunity_id = calendar_events.opportunity_id AND co.tenant_id = calendar_events.tenant_id) THEN opportunity_id END) AS orders_period",
+                [$periodFrom, $periodTo]
+            )
+            ->selectRaw(
                 "SUM(CASE WHEN status = 'pending' AND (ends_at <= ? OR priority = 'high') THEN 1 ELSE 0 END) AS critical",
                 [$deadline]
             )
-            ->groupBy('tenant_user_id')
+            ->groupBy('calendar_events.tenant_user_id')
             ->get()
             ->keyBy('tenant_user_id');
 
@@ -309,6 +317,8 @@ class CalendarEventAction
                 'completed_7d' => (int) ($row?->completed_7d ?? 0),
                 'completed_30d' => (int) ($row?->completed_30d ?? 0),
                 'completed_period' => (int) ($row?->completed_period ?? 0),
+                'won_opportunities_period' => (int) ($row?->won_opportunities_period ?? 0),
+                'orders_period' => (int) ($row?->orders_period ?? 0),
                 'critical' => (int) ($row?->critical ?? 0),
             ];
         })->sortBy([
