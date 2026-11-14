@@ -9,6 +9,7 @@ use App\Enums\TenantUserStatus;
 use App\Models\Comment;
 use App\Models\Opportunity;
 use App\Models\OpportunityFunnelStage;
+use App\Models\OpportunityForecastChange;
 use App\Models\OrderType;
 use App\Models\Product;
 use App\Models\Tenant;
@@ -52,7 +53,7 @@ class OpportunityAction
         $query = OpportunityFilters::apply($query, $filters);
         if (! empty($filters['client_id'])) $query->where('client_id', $filters['client_id']);
 
-        return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType', 'assignee.user'])->latest()->paginate(20);
+        return $query->with(['client', 'stage', 'operator', 'orderType', 'items.orderType', 'assignee.user'])->withCount('forecastChanges')->latest()->paginate(20);
     }
 
     public function highlightedIds(Tenant $tenant, User $user): array
@@ -174,35 +175,46 @@ class OpportunityAction
 
         $previousStage = $opportunity->stage?->name ?? 'Sem etapa';
         $previousForecast = $forecast;
-        DB::transaction(function () use ($opportunity, $stage, $expectedCloseAt, $previousForecast, $previousStage, $tenant, $actor, $forecastReason) {
-        $opportunity->update([
-            'funnel_stage_id' => $stage->id,
-            ...($expectedCloseAt !== null ? ['expected_close_at' => $expectedCloseAt] : []),
-        ]);
+        $previousStageId = $opportunity->funnel_stage_id;
 
-        if ($expectedCloseAt !== null && $expectedCloseAt !== $previousForecast) {
-            Comment::create([
-                'tenant_id' => $tenant->id,
-                'tenant_user_id' => $actor->id,
-                'commentable_type' => 'opportunity',
-                'commentable_id' => $opportunity->id,
-                'content' => sprintf(
-                    'Etapa alterada de %s para %s. Previsão de fechamento atualizada de %s para %s.',
-                    $previousStage, $stage->name, $previousForecast ?? 'Não informada',
-                    $expectedCloseAt,
-                ).($forecastReason !== null && trim($forecastReason) !== '' ? ' Justificativa: '.trim($forecastReason) : ''),
+        DB::transaction(function () use ($opportunity, $stage, $expectedCloseAt, $previousForecast, $previousStage, $previousStageId, $tenant, $actor, $forecastReason): void {
+            $opportunity->update([
+                'funnel_stage_id' => $stage->id,
+                ...($expectedCloseAt !== null ? ['expected_close_at' => $expectedCloseAt] : []),
             ]);
-        }
 
+            if ($expectedCloseAt !== null && $expectedCloseAt !== $previousForecast) {
+                OpportunityForecastChange::create([
+                    'tenant_id' => $tenant->id,
+                    'opportunity_id' => $opportunity->id,
+                    'tenant_user_id' => $actor->id,
+                    'previous_date' => $previousForecast,
+                    'new_date' => $expectedCloseAt,
+                    'previous_stage_id' => $previousStageId,
+                    'new_stage_id' => $stage->id,
+                    'reason' => trim($forecastReason ?? '') ?: null,
+                ]);
+
+                Comment::create([
+                    'tenant_id' => $tenant->id,
+                    'tenant_user_id' => $actor->id,
+                    'commentable_type' => 'opportunity',
+                    'commentable_id' => $opportunity->id,
+                    'content' => sprintf(
+                        'Etapa alterada de %s para %s. Previsão de fechamento atualizada de %s para %s.',
+                        $previousStage, $stage->name, $previousForecast ?? 'Não informada', $expectedCloseAt,
+                    ).($forecastReason !== null && trim($forecastReason) !== '' ? ' Justificativa: '.trim($forecastReason) : ''),
+                ]);
+            }
         });
 
-        return $opportunity->refresh()->load(['client', 'stage', 'orderType']);
+        return $opportunity->refresh()->load(['client', 'stage', 'orderType'])->loadCount('forecastChanges');
     }
 
     public function find(Tenant $tenant, User $user, string $id): Opportunity
     {
         return $this->visible(Opportunity::query(), $tenant, $this->actor($tenant, $user))
-            ->with(['items.orderType', 'client.contacts', 'stage', 'operator', 'orderType', 'assignee.user'])->findOrFail($id);
+            ->with(['items.orderType', 'client.contacts', 'stage', 'operator', 'orderType', 'assignee.user'])->withCount('forecastChanges')->findOrFail($id);
     }
 
     private function validateRelations(Tenant $tenant, array $data): void
