@@ -29,7 +29,7 @@ class CalendarEventRequest extends FormRequest
         if ($this->isMethod('DELETE')) {
             return [];
         }
-        if ($this->isMethod('GET') && ($this->is('api/v1/tenants/*/calendar/assignees') || $this->is('api/v1/tenants/*/calendar/events/*/history'))) return [];
+        if ($this->isMethod('GET') && ($this->is('api/v1/tenants/*/activities/team-summary') || $this->is('api/v1/tenants/*/calendar/assignees') || $this->is('api/v1/tenants/*/calendar/events/*/history'))) return [];
         if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities/overview')) {
             return [
                 'scope' => ['sometimes', Rule::in(['mine', 'team'])],
