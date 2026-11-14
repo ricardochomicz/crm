@@ -9,7 +9,6 @@ use App\Enums\TenantUserStatus;
 use App\Models\Comment;
 use App\Models\Opportunity;
 use App\Models\OpportunityFunnelStage;
-use App\Models\OpportunityForecastChange;
 use App\Models\OrderType;
 use App\Models\Product;
 use App\Models\Tenant;
@@ -174,37 +173,19 @@ class OpportunityAction
         }
 
         $previousStage = $opportunity->stage?->name ?? 'Sem etapa';
-        $previousForecast = $forecast;
-        $previousStageId = $opportunity->funnel_stage_id;
-
-        DB::transaction(function () use ($opportunity, $stage, $expectedCloseAt, $previousForecast, $previousStage, $previousStageId, $tenant, $actor, $forecastReason): void {
+        DB::transaction(function () use ($opportunity, $stage, $expectedCloseAt, $forecast, $previousStage, $tenant, $actor, $forecastReason): void {
+            $previousStageId = $opportunity->funnel_stage_id;
             $opportunity->update([
                 'funnel_stage_id' => $stage->id,
                 ...($expectedCloseAt !== null ? ['expected_close_at' => $expectedCloseAt] : []),
             ]);
 
-            if ($expectedCloseAt !== null && $expectedCloseAt !== $previousForecast) {
-                OpportunityForecastChange::create([
-                    'tenant_id' => $tenant->id,
-                    'opportunity_id' => $opportunity->id,
-                    'tenant_user_id' => $actor->id,
-                    'previous_date' => $previousForecast,
-                    'new_date' => $expectedCloseAt,
-                    'previous_stage_id' => $previousStageId,
-                    'new_stage_id' => $stage->id,
-                    'reason' => trim($forecastReason ?? '') ?: null,
-                ]);
-
-                Comment::create([
-                    'tenant_id' => $tenant->id,
-                    'tenant_user_id' => $actor->id,
-                    'commentable_type' => 'opportunity',
-                    'commentable_id' => $opportunity->id,
-                    'content' => sprintf(
-                        'Etapa alterada de %s para %s. Previsão de fechamento atualizada de %s para %s.',
-                        $previousStage, $stage->name, $previousForecast ?? 'Não informada', $expectedCloseAt,
-                    ).($forecastReason !== null && trim($forecastReason) !== '' ? ' Justificativa: '.trim($forecastReason) : ''),
-                ]);
+            if ($expectedCloseAt !== null && $expectedCloseAt !== $forecast) {
+                app(RecordOpportunityForecastChangeAction::class)->execute(
+                    $opportunity, $actor, $forecast, $expectedCloseAt,
+                    $previousStageId, $stage->id, $forecastReason,
+                    sprintf('Etapa alterada de %s para %s.', $previousStage, $stage->name)
+                );
             }
         });
 
@@ -375,12 +356,13 @@ class OpportunityAction
         if ($items === null && $event->items()->where('operator_id', '!=', $operatorId)->exists()) {
             throw ValidationException::withMessages(['operator_id' => 'Os itens existentes pertencem a outra operadora.']);
         }
-        unset($data['items']);
+        $forecastReason = $data['forecast_reason'] ?? null;
+        unset($data['items'], $data['forecast_reason']);
         if ($items !== null) {
             $data = [...$data, ...$this->totals($items)];
         }
 
-        return DB::transaction(function () use ($event, $data, $items) {
+        return DB::transaction(function () use ($event, $data, $items, $actor, $forecastReason) {
             $opportunity = Opportunity::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
             $order = $opportunity->commercialOrder()->lockForUpdate()->first();
 
@@ -408,13 +390,30 @@ class OpportunityAction
                 $order->items()->whereNotNull('opportunity_item_id')->update(['opportunity_item_id' => null]);
             }
 
+            $previousForecast = $opportunity->expected_close_at?->toDateString();
+            $newForecast = array_key_exists('expected_close_at', $data)
+                ? ($data['expected_close_at'] ? substr($data['expected_close_at'], 0, 10) : null)
+                : $previousForecast;
+            if ($previousForecast !== $newForecast && $newForecast === null) {
+                throw ValidationException::withMessages([
+                    'expected_close_at' => 'Informe a nova previsão de fechamento.',
+                ]);
+            }
+
             $opportunity->update($data);
+            if ($previousForecast !== $newForecast && $newForecast !== null) {
+                app(RecordOpportunityForecastChangeAction::class)->execute(
+                    $opportunity, $actor, $previousForecast, $newForecast,
+                    $opportunity->funnel_stage_id, $opportunity->funnel_stage_id,
+                    $forecastReason, 'Previsão alterada no formulário.'
+                );
+            }
             if ($items !== null) {
                 $opportunity->items()->delete();
                 $opportunity->items()->createMany($items);
             }
 
-            return $opportunity->refresh()->load('items');
+            return $opportunity->refresh()->load('items')->loadCount('forecastChanges');
         });
     }
 }
