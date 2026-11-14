@@ -21,6 +21,10 @@ class CalendarEventRequest extends FormRequest
             default => 'viewCalendar',
         };
 
+        if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities/team-summary')) {
+            $ability = 'viewTeamCalendar';
+        }
+
         return $this->user()?->can($ability, $tenant) ?? false;
     }
 
@@ -29,7 +33,13 @@ class CalendarEventRequest extends FormRequest
         if ($this->isMethod('DELETE')) {
             return [];
         }
-        if ($this->isMethod('GET') && ($this->is('api/v1/tenants/*/activities/team-summary') || $this->is('api/v1/tenants/*/calendar/assignees') || $this->is('api/v1/tenants/*/calendar/events/*/history'))) return [];
+        if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities/team-summary')) {
+            return [
+                'from' => ['sometimes', 'required_with:to', 'date_format:Y-m-d', 'before_or_equal:to'],
+                'to' => ['sometimes', 'required_with:from', 'date_format:Y-m-d', 'after_or_equal:from'],
+            ];
+        }
+        if ($this->isMethod('GET') && ($this->is('api/v1/tenants/*/calendar/assignees') || $this->is('api/v1/tenants/*/calendar/events/*/history'))) return [];
         if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities/overview')) {
             return [
                 'scope' => ['sometimes', Rule::in(['mine', 'team'])],
