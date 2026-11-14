@@ -260,7 +260,7 @@ class CalendarEventAction
      * Team productivity grouped by consultant. All aggregation happens in SQL;
      * consultants without activities remain visible with zeroed counters.
      */
-    public function activitiesTeamSummary(Tenant $tenant, User $user): array
+    public function activitiesTeamSummary(Tenant $tenant, User $user, array $filters = []): array
     {
         abort_unless($user->can('viewTeamCalendar', $tenant), 403);
 
@@ -275,6 +275,8 @@ class CalendarEventAction
         $deadline = $now->copy()->addDay();
         $last7Days = $now->copy()->subDays(7);
         $last30Days = $now->copy()->subDays(30);
+        $periodFrom = isset($filters['from']) ? Carbon::parse($filters['from'])->startOfDay() : $last30Days;
+        $periodTo = isset($filters['to']) ? Carbon::parse($filters['to'])->endOfDay() : $now;
 
         $counts = CalendarEvent::query()
             ->where('tenant_id', $tenant->getKey())
@@ -286,6 +288,7 @@ class CalendarEventAction
             ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed")
             ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? THEN 1 ELSE 0 END) AS completed_7d", [$last7Days, $now])
             ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? THEN 1 ELSE 0 END) AS completed_30d", [$last30Days, $now])
+            ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? THEN 1 ELSE 0 END) AS completed_period", [$periodFrom, $periodTo])
             ->selectRaw(
                 "SUM(CASE WHEN status = 'pending' AND (ends_at <= ? OR priority = 'high') THEN 1 ELSE 0 END) AS critical",
                 [$deadline]
@@ -305,6 +308,7 @@ class CalendarEventAction
                 'completed' => (int) ($row?->completed ?? 0),
                 'completed_7d' => (int) ($row?->completed_7d ?? 0),
                 'completed_30d' => (int) ($row?->completed_30d ?? 0),
+                'completed_period' => (int) ($row?->completed_period ?? 0),
                 'critical' => (int) ($row?->critical ?? 0),
             ];
         })->sortBy([
