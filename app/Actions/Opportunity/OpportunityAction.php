@@ -172,29 +172,28 @@ class OpportunityAction
             throw ValidationException::withMessages(['funnel_stage_id' => 'Reenvie a correção ao Backoffice antes de mover a oportunidade.']);
         }
         $stage = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($stageId);
-        $forecast = $opportunity->expected_close_at?->toDateString();
-        $overdue = $forecast !== null && $forecast < now()->toDateString();
-        if ($overdue && ($expectedCloseAt === null || $expectedCloseAt < now()->toDateString())) {
-            throw ValidationException::withMessages([
-                'expected_close_at' => 'A previsão está vencida. Informe uma nova data de hoje ou posterior para movimentar a oportunidade.',
-            ]);
-        }
-        if ($expectedCloseAt !== null && $expectedCloseAt < now()->toDateString()) {
-            throw ValidationException::withMessages([
-                'expected_close_at' => 'A previsão de fechamento não pode estar no passado.',
-            ]);
-        }
-
-        if ($overdue && mb_strlen(trim($forecastReason ?? '')) < 10) {
-            throw ValidationException::withMessages([
-                'forecast_reason' => 'Informe uma justificativa de pelo menos 10 caracteres para prorrogar a previsão.',
-            ]);
-        }
-
-        $previousStage = $opportunity->stage?->name ?? 'Sem etapa';
         DB::transaction(function () use ($opportunity, $stage, $expectedCloseAt, $tenant, $actor, $forecastReason): void {
             $opportunity = Opportunity::query()->whereKey($opportunity->id)->lockForUpdate()->firstOrFail();
+            abort_unless($opportunity->status === 'open', 422, 'Somente oportunidades abertas podem mudar de etapa.');
             $forecast = $opportunity->expected_close_at?->toDateString();
+            $overdue = $forecast !== null && $forecast < now()->toDateString();
+            if ($overdue && ($expectedCloseAt === null || $expectedCloseAt < now()->toDateString())) {
+                throw ValidationException::withMessages([
+                    'expected_close_at' => 'A previsão está vencida. Informe uma nova data de hoje ou posterior para movimentar a oportunidade.',
+                ]);
+            }
+            if ($expectedCloseAt !== null && $expectedCloseAt < now()->toDateString()) {
+                throw ValidationException::withMessages([
+                    'expected_close_at' => 'A previsão de fechamento não pode estar no passado.',
+                ]);
+            }
+
+            if ($overdue && mb_strlen(trim($forecastReason ?? '')) < 10) {
+                throw ValidationException::withMessages([
+                    'forecast_reason' => 'Informe uma justificativa de pelo menos 10 caracteres para prorrogar a previsão.',
+                ]);
+            }
+
             $previousStage = $opportunity->stage?->name ?? 'Sem etapa';
             $previousStageId = $opportunity->funnel_stage_id;
             $opportunity->update([
