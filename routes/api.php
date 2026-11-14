@@ -264,6 +264,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/opportunities', [OpportunityController::class, 'index']);
                 Route::get('/opportunities/highlights', [OpportunityHighlightController::class, 'index']);
                 Route::put('/opportunities/{opportunityId}/highlight', [OpportunityHighlightController::class, 'update'])->whereUuid('opportunityId')->middleware('subscription.writable');
+                Route::get('/opportunities/{opportunityId}/forecast-history', [OpportunityController::class, 'forecastHistory'])->whereUuid('opportunityId');
                 Route::get('/opportunities/{opportunityId}', [OpportunityController::class, 'show'])->whereUuid('opportunityId');
                 Route::get('/opportunities/{opportunityId}/proposals', [OpportunityProposalController::class, 'index'])->whereUuid('opportunityId');
                 Route::get('/opportunities/{opportunityId}/comparisons', [OpportunityComparisonController::class, 'index'])->whereUuid('opportunityId');
