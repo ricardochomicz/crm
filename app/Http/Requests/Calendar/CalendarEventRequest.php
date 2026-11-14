@@ -35,8 +35,8 @@ class CalendarEventRequest extends FormRequest
         }
         if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities/team-summary')) {
             return [
-                'from' => ['sometimes', 'required_with:to', 'date_format:Y-m-d', 'before_or_equal:to'],
-                'to' => ['sometimes', 'required_with:from', 'date_format:Y-m-d', 'after_or_equal:from'],
+                'from' => ['required_with:to', 'date_format:Y-m-d', 'before_or_equal:to'],
+                'to' => ['required_with:from', 'date_format:Y-m-d', 'after_or_equal:from'],
             ];
         }
         if ($this->isMethod('GET') && ($this->is('api/v1/tenants/*/calendar/assignees') || $this->is('api/v1/tenants/*/calendar/events/*/history'))) return [];
