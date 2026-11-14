@@ -192,7 +192,10 @@ class OpportunityAction
         }
 
         $previousStage = $opportunity->stage?->name ?? 'Sem etapa';
-        DB::transaction(function () use ($opportunity, $stage, $expectedCloseAt, $forecast, $previousStage, $tenant, $actor, $forecastReason): void {
+        DB::transaction(function () use ($opportunity, $stage, $expectedCloseAt, $tenant, $actor, $forecastReason): void {
+            $opportunity = Opportunity::query()->whereKey($opportunity->id)->lockForUpdate()->firstOrFail();
+            $forecast = $opportunity->expected_close_at?->toDateString();
+            $previousStage = $opportunity->stage?->name ?? 'Sem etapa';
             $previousStageId = $opportunity->funnel_stage_id;
             $opportunity->update([
                 'funnel_stage_id' => $stage->id,
