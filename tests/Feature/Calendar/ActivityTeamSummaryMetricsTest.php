@@ -5,6 +5,9 @@ namespace Tests\Feature\Calendar;
 use App\Actions\Calendar\CalendarEventAction;
 use App\Models\CalendarEvent;
 use App\Models\Client;
+use App\Models\CommercialOrder;
+use App\Models\Operator;
+use App\Models\Product;
 use App\Models\Opportunity;
 use App\Models\Tenant;
 use App\Models\TenantUser;
@@ -76,6 +79,25 @@ class ActivityTeamSummaryMetricsTest extends TestCase
         $won = $this->opportunity($tenant, $first, 'won');
         $open = $this->opportunity($tenant, $first, 'open');
         $other = $this->opportunity($tenant, $second, 'won');
+        // The schema permits one order per opportunity; multiple completed
+        // activities linked to that opportunity must still yield one result.
+        $operator = Operator::factory()->create();
+        $product = Product::factory()->create([
+            'tenant_id' => $tenant->id,
+            'operator_id' => $operator->id,
+        ]);
+        CommercialOrder::query()->create([
+            'tenant_id' => $tenant->id,
+            'opportunity_id' => $won->id,
+            'operator_id' => $operator->id,
+            'product_id' => $product->id,
+            'order_type' => 'NEW',
+            'customer_name' => 'Cliente teste',
+            'monthly_amount' => 100,
+            'line_quantity' => 1,
+            'status' => 'DRAFT',
+            'sold_on' => '2026-11-12',
+        ]);
 
         // Two completions for one opportunity must not double-count its outcome.
         $this->activity($tenant, $first, $won, 'completed', '2026-11-10 10:00:00');
@@ -117,7 +139,7 @@ class ActivityTeamSummaryMetricsTest extends TestCase
         $this->assertSame(4, $rows['Ana']['completed_period']);
         $this->assertSame(2, $rows['Ana']['followed_opportunities_period']);
         $this->assertSame(1, $rows['Ana']['won_opportunities_period']);
-        $this->assertSame(0, $rows['Ana']['opportunities_with_orders_period']);
+        $this->assertSame(1, $rows['Ana']['opportunities_with_orders_period']);
         $this->assertSame(2, $rows['Bruno']['completed_period']);
         // The soft-deleted opportunity is still linked to its historical activity.
         $this->assertSame(2, $rows['Bruno']['followed_opportunities_period']);
