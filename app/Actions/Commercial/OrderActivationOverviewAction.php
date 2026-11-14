@@ -39,8 +39,8 @@ class OrderActivationOverviewAction
 
         $rows = (clone $query)
             ->select('item.order_type_id', 'types.name as order_type_name')
-            ->selectRaw('SUM(item.quantity) as lines')
-            ->selectRaw('COALESCE(SUM(item.quantity * item.monthly_unit_amount), 0) as monthly')
+            ->selectRaw('SUM(item.quantity) as activated_lines')
+            ->selectRaw('COALESCE(SUM(item.quantity * item.monthly_unit_amount), 0) as monthly_total')
             ->groupBy('item.order_type_id', 'types.name')
             ->orderBy('types.name')
             ->get();
@@ -48,14 +48,14 @@ class OrderActivationOverviewAction
         return [
             'period' => ['from' => $from, 'to' => $to],
             'total' => [
-                'lines' => (int) $rows->sum('lines'),
-                'monthly' => number_format((float) $rows->sum('monthly'), 2, '.', ''),
+                'lines' => (int) $rows->sum('activated_lines'),
+                'monthly' => number_format((float) $rows->sum('monthly_total'), 2, '.', ''),
             ],
             'by_type' => $rows->map(fn ($row) => [
                 'order_type_id' => $row->order_type_id,
                 'name' => $row->order_type_name ?? 'Sem tipo definido',
-                'lines' => (int) $row->lines,
-                'monthly' => (string) $row->monthly,
+                'lines' => (int) $row->activated_lines,
+                'monthly' => (string) $row->monthly_total,
             ])->values()->all(),
         ];
     }
