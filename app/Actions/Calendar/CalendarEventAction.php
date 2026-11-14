@@ -273,6 +273,8 @@ class CalendarEventAction
 
         $now = now();
         $deadline = $now->copy()->addDay();
+        $last7Days = $now->copy()->subDays(7);
+        $last30Days = $now->copy()->subDays(30);
 
         $counts = CalendarEvent::query()
             ->where('tenant_id', $tenant->getKey())
@@ -282,6 +284,8 @@ class CalendarEventAction
             ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending")
             ->selectRaw("SUM(CASE WHEN status = 'pending' AND ends_at < ? THEN 1 ELSE 0 END) AS overdue", [$now])
             ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed")
+            ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? THEN 1 ELSE 0 END) AS completed_7d", [$last7Days, $now])
+            ->selectRaw("SUM(CASE WHEN status = 'completed' AND completed_at >= ? AND completed_at <= ? THEN 1 ELSE 0 END) AS completed_30d", [$last30Days, $now])
             ->selectRaw(
                 "SUM(CASE WHEN status = 'pending' AND (ends_at <= ? OR priority = 'high') THEN 1 ELSE 0 END) AS critical",
                 [$deadline]
@@ -299,6 +303,8 @@ class CalendarEventAction
                 'pending' => (int) ($row?->pending ?? 0),
                 'overdue' => (int) ($row?->overdue ?? 0),
                 'completed' => (int) ($row?->completed ?? 0),
+                'completed_7d' => (int) ($row?->completed_7d ?? 0),
+                'completed_30d' => (int) ($row?->completed_30d ?? 0),
                 'critical' => (int) ($row?->critical ?? 0),
             ];
         })->sortBy([
