@@ -56,7 +56,8 @@ class CommercialOrderController extends Controller
         $filters = $request->validate([
             'date_from' => ['required', 'date_format:Y-m-d'],
             'date_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_from'],
-            'order_type_id' => ['nullable', 'uuid', 'exists:order_types,id'],
+            'order_type_ids' => ['sometimes', 'array', 'max:50'],
+            'order_type_ids.*' => ['required', 'uuid', 'distinct', 'exists:order_types,id'],
         ]);
 
         return ['data' => $action->execute(
@@ -64,7 +65,7 @@ class CommercialOrderController extends Controller
             $request->user(),
             $filters['date_from'],
             $filters['date_to'],
-            $filters['order_type_id'] ?? null,
+            $filters['order_type_ids'] ?? [],
         )];
     }
 
