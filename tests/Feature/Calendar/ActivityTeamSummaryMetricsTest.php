@@ -6,8 +6,8 @@ use App\Actions\Calendar\CalendarEventAction;
 use App\Models\CalendarEvent;
 use App\Models\Client;
 use App\Models\CommercialOrder;
-use App\Models\Operator;
-use App\Models\Product;
+use Database\Factories\OperatorFactory;
+use Database\Factories\ProductFactory;
 use App\Models\Opportunity;
 use App\Models\Tenant;
 use App\Models\TenantUser;
@@ -81,8 +81,8 @@ class ActivityTeamSummaryMetricsTest extends TestCase
         $other = $this->opportunity($tenant, $second, 'won');
         // The schema permits one order per opportunity; multiple completed
         // activities linked to that opportunity must still yield one result.
-        $operator = Operator::factory()->create();
-        $product = Product::factory()->create([
+        $operator = OperatorFactory::new()->create();
+        $product = ProductFactory::new()->create([
             'tenant_id' => $tenant->id,
             'operator_id' => $operator->id,
         ]);
