@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Commercial;
 
 use App\Actions\Commercial\FilterCommercialOrderAction;
+use App\Actions\Commercial\OrderActivationOverviewAction;
 use App\Actions\Commercial\ResolveOrderParticipantsAction;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
@@ -47,6 +48,24 @@ class CommercialOrderController extends Controller
             'data' => CommercialOrderResource::collection($filter->execute($tenant->id, $request->validated(), $visibleIds)),
             'meta' => ['can_manage' => $request->user()->can('manageOrders', $tenant)],
         ];
+    }
+
+    public function activationOverview(Request $request, string $tenantId, OrderActivationOverviewAction $action): array
+    {
+        $tenant = $this->tenant($request);
+        $filters = $request->validate([
+            'date_from' => ['required', 'date_format:Y-m-d'],
+            'date_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'order_type_id' => ['nullable', 'uuid', 'exists:order_types,id'],
+        ]);
+
+        return ['data' => $action->execute(
+            $tenant,
+            $request->user(),
+            $filters['date_from'],
+            $filters['date_to'],
+            $filters['order_type_id'] ?? null,
+        )];
     }
 
     public function options(Request $request, string $tenantId): array
