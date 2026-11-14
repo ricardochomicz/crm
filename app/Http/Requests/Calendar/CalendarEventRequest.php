@@ -39,7 +39,7 @@ class CalendarEventRequest extends FormRequest
         if ($this->isMethod('GET') && $this->is('api/v1/tenants/*/activities')) {
             return [
                 'scope' => ['sometimes', Rule::in(['mine', 'team'])],
-                'status' => ['sometimes', Rule::in(['pending', 'overdue', 'completed', 'cancelled', 'all'])],
+                'status' => ['sometimes', Rule::in(['pending', 'overdue', 'critical', 'completed', 'cancelled', 'all'])],
                 'search' => ['sometimes', 'string', 'max:120'],
                 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
                 'page' => ['sometimes', 'integer', 'min:1'],
