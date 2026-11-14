@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Opportunity;
 
 use App\Actions\Opportunity\OpportunityAction;
+use App\Actions\Opportunity\ListOpportunityForecastHistoryAction;
 use App\Actions\Opportunity\ConfirmOpportunitySaleAction;
 use App\Actions\Opportunity\MarkOpportunityLostAction;
 use App\Actions\Opportunity\RecoverOpportunityAction;
@@ -45,6 +46,11 @@ class OpportunityController extends Controller
     {
         $data = $request->validate(['funnel_stage_id' => ['required', 'uuid'], 'expected_close_at' => ['nullable', 'date_format:Y-m-d'], 'forecast_reason' => ['nullable', 'string', 'max:500']]);
         return response()->json(['data' => $action->moveStage($this->tenant($request), $request->user(), $opportunityId, $data['funnel_stage_id'], $data['expected_close_at'] ?? null, $data['forecast_reason'] ?? null)]);
+    }
+
+    public function forecastHistory(OpportunityRequest $request, string $tenantId, string $opportunityId, ListOpportunityForecastHistoryAction $action): JsonResponse
+    {
+        return response()->json($action->execute($this->tenant($request), $request->user(), $opportunityId));
     }
 
     public function show(OpportunityRequest $request, string $tenantId, string $opportunityId, OpportunityAction $action): JsonResponse
