@@ -54,6 +54,7 @@ class OpportunityRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'external_protocol' => ['nullable', 'string', 'max:100'],
             'expected_close_at' => [$required, 'date'],
+            'forecast_reason' => ['nullable', 'string', 'max:500'],
             'estimated_monthly_amount' => ['sometimes', 'numeric', 'min:0'],
             'estimated_one_time_amount' => ['sometimes', 'numeric', 'min:0'],
             'probability' => ['nullable', 'integer', 'between:0,100'],
