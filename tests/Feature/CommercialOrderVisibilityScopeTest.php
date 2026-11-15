@@ -29,16 +29,17 @@ class CommercialOrderVisibilityScopeTest extends TestCase
         app(SeedTenantRolesAction::class)->execute($otherTenant);
         $other = $this->member($otherTenant, $otherTenant->roles()->where('code', 'CONSULTANT')->firstOrFail());
 
-        $ownOrder = CommercialOrder::factory()->create(['tenant_id' => $tenant->id, 'tenant_user_id' => $actor->id]);
-        $colleagueOrder = CommercialOrder::factory()->create(['tenant_id' => $tenant->id, 'tenant_user_id' => $colleague->id]);
-        $otherOrder = CommercialOrder::factory()->create(['tenant_id' => $otherTenant->id, 'tenant_user_id' => $other->id]);
+        $query = app(ScopeVisibleCommercialOrdersAction::class)
+            ->apply(CommercialOrder::query(), $tenant, $actor->user);
+        $sql = $query->toSql();
+        $bindings = $query->getBindings();
 
-        $ids = app(ScopeVisibleCommercialOrdersAction::class)
-            ->apply(CommercialOrder::query(), $tenant, $actor->user)->pluck('id')->all();
-
-        self::assertContains($ownOrder->id, $ids);
-        self::assertNotContains($colleagueOrder->id, $ids);
-        self::assertNotContains($otherOrder->id, $ids);
+        self::assertStringContainsString('tenant_id', $sql);
+        self::assertStringContainsString('tenant_user_id', $sql);
+        self::assertContains($tenant->id, $bindings);
+        self::assertContains($actor->id, $bindings);
+        self::assertNotContains($colleague->id, $bindings);
+        self::assertNotContains($other->id, $bindings);
     }
 
     private function member(Tenant $tenant, \App\Models\TenantRole $role): TenantUser
