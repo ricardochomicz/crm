@@ -3,7 +3,6 @@
 namespace App\Actions\Commission;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
-use App\Enums\TenantUserRole;
 use App\Models\CommercialOrder;
 use App\Models\Tenant;
 use App\Models\User;
@@ -16,8 +15,9 @@ class FilterOrderCommissionsAction
 
     public function findOrder(Tenant $tenant, User $user, string $orderId): CommercialOrder
     {
-        $actor = $this->permissions->membership($user, $tenant) ?? abort(403);
-        abort_unless(in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
+        abort_unless($this->permissions->membership($user, $tenant) !== null
+            && $user->can('viewOrders', $tenant)
+            && $user->can('viewCommissions', $tenant), 403);
 
         return CommercialOrder::query()->where('tenant_id', $tenant->id)->findOrFail($orderId);
     }
