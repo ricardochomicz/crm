@@ -38,6 +38,7 @@ class BuildActiveTenantAccessAction
 
         return [
             'permissions' => $grants,
+            'can_view_team_productivity' => $user->can('viewTeamCalendar', $tenant),
             'tenant_role_id' => $tenant->membership->tenant_role_id,
             'role_name' => $tenant->membership->tenantRole?->name,
             'can_manage_permissions' => $tenant->membership->role === TenantUserRole::Owner,
