@@ -194,8 +194,12 @@ class OpportunityAction
         }
         $stage = OpportunityFunnelStage::query()->where('tenant_id', $tenant->id)->where('is_active', true)->findOrFail($stageId);
         DB::transaction(function () use ($opportunity, $stage, $expectedCloseAt, $tenant, $actor, $forecastReason): void {
-            $opportunity = Opportunity::query()->whereKey($opportunity->id)->lockForUpdate()->firstOrFail();
+            $opportunity = Opportunity::query()->where('tenant_id', $tenant->id)->whereKey($opportunity->id)->lockForUpdate()->firstOrFail();
+            abort_unless($opportunity->tenant_user_id === $actor->id || in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
             abort_unless($opportunity->status === 'open', 422, 'Somente oportunidades abertas podem mudar de etapa.');
+            if ($opportunity->commercialOrder()->whereHas('orderStatus', fn (Builder $query) => $query->where('code', OrderStatusCode::Correction->value))->exists()) {
+                throw ValidationException::withMessages(['funnel_stage_id' => 'Reenvie a correção ao Backoffice antes de mover a oportunidade.']);
+            }
             $forecast = $opportunity->expected_close_at?->toDateString();
             $overdue = $forecast !== null && $forecast < now()->toDateString();
             if ($overdue && ($expectedCloseAt === null || $expectedCloseAt < now()->toDateString())) {
@@ -410,8 +414,10 @@ class OpportunityAction
             $data = [...$data, ...$this->totals($items)];
         }
 
-        return DB::transaction(function () use ($event, $data, $items, $actor, $forecastReason) {
-            $opportunity = Opportunity::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+        return DB::transaction(function () use ($event, $data, $items, $actor, $forecastReason, $tenant) {
+            $opportunity = Opportunity::query()->where('tenant_id', $tenant->id)->whereKey($event->id)->lockForUpdate()->firstOrFail();
+            abort_unless($opportunity->tenant_user_id === $actor->id || in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
+            abort_unless($opportunity->status === 'open', 422, 'Somente oportunidades abertas podem ser editadas.');
             $order = $opportunity->commercialOrder()->lockForUpdate()->first();
 
             if ($order) {
