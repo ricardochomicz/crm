@@ -30,7 +30,7 @@ class CommissionReportAction
         }
 
         $summary = (clone $query)
-            ->selectRaw('status, COUNT(*) AS items, COALESCE(SUM(quantity), 0) AS lines, COALESCE(SUM(gross_amount), 0) AS gross, COALESCE(SUM(deduction_amount), 0) AS deduction, COALESCE(SUM(net_amount), 0) AS net, COALESCE(SUM(participant_total), 0) AS participants, COALESCE(SUM(company_balance), 0) AS company_balance')
+            ->selectRaw('status, COUNT(*) AS items, COALESCE(SUM(quantity), 0) AS `lines`, COALESCE(SUM(gross_amount), 0) AS gross, COALESCE(SUM(deduction_amount), 0) AS deduction, COALESCE(SUM(net_amount), 0) AS net, COALESCE(SUM(participant_total), 0) AS participants, COALESCE(SUM(company_balance), 0) AS company_balance')
             ->groupBy('status')->orderBy('status')->get();
 
         // Participant values are snapshots from the current accrual revision, not live rules.
