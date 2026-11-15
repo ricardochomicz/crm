@@ -116,6 +116,19 @@ class CommercialOrderController extends Controller
         unset($data['participants']);
         $resolved = $this->participants->execute($tenant->id, $participants);
 
+        // A non-manager must not create an order assigned outside the same
+        // visibility scope used for subsequent reads and workflow changes.
+        $visibleIds = $this->scope->membershipIds($tenant, $request->user());
+        $consultantId = collect($resolved)->firstWhere('role', 'CONSULTANT')['tenant_user_id'] ?? null;
+        if ($visibleIds !== null && ($consultantId === null || ! in_array($consultantId, $visibleIds, true))) {
+            throw ValidationException::withMessages([
+                'participants' => 'Selecione um consultor da sua carteira ou equipe para este pedido.',
+            ]);
+        }
+        if ($orderId === null && $consultantId !== null) {
+            $data['tenant_user_id'] = $consultantId;
+        }
+
         return DB::transaction(function () use ($tenant, $orderId, $data, $resolved, $request) {
             $order = $orderId
                 ? $this->scope->apply(CommercialOrder::query(), $tenant, $request->user())->lockForUpdate()->findOrFail($orderId)
