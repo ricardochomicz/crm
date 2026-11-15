@@ -103,6 +103,11 @@ class TenantPolicy
         return $this->permissions->allows($user, $tenant, TenantPermission::DeleteClients);
     }
 
+    public function viewMyCommissions(User $user, Tenant $tenant): bool
+    {
+        return $this->permissions->allows($user, $tenant, TenantPermission::ViewMyCommissions);
+    }
+
     public function viewCommissions(User $user, Tenant $tenant): bool
     {
         return $this->permissions->membership($user, $tenant)?->role !== TenantUserRole::Consultant
