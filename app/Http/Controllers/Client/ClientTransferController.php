@@ -26,7 +26,7 @@ class ClientTransferController extends Controller
     public function lookup(Request $request, string $tenantId, EvaluateClientTransferAction $eligibility): JsonResponse
     {
         $tenant = $request->attributes->get('active_tenant');
-        abort_unless($request->user()->can('createClients', $tenant), 403);
+        abort_unless($request->user()->can('createClients', $tenant) || $request->user()->can('viewOpportunities', $tenant), 403);
         $member = $this->member($request, $tenant->id);
         $data = $request->validate(['document' => ['required', 'string', 'regex:/^\d{11}$|^\d{14}$/']]);
 
