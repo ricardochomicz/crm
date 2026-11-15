@@ -4,6 +4,7 @@ namespace App\Actions\Commission;
 
 use App\Models\CommercialOrder;
 use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Support\Facades\DB;
 
 class PreviewBulkCommissionRevisionAction
@@ -71,6 +72,10 @@ class PreviewBulkCommissionRevisionAction
                 }
                 $participants[$id]['amount'] = (string) BigDecimal::of($participants[$id]['amount'])->plus($participant['amount']);
             }
+        }
+
+        foreach (array_keys($totals) as $field) {
+            $totals[$field] = (string) BigDecimal::of($totals[$field])->toScale(2, RoundingMode::HalfUp);
         }
 
         return [...$result, 'projected' => [...$totals, 'participants' => array_values($participants)]];
