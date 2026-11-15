@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Commercial;
 
 use App\Actions\Commercial\FilterCommercialOrderAction;
+use App\Actions\Commercial\ScopeVisibleCommercialOrdersAction;
 use App\Actions\Commercial\OrderActivationOverviewAction;
 use App\Actions\Commercial\PendingOrderActivationOverviewAction;
 use App\Actions\Commercial\ResolveOrderParticipantsAction;
@@ -23,7 +24,7 @@ use Illuminate\Validation\ValidationException;
 
 class CommercialOrderController extends Controller
 {
-    public function __construct(private ResolveOrderParticipantsAction $participants) {}
+    public function __construct(private ResolveOrderParticipantsAction $participants, private ScopeVisibleCommercialOrdersAction $scope) {}
 
     private function tenant(Request $request, bool $write = false): Tenant
     {
@@ -122,9 +123,9 @@ class CommercialOrderController extends Controller
         unset($data['participants']);
         $resolved = $this->participants->execute($tenant->id, $participants);
 
-        return DB::transaction(function () use ($tenant, $orderId, $data, $resolved) {
+        return DB::transaction(function () use ($tenant, $orderId, $data, $resolved, $request) {
             $order = $orderId
-                ? CommercialOrder::where('tenant_id', $tenant->id)->lockForUpdate()->findOrFail($orderId)
+                ? $this->scope->apply(CommercialOrder::query(), $tenant, $request->user())->lockForUpdate()->findOrFail($orderId)
                 : new CommercialOrder(['tenant_id' => $tenant->id]);
             abort_unless($order->status === null || $order->status === 'DRAFT', 422, 'Somente pedidos em rascunho podem ser editados.');
             if ($order->exists && (
