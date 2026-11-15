@@ -81,11 +81,22 @@ class CommercialOrderController extends Controller
     {
         $tenant = $this->tenant($request);
 
+        // The order form needs participant options, but orders.view alone must
+        // not expose the complete company member/partner directory.
+        $canManage = $request->user()->can('manageOrders', $tenant);
+        $member = $request->user()->can('viewMembers', $tenant);
+        $actorMembership = app(ResolveTenantPermissionsAction::class)
+            ->membership($request->user(), $tenant) ?? abort(403);
+
         return ['data' => [
             'members' => TenantUser::where('tenant_id', $tenant->id)->where('status', 'ACTIVE')
-                ->with('user:id,name,email')->get()->map(fn ($m) => ['id' => $m->id, 'name' => $m->user?->name ?? $m->user?->email ?? $m->id])->values(),
-            'externals' => CommercialParticipant::where('tenant_id', $tenant->id)->where('is_active', true)
-                ->orderBy('name')->get(['id', 'name', 'role']),
+                ->when(! $canManage && ! $member, fn ($query) => $query->whereKey($actorMembership->id))
+                ->with('user:id,name,email')->get()
+                ->map(fn ($m) => ['id' => $m->id, 'name' => $m->user?->name ?? $m->user?->email ?? $m->id])->values(),
+            'externals' => $canManage
+                ? CommercialParticipant::where('tenant_id', $tenant->id)->where('is_active', true)
+                    ->orderBy('name')->get(['id', 'name', 'role'])
+                : collect(),
         ]];
     }
 
