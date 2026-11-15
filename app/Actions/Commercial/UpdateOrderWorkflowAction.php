@@ -17,15 +17,15 @@ use Illuminate\Validation\ValidationException;
 
 class UpdateOrderWorkflowAction
 {
-    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+    public function __construct(private ResolveTenantPermissionsAction $permissions, private ScopeVisibleCommercialOrdersAction $scope) {}
 
     public function execute(Tenant $tenant, User $user, string $id, array $data): CommercialOrder
     {
         $actor = $this->permissions->membership($user, $tenant) ?? abort(403);
         abort_unless($user->can('manageOrders', $tenant), 403);
 
-        return DB::transaction(function () use ($tenant, $actor, $id, $data): CommercialOrder {
-            $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
+        return DB::transaction(function () use ($tenant, $user, $actor, $id, $data): CommercialOrder {
+            $order = $this->scope->apply(CommercialOrder::query(), $tenant, $user)
                 ->lockForUpdate()->findOrFail($id);
             $status = OrderStatus::query()->findOrFail($data['order_status_id']);
 
