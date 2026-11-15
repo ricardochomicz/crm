@@ -66,7 +66,26 @@ class CommissionReportAction
         }
         arsort($issueCounts);
 
+        $pendingOrders = (clone $query)
+            ->where('status', 'PENDING_RULES')
+            ->select('commercial_order_id', 'sold_on', 'activated_on', 'issues', 'revision')
+            ->orderBy('commercial_order_id')
+            ->limit(100)
+            ->get()
+            ->groupBy('commercial_order_id')
+            ->map(function ($rows, $orderId): array {
+                return [
+                    'order_id' => $orderId,
+                    'sold_on' => $rows->first()->sold_on,
+                    'activated_on' => $rows->first()->activated_on,
+                    'revision' => (int) $rows->first()->revision,
+                    'issues' => $rows->flatMap(fn ($row): array => json_decode($row->issues, true, flags: JSON_THROW_ON_ERROR))
+                        ->unique()->values()->all(),
+                ];
+            })->values()->all();
+
         return [
+            'pending_orders' => $pendingOrders,
             'pending_issues' => collect($issueCounts)->map(
                 fn (int $lines, string $code): array => ['code' => $code, 'lines' => $lines]
             )->values()->all(),
