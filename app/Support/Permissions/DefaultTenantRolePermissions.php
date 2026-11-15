@@ -18,6 +18,7 @@ final class DefaultTenantRolePermissions
     public static function all(): array
     {
         $consultant = [
+            'my-commissions.view',
             'clients.view', 'clients.create', 'clients.update',
             'opportunities.view', 'opportunities.create', 'opportunities.update',
             'orders.view',
@@ -47,6 +48,7 @@ final class DefaultTenantRolePermissions
         ];
 
         $administrative = [
+            'my-commissions.view',
             'clients.view', 'clients.create', 'clients.update',
             'orders.view', 'orders.manage', 'portfolio.view',
             'calendar.view', 'calendar.create', 'calendar.update',
@@ -56,6 +58,7 @@ final class DefaultTenantRolePermissions
         ];
 
         $telemarketing = [
+            'my-commissions.view',
             'clients.view', 'clients.create', 'clients.update',
             'opportunities.view', 'opportunities.create', 'opportunities.update',
             'calendar.view', 'calendar.create', 'calendar.update',
@@ -63,6 +66,7 @@ final class DefaultTenantRolePermissions
         ];
 
         $backoffice = [
+            'my-commissions.view',
             'clients.view', 'clients.update',
             'opportunities.view', 'orders.view', 'orders.manage',
             'portfolio.view', 'after-sales.view', 'after-sales.create',
@@ -70,6 +74,7 @@ final class DefaultTenantRolePermissions
         ];
 
         $finance = [
+            'my-commissions.view',
             'clients.view', 'orders.view', 'portfolio.view',
             'commissions.view', 'commissions.manage',
             'team-commissions.view', 'team-commissions.manage',
