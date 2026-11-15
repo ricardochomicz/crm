@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Commercial;
 
 use App\Actions\Commercial\FilterCommercialOrderAction;
 use App\Actions\Commercial\OrderActivationOverviewAction;
+use App\Actions\Commercial\PendingOrderActivationOverviewAction;
 use App\Actions\Commercial\ResolveOrderParticipantsAction;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
@@ -67,6 +68,13 @@ class CommercialOrderController extends Controller
             $filters['date_to'],
             $filters['order_type_ids'] ?? [],
         )];
+    }
+
+    public function pendingActivationOverview(Request $request, string $tenantId, PendingOrderActivationOverviewAction $action): array
+    {
+        $tenant = $this->tenant($request);
+
+        return ['data' => $action->execute($tenant, $request->user(), now()->toDateString())];
     }
 
     public function options(Request $request, string $tenantId): array
