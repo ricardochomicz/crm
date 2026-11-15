@@ -25,7 +25,7 @@ final class DefaultTenantRolePermissions
             'calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete',
             'after-sales.view', 'after-sales.create', 'after-sales.update',
             'products.view', 'operator-classifications.view',
-            'commercial-goals.view', 'commissions.view',
+            'commercial-goals.view',
         ];
 
         $supervisor = [
