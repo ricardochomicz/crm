@@ -36,18 +36,28 @@ class MyCommissionController extends Controller
             $query->where('status', $filters['status']);
         }
 
+        $typeNames = DB::table('order_types')->pluck('name', 'id');
         $totals = ['ESTIMATED' => '0.00', 'ELIGIBLE' => '0.00'];
         $rows = [];
         foreach ($query->cursor() as $accrual) {
             $participants = json_decode($accrual->participant_amounts, true, flags: JSON_THROW_ON_ERROR);
             $amount = BigDecimal::zero();
             $matched = false;
+            $percentage = null;
+            $snapshot = json_decode($accrual->rule_snapshot ?? '{}', true, flags: JSON_THROW_ON_ERROR);
             foreach ($participants as $participant) {
                 if (($participant['tenant_user_id'] ?? null) !== $member->id) {
                     continue;
                 }
                 $matched = true;
                 $amount = $amount->plus((string) ($participant['amount'] ?? '0'));
+                foreach (($snapshot['participants'] ?? []) as $ruleParticipant) {
+                    if (($ruleParticipant['tenant_user_id'] ?? null) === $member->id
+                        && ($ruleParticipant['role'] ?? null) === ($participant['role'] ?? null)) {
+                        $percentage = $ruleParticipant['percentage'] ?? null;
+                        break;
+                    }
+                }
             }
             if (! $matched) {
                 continue;
@@ -63,6 +73,9 @@ class MyCommissionController extends Controller
                 'activated_on' => $accrual->activated_on,
                 'line_number' => $accrual->line_number,
                 'description' => $accrual->description,
+                'order_type' => $typeNames[$accrual->order_type] ?? $accrual->order_type,
+                'plan_amount' => $accrual->base_amount === null ? null : (string) BigDecimal::of($accrual->base_amount)->toScale(2),
+                'commission_percentage' => $accrual->status === 'PENDING_RULES' ? null : $percentage,
                 'status' => $accrual->status,
                 'revision' => (int) $accrual->revision,
                 'amount' => $accrual->status === 'PENDING_RULES' ? null : $value,
