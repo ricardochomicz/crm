@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Opportunity;
 
 use App\Actions\Opportunity\OpportunityAction;
+use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
 use App\Models\OpportunityComparison;
+use App\Models\Opportunity;
 use App\Models\Operator;
 use App\Models\Product;
 use App\Models\Tenant;
@@ -16,6 +19,17 @@ use Illuminate\Validation\ValidationException;
 
 class OpportunityComparisonController extends Controller
 {
+    private function authorizeMutation(Request $request, Tenant $tenant, Opportunity $opportunity): void
+    {
+        $actor = app(ResolveTenantPermissionsAction::class)->membership($request->user(), $tenant) ?? abort(403);
+        abort_unless(
+            $opportunity->tenant_user_id === $actor->id ||
+            in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true),
+            403
+        );
+        abort_unless($opportunity->status === 'open', 422, 'Somente oportunidades abertas podem gerar ou alterar documentos comerciais.');
+    }
+
     private function tenant(Request $request): Tenant
     {
         $tenant = $request->attributes->get('active_tenant');
@@ -38,7 +52,7 @@ class OpportunityComparisonController extends Controller
         $tenant = $this->tenant($request);
         abort_unless($request->user()->can('updateOpportunities', $tenant), 403);
         $opportunity = $action->find($tenant, $request->user(), $opportunityId);
-        abort_unless($opportunity->status === 'open', 422, 'A oportunidade precisa estar aberta.');
+        $this->authorizeMutation($request, $tenant, $opportunity);
         $data = $request->validate([
             'title' => ['required', 'string', 'max:200'],
             'options' => ['required', 'array', 'min:2', 'max:10'],
@@ -63,7 +77,9 @@ class OpportunityComparisonController extends Controller
             throw ValidationException::withMessages(['options' => 'Há operadoras não vinculadas à empresa.']);
         }
         $names = Operator::query()->whereIn('id', $operatorIds)->pluck('name', 'id');
-        $comparison = DB::transaction(function () use ($tenant, $opportunity, $data, $products, $names) {
+        $comparison = DB::transaction(function () use ($tenant, $opportunity, $data, $products, $names, $request) {
+            $locked = Opportunity::query()->where('tenant_id', $tenant->id)->whereKey($opportunity->id)->lockForUpdate()->firstOrFail();
+            $this->authorizeMutation($request, $tenant, $locked);
             $comparison = OpportunityComparison::query()->create([
                 'tenant_id' => $tenant->id,
                 'opportunity_id' => $opportunity->id,
@@ -93,7 +109,7 @@ class OpportunityComparisonController extends Controller
     {
         $tenant = $this->tenant($request);
         abort_unless($request->user()->can('updateOpportunities', $tenant), 403);
-        $action->find($tenant, $request->user(), $opportunityId);
+        $this->authorizeMutation($request, $tenant, $action->find($tenant, $request->user(), $opportunityId));
         $comparison = OpportunityComparison::query()->where('tenant_id', $tenant->id)
             ->where('opportunity_id', $opportunityId)->findOrFail($comparisonId);
         $comparison->update(['revoked_at' => now()]);
