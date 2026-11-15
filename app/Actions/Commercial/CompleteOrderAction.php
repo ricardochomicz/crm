@@ -14,15 +14,15 @@ use Illuminate\Validation\ValidationException;
 
 class CompleteOrderAction
 {
-    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+    public function __construct(private ResolveTenantPermissionsAction $permissions, private ScopeVisibleCommercialOrdersAction $scope) {}
 
     public function execute(Tenant $tenant, User $user, string $orderId): CommercialOrder
     {
         $actor = $this->permissions->membership($user, $tenant) ?? abort(403);
         abort_unless($user->can('manageOrders', $tenant), 403);
 
-        return DB::transaction(function () use ($tenant, $actor, $orderId): CommercialOrder {
-            $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
+        return DB::transaction(function () use ($tenant, $user, $actor, $orderId): CommercialOrder {
+            $order = $this->scope->apply(CommercialOrder::query(), $tenant, $user)
                 ->lockForUpdate()->findOrFail($orderId);
 
             if ($order->administratively_completed_at) {
