@@ -7,6 +7,9 @@ use App\Models\CommercialOrder;
 use App\Models\CommercialOrderItem;
 use App\Models\Tenant;
 use App\Models\TenantUser;
+use App\Models\Team;
+use App\Enums\TenantPermission;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use Database\Factories\OperatorFactory;
 use Database\Factories\ProductFactory;
@@ -85,4 +88,62 @@ class PendingOrderActivationOverviewTest extends TestCase
         $this->assertSame(1, $result['overdue']['orders']);
         $this->assertSame(3, $result['overdue']['lines']);
     }
+    public function test_consultant_sees_only_own_orders_and_orders_from_supervised_teams(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $owner = $this->owner($tenant);
+        $supervisor = TenantUser::query()->create([
+            'tenant_id' => $tenant->id,
+            'user_id' => User::factory()->create()->id,
+            'role' => 'CONSULTANT',
+            'status' => 'ACTIVE',
+        ]);
+        DB::table('tenant_role_permissions')->updateOrInsert(
+            ['tenant_id' => $tenant->id, 'role' => 'CONSULTANT'],
+            ['permissions' => json_encode([TenantPermission::ViewOrders->value]), 'version' => 1]
+        );
+
+        $team = Team::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Equipe supervisionada',
+            'supervisor_membership_id' => $supervisor->id,
+        ]);
+        $teammate = TenantUser::query()->create([
+            'tenant_id' => $tenant->id,
+            'user_id' => User::factory()->create()->id,
+            'role' => 'CONSULTANT',
+            'status' => 'ACTIVE',
+            'team_id' => $team->id,
+        ]);
+        $other = TenantUser::query()->create([
+            'tenant_id' => $tenant->id,
+            'user_id' => User::factory()->create()->id,
+            'role' => 'CONSULTANT',
+            'status' => 'ACTIVE',
+        ]);
+
+        foreach ([$supervisor, $teammate, $other, $owner] as $member) {
+            $this->line($this->order($tenant, $member, '2026-11-10'), 2, 'PENDING');
+        }
+
+        $result = app(PendingOrderActivationOverviewAction::class)->execute($tenant, $supervisor->user, '2026-11-14');
+        $this->assertSame(2, $result['pending']['orders']);
+        $this->assertSame(4, $result['pending']['lines']);
+        $this->assertSame(2, $result['overdue']['orders']);
+    }
+
+    public function test_user_without_order_permission_cannot_read_pending_activations(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $member = TenantUser::query()->create([
+            'tenant_id' => $tenant->id,
+            'user_id' => User::factory()->create()->id,
+            'role' => 'CONSULTANT',
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->expectException(\\Symfony\\Component\\HttpKernel\\Exception\\HttpException::class);
+        app(PendingOrderActivationOverviewAction::class)->execute($tenant, $member->user, '2026-11-14');
+    }
+
 }
