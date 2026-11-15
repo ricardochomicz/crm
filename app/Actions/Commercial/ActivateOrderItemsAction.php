@@ -19,6 +19,7 @@ class ActivateOrderItemsAction
     public function __construct(
         private ResolveTenantPermissionsAction $permissions,
         private CaptureOrderCommissionsAction $commissions,
+        private ScopeVisibleCommercialOrdersAction $scope,
     ) {}
 
     public function execute(Tenant $tenant, User $user, string $orderId, array $data): CommercialOrder
@@ -26,8 +27,8 @@ class ActivateOrderItemsAction
         $actor = $this->permissions->membership($user, $tenant) ?? abort(403);
         abort_unless($user->can('manageOrders', $tenant), 403);
 
-        return DB::transaction(function () use ($tenant, $actor, $orderId, $data): CommercialOrder {
-            $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
+        return DB::transaction(function () use ($tenant, $user, $actor, $orderId, $data): CommercialOrder {
+            $order = $this->scope->apply(CommercialOrder::query(), $tenant, $user)
                 ->lockForUpdate()->findOrFail($orderId);
 
             if ($order->administratively_completed_at) {
