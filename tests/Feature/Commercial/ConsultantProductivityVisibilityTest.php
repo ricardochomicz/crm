@@ -122,7 +122,7 @@ class ConsultantProductivityVisibilityTest extends TestCase
                 'from' => '2026-11-01', 'to' => '2026-11-14',
             ]);
             $this->fail('Expected a forbidden response.');
-        } catch (\\Symfony\\Component\\HttpKernel\\Exception\\HttpException $exception) {
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
             $this->assertSame(403, $exception->getStatusCode());
         }
     }
