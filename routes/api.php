@@ -27,6 +27,7 @@ use App\Http\Controllers\Commission\CommercialGoalController;
 use App\Http\Controllers\Commission\CommercialParticipantController;
 use App\Http\Controllers\Commission\CommissionTableController;
 use App\Http\Controllers\Commission\CommissionReportController;
+use App\Http\Controllers\Commission\CommissionRevisionPreviewController;
 use App\Http\Controllers\Commission\OrderCommissionController;
 use App\Http\Controllers\Commission\TeamCommissionRuleController;
 use App\Http\Controllers\CustomerPortal\CustomerPortalController;
@@ -247,6 +248,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/commercial-goals', [CommercialGoalController::class, 'index']);
                 Route::get('/team-commissions', [TeamCommissionRuleController::class, 'index']);
                 Route::get('/team-commissions/options', [TeamCommissionRuleController::class, 'options']);
+                Route::get('/commissions/revision-preview', CommissionRevisionPreviewController::class)->name('commissions.revision-preview');
                 Route::get('/commissions/report', CommissionReportController::class)->name('commissions.report');
                 Route::get('/commissions', [CommissionTableController::class, 'index'])->name('commissions.index');
                 Route::get('/commissions/order-types', [CommissionTableController::class, 'orderTypes']);
