@@ -37,7 +37,7 @@ final class DefaultTenantRolePermissions
         $manager = [
             ...$supervisor,
             'clients.delete', 'commercial-goals.manage',
-            'commissions.manage', 'team-commissions.manage',
+            'commissions.view', 'commissions.manage', 'team-commissions.manage',
             'operator-classifications.manage',
             'products.create', 'products.update', 'products.promotions',
             'members.create', 'members.profile.view', 'members.profile.update',
