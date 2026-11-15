@@ -6,6 +6,7 @@ use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Models\Tenant;
 use App\Models\User;
+use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
 class CommissionReportAction
@@ -52,7 +53,7 @@ class CommissionReportAction
                 }
                 $field = $row->status === 'ELIGIBLE' ? 'eligible' : ($row->status === 'ESTIMATED' ? 'estimated' : null);
                 if ($field !== null) {
-                    $participants[$key][$field] = bcadd($participants[$key][$field], (string) $participant['amount'], 2);
+                    $participants[$key][$field] = (string) BigDecimal::of($participants[$key][$field])->plus((string) $participant['amount']);
                 }
             }
         }
