@@ -29,6 +29,7 @@ use App\Http\Controllers\Commission\CommissionTableController;
 use App\Http\Controllers\Commission\CommissionReportController;
 use App\Http\Controllers\Commission\CommissionRevisionPreviewController;
 use App\Http\Controllers\Commission\BulkCommissionRevisionController;
+use App\Http\Controllers\Commission\BulkCommissionRevisionPreviewController;
 use App\Http\Controllers\Commission\OrderCommissionController;
 use App\Http\Controllers\Commission\TeamCommissionRuleController;
 use App\Http\Controllers\CustomerPortal\CustomerPortalController;
@@ -311,6 +312,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/operators', ListTenantOperatorsController::class)->name('tenant-operators.index');
                 Route::middleware('subscription.writable')->group(function (): void {
                     Route::post('/commercial-orders/{orderId}/commissions/revisions', [OrderCommissionController::class, 'store'])->whereUuid('orderId')->middleware('throttle:10,1')->name('order-commissions.store');
+                    Route::post('/commissions/bulk-revisions/preview', BulkCommissionRevisionPreviewController::class)->middleware('throttle:20,1')->name('commissions.bulk-revisions.preview');
                     Route::post('/commissions/bulk-revisions', BulkCommissionRevisionController::class)->middleware('throttle:10,1')->name('commissions.bulk-revisions');
                     Route::post('/after-sales/protocols', [ProtocolController::class, 'store']);
                     Route::patch('/after-sales/protocols/{protocolId}', [ProtocolController::class, 'update'])->whereUuid('protocolId');
