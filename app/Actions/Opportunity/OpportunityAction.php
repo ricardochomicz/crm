@@ -7,6 +7,8 @@ use App\Enums\OrderStatusCode;
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
 use App\Models\Comment;
+use App\Models\Client;
+use App\Models\ClientSeller;
 use App\Models\Opportunity;
 use App\Models\OpportunityFunnelStage;
 use App\Models\OrderType;
@@ -360,6 +362,20 @@ class OpportunityAction
             ->where('status', TenantUserStatus::Active->value)->whereKey($assignee)->exists(), 422);
 
         return DB::transaction(function () use ($tenant, $data, $assignee, $items, $actor) {
+            // Lock the client before reading its current portfolio assignment.
+            // Transfer approval locks this same row, preventing a sale from
+            // racing with an ownership change.
+            Client::query()->where('tenant_id', $tenant->id)
+                ->whereKey($data['client_id'])->lockForUpdate()->firstOrFail();
+            $portfolioOwner = ClientSeller::query()->where('tenant_id', $tenant->id)
+                ->where('client_id', $data['client_id'])->whereNull('ended_at')
+                ->lockForUpdate()->first();
+            if (! $portfolioOwner || $portfolioOwner->tenant_user_id !== $assignee) {
+                throw ValidationException::withMessages([
+                    'client_id' => 'Este cliente não pertence à carteira do consultor responsável. Solicite a transferência de carteira e aguarde a aprovação.',
+                ]);
+            }
+
             $opportunity = Opportunity::create([...$data, 'tenant_id' => $tenant->id, 'tenant_user_id' => $assignee]);
             $opportunity->items()->createMany($items);
 
