@@ -58,7 +58,18 @@ class CommissionReportAction
             }
         }
 
+        $issueCounts = [];
+        foreach ((clone $query)->where('status', 'PENDING_RULES')->select(['issues', 'quantity'])->cursor() as $row) {
+            foreach (array_unique(json_decode($row->issues, true, flags: JSON_THROW_ON_ERROR)) as $issue) {
+                $issueCounts[$issue] = ($issueCounts[$issue] ?? 0) + (int) $row->quantity;
+            }
+        }
+        arsort($issueCounts);
+
         return [
+            'pending_issues' => collect($issueCounts)->map(
+                fn (int $lines, string $code): array => ['code' => $code, 'lines' => $lines]
+            )->values()->all(),
             'period' => ['from' => $filters['from'], 'to' => $filters['to']],
             'summary' => $summary,
             'participants' => array_values($participants),
