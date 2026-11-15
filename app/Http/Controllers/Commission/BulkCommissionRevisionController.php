@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Commission;
 use App\Actions\Commission\CalculateSaleCommissionAction;
 use App\Actions\Commission\CaptureOrderCommissionsAction;
 use App\Actions\Commission\FilterOrderCommissionsAction;
+use App\Actions\Commission\PreviewBulkCommissionRevisionAction;
 use App\Actions\Commission\ResolveOrderCommissionRulesAction;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Http\Controllers\Controller;
@@ -24,6 +25,7 @@ class BulkCommissionRevisionController extends Controller
         ResolveOrderCommissionRulesAction $rules,
         CalculateSaleCommissionAction $calculator,
         CaptureOrderCommissionsAction $capture,
+        PreviewBulkCommissionRevisionAction $preview,
         ResolveTenantPermissionsAction $permissions,
     ): JsonResponse {
         $tenant = $request->attributes->get('active_tenant');
@@ -42,8 +44,12 @@ class BulkCommissionRevisionController extends Controller
         $results = [];
         foreach ($data['order_ids'] as $orderId) {
             try {
-                $results[] = DB::transaction(function () use ($tenant, $request, $orderId, $data, $filter, $rules, $calculator, $capture, $actor): array {
+                $results[] = DB::transaction(function () use ($tenant, $request, $orderId, $data, $filter, $rules, $calculator, $capture, $preview, $actor): array {
                     $order = $filter->findOrder($tenant, $request->user(), $orderId);
+                    $preflight = $preview->execute($order, (int) $data['operator_id'], $data['order_type']);
+                    if ($preflight['status'] !== 'ready') {
+                        return ['order_id' => $orderId, 'status' => 'skipped', 'reason' => $preflight['reason']];
+                    }
                     $items = $order->items()->get();
                     $pending = DB::table('order_commission_accruals')
                         ->where('tenant_id', $tenant->id)->where('commercial_order_id', $order->id)
