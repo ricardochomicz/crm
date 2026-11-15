@@ -26,7 +26,8 @@ class OpportunityMutationAuthorizationTest extends TestCase
             'tenant_id' => $tenant->id, 'name' => 'Prospecção', 'position' => 0, 'is_active' => true,
         ]);
         $client = Client::query()->create([
-            'tenant_id' => $tenant->id, 'person_type' => 'PJ', 'company_name' => 'Cliente de teste',
+            'tenant_id' => $tenant->id, 'person_type' => 'PJ',
+            'document' => '12345678000195', 'company_name' => 'Cliente de teste',
         ]);
         $opportunity = Opportunity::query()->create([
             'tenant_id' => $tenant->id, 'tenant_user_id' => $colleague->id,
