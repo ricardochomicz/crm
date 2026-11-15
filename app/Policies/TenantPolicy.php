@@ -105,12 +105,14 @@ class TenantPolicy
 
     public function viewCommissions(User $user, Tenant $tenant): bool
     {
-        return $this->permissions->allows($user, $tenant, TenantPermission::ViewCommissions);
+        return $this->permissions->membership($user, $tenant)?->role !== TenantUserRole::Consultant
+            && $this->permissions->allows($user, $tenant, TenantPermission::ViewCommissions);
     }
 
     public function manageCommissions(User $user, Tenant $tenant): bool
     {
-        return $this->permissions->allows($user, $tenant, TenantPermission::ManageCommissions);
+        return $this->permissions->membership($user, $tenant)?->role !== TenantUserRole::Consultant
+            && $this->permissions->allows($user, $tenant, TenantPermission::ManageCommissions);
     }
 
     public function viewCommercialGoals(User $user, Tenant $tenant): bool
