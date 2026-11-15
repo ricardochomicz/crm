@@ -29,8 +29,9 @@ class CommercialOrderVisibilityScopeTest extends TestCase
         app(SeedTenantRolesAction::class)->execute($otherTenant);
         $other = $this->member($otherTenant, $otherTenant->roles()->where('code', 'CONSULTANT')->firstOrFail());
 
-        $query = app(ScopeVisibleCommercialOrdersAction::class)
-            ->apply(CommercialOrder::query(), $tenant, $actor->user);
+        $scope = app(ScopeVisibleCommercialOrdersAction::class);
+        self::assertSame([$actor->id], $scope->membershipIds($tenant, $actor->user));
+        $query = $scope->apply(CommercialOrder::query(), $tenant, $actor->user);
         $sql = $query->toSql();
         $bindings = $query->getBindings();
 
