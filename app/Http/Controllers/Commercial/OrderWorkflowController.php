@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Commercial;
 
 use App\Actions\Commercial\UpdateOrderWorkflowAction;
+use App\Actions\Commercial\ScopeVisibleCommercialOrdersAction;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Models\TenantUser;
@@ -15,19 +16,11 @@ use Illuminate\Http\Request;
 
 class OrderWorkflowController extends Controller
 {
-    public function show(Request $request, string $tenantId, string $orderId, ResolveTenantPermissionsAction $permissions): CommercialOrderResource
+    public function show(Request $request, string $tenantId, string $orderId, ScopeVisibleCommercialOrdersAction $scope): CommercialOrderResource
     {
         $tenant = $request->attributes->get('active_tenant');
         abort_unless($request->user()->can('viewOrders', $tenant), 403);
-        $actor = $permissions->membership($request->user(), $tenant) ?? abort(403);
-        $query = CommercialOrder::query()->where('tenant_id', $tenant->id);
-        if (! in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
-            $teams = DB::table('teams')->where('tenant_id', $tenant->id)
-                ->where('supervisor_membership_id', $actor->id)->pluck('id');
-            $members = TenantUser::query()->where('tenant_id', $tenant->id)
-                ->whereIn('team_id', $teams)->pluck('id')->push($actor->id)->unique()->all();
-            $query->whereIn('tenant_user_id', $members);
-        }
+        $query = $scope->apply(CommercialOrder::query(), $tenant, $request->user());
 
         return new CommercialOrderResource(
             $query
