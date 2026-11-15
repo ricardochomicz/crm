@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Opportunity;
 
 use App\Actions\Opportunity\OpportunityAction;
+use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Opportunity;
 use App\Models\OpportunityProposal;
@@ -14,6 +16,17 @@ use Illuminate\Support\Str;
 
 class OpportunityProposalController extends Controller
 {
+    private function authorizeMutation(Request $request, Tenant $tenant, Opportunity $opportunity): void
+    {
+        $actor = app(ResolveTenantPermissionsAction::class)->membership($request->user(), $tenant) ?? abort(403);
+        abort_unless(
+            $opportunity->tenant_user_id === $actor->id ||
+            in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true),
+            403
+        );
+        abort_unless($opportunity->status === 'open', 422, 'Somente oportunidades abertas podem gerar ou alterar documentos comerciais.');
+    }
+
     private function tenant(Request $request): Tenant
     {
         $tenant = $request->attributes->get('active_tenant');
@@ -37,15 +50,16 @@ class OpportunityProposalController extends Controller
     {
         $tenant = $this->tenant($request);
         abort_unless($request->user()->can('updateOpportunities', $tenant), 403);
-        $action->find($tenant, $request->user(), $opportunityId);
+        $this->authorizeMutation($request, $tenant, $action->find($tenant, $request->user(), $opportunityId));
         $data = $request->validate([
             'validity_days' => ['required', 'integer', 'min:1', 'max:365'],
             'conditions' => ['required', 'string', 'max:2000'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
-        $proposal = DB::transaction(function () use ($tenant, $opportunityId, $data) {
+        $proposal = DB::transaction(function () use ($tenant, $opportunityId, $data, $request) {
             $opportunity = Opportunity::query()->where('tenant_id', $tenant->id)
                 ->whereKey($opportunityId)->lockForUpdate()->firstOrFail();
+            $this->authorizeMutation($request, $tenant, $opportunity);
             $opportunity->load(['client', 'operator', 'assignee.user', 'items', 'client.contacts']);
             abort_unless($opportunity->items->isNotEmpty(), 422, 'Adicione serviços antes de gerar a proposta.');
             $version = (int) OpportunityProposal::query()->where('opportunity_id', $opportunityId)->max('version') + 1;
@@ -86,7 +100,7 @@ class OpportunityProposalController extends Controller
     {
         $tenant = $this->tenant($request);
         abort_unless($request->user()->can('updateOpportunities', $tenant), 403);
-        $action->find($tenant, $request->user(), $opportunityId);
+        $this->authorizeMutation($request, $tenant, $action->find($tenant, $request->user(), $opportunityId));
         $proposal = OpportunityProposal::query()->where('tenant_id', $tenant->id)
             ->where('opportunity_id', $opportunityId)->findOrFail($proposalId);
         $proposal->update(['revoked_at' => $proposal->revoked_at ?? now()]);
