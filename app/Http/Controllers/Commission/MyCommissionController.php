@@ -17,7 +17,7 @@ class MyCommissionController extends Controller
         $tenant = $request->attributes->get('active_tenant');
         $member = $tenant ? $permissions->membership($request->user(), $tenant) : null;
         abort_unless($member !== null, 403);
-        $this->authorize('viewMyCommissions', $tenant);
+        abort_unless($request->user()->can('viewMyCommissions', $tenant), 403);
 
         $filters = Validator::make($request->query(), [
             'from' => ['required', 'date_format:Y-m-d'],
