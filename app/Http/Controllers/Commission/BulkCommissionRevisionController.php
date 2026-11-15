@@ -46,6 +46,9 @@ class BulkCommissionRevisionController extends Controller
             try {
                 $results[] = DB::transaction(function () use ($tenant, $request, $orderId, $data, $filter, $rules, $calculator, $capture, $preview, $actor): array {
                     $order = $filter->findOrder($tenant, $request->user(), $orderId);
+                    // Serialize reviews and item updates for the same order until capture commits.
+                    $order = CommercialOrder::query()->where('tenant_id', $tenant->id)
+                        ->lockForUpdate()->findOrFail($order->id);
                     $preflight = $preview->execute($order, (int) $data['operator_id'], $data['order_type']);
                     if ($preflight['status'] !== 'ready') {
                         return ['order_id' => $orderId, 'status' => 'skipped', 'reason' => $preflight['reason']];
