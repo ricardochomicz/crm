@@ -18,7 +18,7 @@ class OrderWorkflowController extends Controller
     public function show(Request $request, string $tenantId, string $orderId, ResolveTenantPermissionsAction $permissions): CommercialOrderResource
     {
         $tenant = $request->attributes->get('active_tenant');
-        abort_unless($request->user()->can('viewCommissions', $tenant) || $request->user()->can('viewOpportunities', $tenant), 403);
+        abort_unless($request->user()->can('viewOrders', $tenant), 403);
         $actor = $permissions->membership($request->user(), $tenant) ?? abort(403);
         $query = CommercialOrder::query()->where('tenant_id', $tenant->id);
         if (! in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
