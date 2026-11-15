@@ -125,7 +125,7 @@ class CommercialOrderController extends Controller
                 'participants' => 'Selecione um consultor da sua carteira ou equipe para este pedido.',
             ]);
         }
-        if ($orderId === null && $consultantId !== null) {
+        if ($consultantId !== null) {
             $data['tenant_user_id'] = $consultantId;
         }
 
