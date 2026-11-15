@@ -22,6 +22,7 @@ enum TenantPermission: string
     case CreateClients = 'clients.create';
     case UpdateClients = 'clients.update';
     case DeleteClients = 'clients.delete';
+    case ViewMyCommissions = 'my-commissions.view';
     case ViewCommissions = 'commissions.view';
     case ManageCommissions = 'commissions.manage';
     case ViewCommercialGoals = 'commercial-goals.view';
@@ -77,6 +78,7 @@ enum TenantPermission: string
             ['key' => self::CreateClients->value, 'group' => 'Clientes', 'label' => 'Cadastrar clientes', 'requires' => ['clients.view']],
             ['key' => self::UpdateClients->value, 'group' => 'Clientes', 'label' => 'Editar clientes e contatos', 'requires' => ['clients.view']],
             ['key' => self::DeleteClients->value, 'group' => 'Clientes', 'label' => 'Excluir clientes (lixeira)', 'requires' => ['clients.view']],
+            ['key' => self::ViewMyCommissions->value, 'group' => 'Minhas comissões', 'label' => 'Consultar somente as próprias comissões', 'requires' => []],
             ['key' => self::ViewCommissions->value, 'group' => 'Comissões', 'label' => 'Visualizar tabelas de comissões', 'requires' => []],
             ['key' => self::ManageCommissions->value, 'group' => 'Comissões', 'label' => 'Gerenciar tabelas de comissões', 'requires' => ['commissions.view']],
             ['key' => self::ViewCommercialGoals->value, 'group' => 'Metas comerciais', 'label' => 'Visualizar metas comerciais', 'requires' => []],
