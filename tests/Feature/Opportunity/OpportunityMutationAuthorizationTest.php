@@ -10,7 +10,7 @@ use App\Models\Tenant;
 use App\Models\TenantUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Tests\TestCase;
 
 class OpportunityMutationAuthorizationTest extends TestCase
@@ -38,8 +38,8 @@ class OpportunityMutationAuthorizationTest extends TestCase
         try {
             app(OpportunityAction::class)->moveStage($tenant, $owner->user, $opportunity->id, $stage->id);
             self::fail('A movimentação de uma oportunidade de outro consultor deveria ser negada.');
-        } catch (HttpException $exception) {
-            self::assertSame(404, $exception->getStatusCode());
+        } catch (ModelNotFoundException $exception) {
+            self::assertSame(Opportunity::class, $exception->getModel());
         }
 
         self::assertSame($stage->id, $opportunity->fresh()->funnel_stage_id);
