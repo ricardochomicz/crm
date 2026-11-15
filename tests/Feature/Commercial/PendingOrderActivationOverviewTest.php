@@ -142,7 +142,7 @@ class PendingOrderActivationOverviewTest extends TestCase
             'status' => 'ACTIVE',
         ]);
 
-        $this->expectException(\\Symfony\\Component\\HttpKernel\\Exception\\HttpException::class);
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
         app(PendingOrderActivationOverviewAction::class)->execute($tenant, $member->user, '2026-11-14');
     }
 
