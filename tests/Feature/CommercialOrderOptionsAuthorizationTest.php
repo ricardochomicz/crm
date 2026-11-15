@@ -42,6 +42,24 @@ class CommercialOrderOptionsAuthorizationTest extends TestCase
         $this->assertNotSame($viewer->id, $other->id);
     }
 
+    public function test_order_details_require_orders_view_even_when_opportunities_are_visible(): void
+    {
+        $tenant = Tenant::factory()->create();
+        Subscription::factory()->for($tenant)->trialing()->create(['user_limit' => 30]);
+        app(SeedTenantRolesAction::class)->execute($tenant);
+        $role = $tenant->roles()->where('code', 'CONSULTANT')->firstOrFail();
+        $role->update(['permissions' => ['opportunities.view']]);
+        $viewer = TenantUser::query()->create([
+            'tenant_id' => $tenant->id, 'user_id' => User::factory()->create()->id,
+            'role' => $role->legacy_role, 'tenant_role_id' => $role->id,
+            'status' => 'ACTIVE', 'joined_at' => now(),
+        ]);
+
+        $this->actingAs($viewer->user)
+            ->getJson("/api/v1/tenants/{$tenant->id}/commercial-orders/".\Illuminate\Support\Str::uuid())
+            ->assertForbidden();
+    }
+
     public function test_user_without_orders_view_cannot_read_order_options(): void
     {
         $tenant = Tenant::factory()->create();
