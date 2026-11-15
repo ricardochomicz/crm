@@ -19,7 +19,10 @@ class OrderActivationOverviewAction
         abort_unless($user->can('viewOrders', $tenant), 403);
 
         $previousFrom = \Carbon\CarbonImmutable::parse($from)->subMonthNoOverflow();
-        $previousTo = \Carbon\CarbonImmutable::parse($to)->subMonthNoOverflow();
+        $selectedEnd = \Carbon\CarbonImmutable::parse($to);
+        $previousTo = $selectedEnd->isLastOfMonth()
+            ? $previousFrom->endOfMonth()
+            : $previousFrom->addDays($selectedEnd->day - 1)->min($previousFrom->endOfMonth());
         $query = DB::table('commercial_order_items as item')
             ->join('commercial_orders as orders', 'orders.id', '=', 'item.commercial_order_id')
             ->leftJoin('order_types as types', 'types.id', '=', 'item.order_type_id')
