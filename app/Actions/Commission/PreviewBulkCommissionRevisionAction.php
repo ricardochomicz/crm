@@ -3,6 +3,7 @@
 namespace App\Actions\Commission;
 
 use App\Models\CommercialOrder;
+use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
 class PreviewBulkCommissionRevisionAction
@@ -61,14 +62,14 @@ class PreviewBulkCommissionRevisionAction
                 return [...$result, 'status' => 'skipped', 'reason' => 'invalid_commission_balance'];
             }
             foreach (array_keys($totals) as $field) {
-                $totals[$field] = bcadd($totals[$field], $amounts[$field], 2);
+                $totals[$field] = (string) BigDecimal::of($totals[$field])->plus($amounts[$field]);
             }
             foreach ($amounts['participant_amounts'] as $participant) {
                 $id = ($participant['role'] ?? '').':'.($participant['tenant_user_id'] ?? $participant['commercial_participant_id'] ?? '');
                 if (! isset($participants[$id])) {
                     $participants[$id] = ['role' => $participant['role'], 'name' => $participant['name'], 'amount' => '0.00'];
                 }
-                $participants[$id]['amount'] = bcadd($participants[$id]['amount'], $participant['amount'], 2);
+                $participants[$id]['amount'] = (string) BigDecimal::of($participants[$id]['amount'])->plus($participant['amount']);
             }
         }
 
@@ -84,7 +85,7 @@ class PreviewBulkCommissionRevisionAction
         foreach ($rows as $row) {
             foreach ($fields as $field) {
                 if ($row->{$field} !== null) {
-                    $totals[$field] = bcadd($totals[$field], (string) $row->{$field}, 2);
+                    $totals[$field] = (string) BigDecimal::of($totals[$field])->plus((string) $row->{$field});
                 }
             }
             foreach (json_decode($row->participant_amounts ?? '[]', true) ?: [] as $participant) {
@@ -92,7 +93,7 @@ class PreviewBulkCommissionRevisionAction
                 if (! isset($participants[$id])) {
                     $participants[$id] = ['role' => $participant['role'], 'name' => $participant['name'], 'amount' => '0.00'];
                 }
-                $participants[$id]['amount'] = bcadd($participants[$id]['amount'], (string) $participant['amount'], 2);
+                $participants[$id]['amount'] = (string) BigDecimal::of($participants[$id]['amount'])->plus((string) $participant['amount']);
             }
         }
         return [...$totals, 'participants' => array_values($participants)];
