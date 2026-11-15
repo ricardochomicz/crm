@@ -34,17 +34,10 @@ class CommercialOrderController extends Controller
         return $tenant;
     }
 
-    public function index(IndexCommercialOrderRequest $request, string $tenantId, FilterCommercialOrderAction $filter, ResolveTenantPermissionsAction $permissions): array
+    public function index(IndexCommercialOrderRequest $request, string $tenantId, FilterCommercialOrderAction $filter): array
     {
         $tenant = $request->attributes->get('active_tenant');
-        $actor = $permissions->membership($request->user(), $tenant) ?? abort(403);
-        $visibleIds = null;
-        if (! in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
-            $teams = DB::table('teams')->where('tenant_id', $tenant->id)
-                ->where('supervisor_membership_id', $actor->id)->pluck('id');
-            $visibleIds = TenantUser::query()->where('tenant_id', $tenant->id)
-                ->whereIn('team_id', $teams)->pluck('id')->push($actor->id)->unique()->all();
-        }
+        $visibleIds = $this->scope->membershipIds($tenant, $request->user());
 
         return [
             'data' => CommercialOrderResource::collection($filter->execute($tenant->id, $request->validated(), $visibleIds)),
