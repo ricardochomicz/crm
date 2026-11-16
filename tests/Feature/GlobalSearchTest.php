@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Search\GlobalSearchAction;
+use App\Actions\Tenant\SeedTenantRolesAction;
 use App\Models\Client;
 use App\Models\ClientSeller;
 use App\Models\CommercialOrder;
@@ -19,7 +20,12 @@ class GlobalSearchTest extends TestCase
 
     private function member(Tenant $tenant, string $role = 'OWNER'): TenantUser
     {
+        app(SeedTenantRolesAction::class)->execute($tenant);
+        $roleCode = $role === 'OWNER' ? 'OWNER' : 'CONSULTANT';
+        $companyRole = $tenant->roles()->where('code', $roleCode)->firstOrFail();
+
         return TenantUser::query()->create([
+            'tenant_role_id' => $companyRole->id,
             'tenant_id' => $tenant->id,
             'user_id' => User::factory()->create()->id,
             'role' => $role,
