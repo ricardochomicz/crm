@@ -422,6 +422,12 @@ class OpportunityAction
             $opportunity = Opportunity::query()->where('tenant_id', $tenant->id)->whereKey($event->id)->lockForUpdate()->firstOrFail();
             abort_unless($opportunity->tenant_user_id === $actor->id || in_array($actor->role, [TenantUserRole::Owner, TenantUserRole::Manager], true), 403);
             abort_unless($opportunity->status === 'open', 422, 'Somente oportunidades abertas podem ser editadas.');
+            // Ownership is checked against the current portfolio, not the original
+            // opportunity owner. This also prevents changing client_id to a
+            // customer in another consultant's portfolio.
+            app(AssertClientPortfolioOwnershipAction::class)->execute(
+                $tenant->id, $data['client_id'] ?? $opportunity->client_id, $opportunity->tenant_user_id
+            );
             $order = $opportunity->commercialOrder()->lockForUpdate()->first();
 
             if ($order) {
