@@ -13,6 +13,7 @@ use App\Http\Controllers\Client\ClientDocumentController;
 use App\Http\Controllers\Client\ClientOperatorClassificationController;
 use App\Http\Controllers\Client\ClientPortfolioRedistributionController;
 use App\Http\Controllers\Client\ClientTransferController;
+use App\Http\Controllers\Client\OpportunityOwnershipTransferHistoryController;
 use App\Http\Controllers\Client\ConsolidateClientOrderController;
 use App\Http\Controllers\Client\ContractPortfolioController;
 use App\Http\Controllers\Client\HistoricalOrderRenewalController;
@@ -295,6 +296,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::post('/clients/portfolio-redistributions', [ClientPortfolioRedistributionController::class, 'store']);
                 Route::get('/clients/transfer-lookup', [ClientTransferController::class, 'lookup']);
                 Route::get('/clients/transfers', [ClientTransferController::class, 'index']);
+                Route::get('/clients/opportunity-transfer-history', OpportunityOwnershipTransferHistoryController::class);
                 Route::get('/clients/options', [ClientController::class, 'options']);
                 Route::get('/client-portfolio', ContractPortfolioController::class);
                 Route::get('/client-portfolio/consolidated', [ContractPortfolioController::class, 'consolidated']);
