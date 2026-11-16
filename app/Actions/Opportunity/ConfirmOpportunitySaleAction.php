@@ -3,6 +3,7 @@
 namespace App\Actions\Opportunity;
 
 use App\Actions\Commission\CaptureOrderCommissionsAction;
+use App\Actions\Client\AssertClientPortfolioOwnershipAction;
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
 use App\Enums\TenantUserRole;
 use App\Models\CommercialOrder;
