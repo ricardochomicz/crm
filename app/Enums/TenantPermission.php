@@ -91,6 +91,7 @@ enum TenantPermission: string
             ['key' => self::CreateProducts->value, 'group' => 'Produtos', 'label' => 'Cadastrar produtos', 'requires' => ['products.view']],
             ['key' => self::UpdateProducts->value, 'group' => 'Produtos', 'label' => 'Editar produtos', 'requires' => ['products.view']],
             ['key' => self::ManagePromotions->value, 'group' => 'Produtos', 'label' => 'Gerenciar promoções', 'requires' => ['products.view']],
+            ['key' => self::ManageProducts->value, 'group' => 'Produtos', 'label' => 'Gerenciar catálogo de produtos', 'requires' => ['products.view']],
             ['key' => self::ManageUnits->value, 'group' => 'Empresa', 'label' => 'Gerenciar matriz, filiais e vínculos nas unidades', 'requires' => []],
             ['key' => self::UpdateCompany->value, 'group' => 'Empresa', 'label' => 'Editar dados da empresa', 'requires' => []],
             ['key' => self::ViewMembers->value, 'group' => 'Membros', 'label' => 'Visualizar membros', 'requires' => []],
