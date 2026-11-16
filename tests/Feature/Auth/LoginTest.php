@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class LoginTest extends TestCase
@@ -108,8 +109,17 @@ class LoginTest extends TestCase
         ];
 
         for ($attempt = 0; $attempt < 5; $attempt++) {
-            $this->postJson('/api/v1/auth/login', $credentials)
-                ->assertUnprocessable();
+            $response = $this->postJson('/api/v1/auth/login', $credentials);
+            $this->assertSame(422, $response->status(), sprintf(
+                'Tentativa %d/5: HTTP %d; IP=%s; limite-IP=%d; limite-conta=%d; Retry-After=%s; cache.limiter=%s',
+                $attempt + 1,
+                $response->status(),
+                $this->app['request']->ip(),
+                RateLimiter::attempts('login:login-ip:' . $this->app['request']->ip()),
+                RateLimiter::attempts('login:login-account:' . hash('sha256', 'inexistente@example.test|' . $this->app['request']->ip())),
+                $response->headers->get('Retry-After', 'ausente'),
+                (string) config('cache.limiter', 'null'),
+            ));
         }
 
         $this->postJson('/api/v1/auth/login', $credentials)
@@ -130,10 +140,18 @@ class LoginTest extends TestCase
         $this->freezeTime();
 
         for ($attempt = 0; $attempt < 30; $attempt++) {
-            $this->postJson('/api/v1/auth/login', [
+            $response = $this->postJson('/api/v1/auth/login', [
                 'email' => "usuario{$attempt}@example.test",
                 'password' => 'senha-incorreta',
-            ])->assertUnprocessable();
+            ]);
+            $this->assertSame(422, $response->status(), sprintf(
+                'Tentativa IP %d/30: HTTP %d; IP=%s; Retry-After=%s; cache.limiter=%s',
+                $attempt + 1,
+                $response->status(),
+                $this->app['request']->ip(),
+                $response->headers->get('Retry-After', 'ausente'),
+                (string) config('cache.limiter', 'null'),
+            ));
         }
 
         $this->postJson('/api/v1/auth/login', [
