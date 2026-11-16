@@ -57,6 +57,40 @@ class ClientPortfolioOwnershipTest extends TestCase
             ->execute($tenant->id, $client->id, $seller->id));
     }
 
+    public function test_transfer_revokes_old_owner_and_authorizes_new_owner(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $previous = $this->member($tenant);
+        $newOwner = $this->member($tenant);
+        $client = Client::query()->create([
+            'tenant_id' => $tenant->id, 'person_type' => 'PJ',
+            'document' => '12345678000195', 'company_name' => 'Cliente transferido',
+        ]);
+        $assignment = ClientSeller::query()->create([
+            'tenant_id' => $tenant->id, 'client_id' => $client->id,
+            'tenant_user_id' => $previous->id, 'assigned_by' => $previous->user_id,
+            'started_at' => now()->subDay(),
+        ]);
+        $check = app(AssertClientPortfolioOwnershipAction::class);
+        DB::transaction(function () use ($assignment, $tenant, $client, $newOwner): void {
+            $assignment->update(['ended_at' => now()]);
+            ClientSeller::query()->create([
+                'tenant_id' => $tenant->id, 'client_id' => $client->id,
+                'tenant_user_id' => $newOwner->id, 'assigned_by' => $newOwner->user_id,
+                'started_at' => now(),
+            ]);
+        });
+
+        DB::transaction(fn () => $check->execute($tenant->id, $client->id, $newOwner->id));
+
+        try {
+            DB::transaction(fn () => $check->execute($tenant->id, $client->id, $previous->id));
+            self::fail('O antigo consultor não pode vender após a transferência.');
+        } catch (ValidationException $exception) {
+            self::assertArrayHasKey('client_id', $exception->errors());
+        }
+    }
+
     private function member(Tenant $tenant): TenantUser
     {
         return TenantUser::query()->create([
