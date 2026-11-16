@@ -91,8 +91,8 @@ class OpportunityForecastAuditTest extends TestCase
             'tenant_id' => $opportunity->tenant_id,
             'opportunity_id' => $opportunity->id,
             'tenant_user_id' => $actor->id,
-            'previous_date' => '2026-11-10',
-            'new_date' => '2026-11-20',
+            'previous_date' => '2026-11-10 00:00:00',
+            'new_date' => '2026-11-20 00:00:00',
             'reason' => 'Cliente solicitou mais prazo.',
         ]);
         $this->assertDatabaseHas('comments', [
