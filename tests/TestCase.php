@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
@@ -24,6 +25,13 @@ abstract class TestCase extends BaseTestCase
                 'Testes bloqueados: a conexão de banco deve ser sqlite em memória, sem DB_URL. '
                 . 'Confira a configuração efetiva do ambiente de testes.'
             );
+        }
+
+        // Each test must start with a fresh in-memory rate limiter. Keep
+        // throttle middleware enabled so dedicated 429 tests still exercise
+        // the real production limits within their own test.
+        if (config('cache.default') === 'array') {
+            Cache::store('array')->flush();
         }
     }
 }
