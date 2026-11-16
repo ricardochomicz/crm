@@ -89,7 +89,6 @@ class RedistributeClientPortfolioAction
                 ->where('tenant_user_id', $source->id)
                 ->whereNull('ended_at')
                 ->orderBy('client_id')
-                ->lockForUpdate()
                 ->get();
 
             if ($assignments->isEmpty()) {
