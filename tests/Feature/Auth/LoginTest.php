@@ -98,6 +98,8 @@ class LoginTest extends TestCase
 
     public function test_blocks_sixth_attempt_for_same_email_and_ip(): void
     {
+        // Keep this limiter scenario independent of other tests in the suite.
+        $this->withServerVariables(['REMOTE_ADDR' => '198.18.0.10']);
         $this->freezeTime();
 
         $credentials = [
@@ -124,6 +126,7 @@ class LoginTest extends TestCase
 
     public function test_blocks_ip_after_thirty_attempts_with_different_emails(): void
     {
+        $this->withServerVariables(['REMOTE_ADDR' => '198.18.0.11']);
         $this->freezeTime();
 
         for ($attempt = 0; $attempt < 30; $attempt++) {
