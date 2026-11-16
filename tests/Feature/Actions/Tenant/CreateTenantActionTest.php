@@ -38,6 +38,7 @@ class CreateTenantActionTest extends TestCase
             $owner,
             $plan->id,
             $this->tenantData(),
+            [],
         );
 
         $tenant->refresh();
@@ -96,6 +97,7 @@ class CreateTenantActionTest extends TestCase
                 $owner,
                 $plan->id,
                 $this->tenantData(),
+            [],
             );
 
             $this->fail('Era esperado rejeitar o plano inativo.');
@@ -120,6 +122,7 @@ class CreateTenantActionTest extends TestCase
                 $owner,
                 (string) Str::uuid(),
                 $this->tenantData(),
+            [],
             );
 
             $this->fail('Era esperado rejeitar o plano inexistente.');
@@ -151,6 +154,7 @@ class CreateTenantActionTest extends TestCase
                     $owner,
                     $plan->id,
                     $this->tenantData(),
+            [],
                 );
 
                 $this->fail('Era esperado interromper a criação da assinatura.');
