@@ -4,6 +4,7 @@ namespace App\Actions\Client;
 
 use App\Enums\TenantUserRole;
 use App\Enums\TenantUserStatus;
+use App\Models\Client;
 use App\Models\ClientSeller;
 use App\Models\Tenant;
 use App\Models\TenantUser;
@@ -170,8 +171,43 @@ class RedistributeClientPortfolioAction
                 $loads[$destinationId] = (int) ($loads[$destinationId] ?? 0) + 1;
             }
 
-            // Revalida todas as carteiras antes de iniciar qualquer alteração.
+            // Lock each client in deterministic order. Individual transfers and
+            // opportunity writes lock the client before its active assignment.
+            // Re-read the active rows after acquiring those locks to detect a
+            // transfer that happened during the redistribution preview.
             $clientIds = $assignments->pluck('client_id');
+            $lockedClientIds = Client::query()
+                ->where('tenant_id', $tenant->id)
+                ->whereIn('id', $clientIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->pluck('id');
+
+            if ($lockedClientIds->count() !== $clientIds->count()) {
+                throw ValidationException::withMessages([
+                    'client_ids' => 'A carteira mudou durante a redistribuição. Atualize e tente novamente.',
+                ]);
+            }
+
+            $currentAssignments = ClientSeller::query()
+                ->where('tenant_id', $tenant->id)
+                ->whereIn('client_id', $clientIds)
+                ->whereNull('ended_at')
+                ->orderBy('client_id')
+                ->lockForUpdate()
+                ->get();
+
+            if ($currentAssignments->count() !== $assignments->count()
+                || $currentAssignments->contains(fn (ClientSeller $item) =>
+                    $item->tenant_user_id !== $source->id
+                    || ! $assignments->contains(fn (ClientSeller $original) =>
+                        $original->id === $item->id && $original->client_id === $item->client_id))) {
+                throw ValidationException::withMessages([
+                    'client_ids' => 'A titularidade da carteira foi alterada. Atualize e revise novamente.',
+                ]);
+            }
+
+            // Revalida todas as carteiras antes de iniciar qualquer alteração.
             $activeCounts = ClientSeller::query()
                 ->where('tenant_id', $tenant->id)
                 ->whereIn('client_id', $clientIds)
