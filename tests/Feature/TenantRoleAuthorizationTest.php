@@ -261,7 +261,7 @@ class TenantRoleAuthorizationTest extends TestCase
         $this->getJson("/api/v1/tenants/{$tenant->id}")->assertOk()
             ->assertJsonPath('data.access.tenant_role_id', $actor->tenant_role_id)
             ->assertJsonPath('data.access.role_name', 'Gerente')
-            ->assertJsonPath('data.access.assignable_roles', ['CONSULTANT', 'ASSISTANT']);
+            ->assertJsonPath('data.access.assignable_roles', ['ASSISTANT']);
     }
 
     public function test_resend_rechecks_the_invitation_custom_role_permissions(): void
