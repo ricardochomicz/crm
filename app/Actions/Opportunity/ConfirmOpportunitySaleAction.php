@@ -37,6 +37,12 @@ class ConfirmOpportunitySaleAction
                 403
             );
 
+            // A transferred client cannot be sold from an opportunity owned
+            // by the previous consultant, even if that opportunity remains open.
+            app(AssertClientPortfolioOwnershipAction::class)->execute(
+                $tenant->id, $opportunity->client_id, $opportunity->tenant_user_id
+            );
+
             if ($opportunity->status !== 'open') {
                 throw ValidationException::withMessages(['opportunity' => 'Somente oportunidades abertas podem ser convertidas.']);
             }
