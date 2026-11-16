@@ -10,6 +10,7 @@ use App\Models\TenantRole;
 use App\Models\TenantUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
@@ -17,6 +18,15 @@ use Tests\TestCase;
 class TenantRoleAuthorizationTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // These tests exercise tenant authorization, not request quotas.
+        // Dedicated throttle tests still run the production middleware.
+        $this->withoutMiddleware(ThrottleRequests::class);
+    }
 
     private function company(): Tenant
     {
