@@ -141,10 +141,10 @@ class TenantUnitTest extends TestCase
         }
 
         $url = "/api/v1/tenants/{$tenant->id}/units/{$unit->id}/assignments?kind=members&mode=linked";
-        $this->getJson($url)->assertOk()->assertJsonCount(20, 'data')->assertJsonPath('total', 25)->assertJsonPath('last_page', 2);
+        $this->getJson($url)->assertOk()->assertJsonCount(20, 'data')->assertJsonPath('meta.total', 25)->assertJsonPath('meta.last_page', 2);
         $this->getJson($url.'&page=2')->assertOk()->assertJsonCount(5, 'data');
-        $this->getJson($url.'&q=pessoa24%40example.com')->assertOk()->assertJsonPath('total', 1)->assertJsonPath('data.0.name', 'Pessoa 24');
-        $this->getJson(str_replace('mode=linked', 'mode=available', $url))->assertOk()->assertJsonPath('total', 0);
+        $this->getJson($url.'&q=pessoa24%40example.com')->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'Pessoa 24');
+        $this->getJson(str_replace('mode=linked', 'mode=available', $url))->assertOk()->assertJsonPath('meta.total', 0);
     }
 
     public function test_incremental_changes_preserve_other_members_and_other_units(): void
@@ -188,7 +188,7 @@ class TenantUnitTest extends TestCase
         $second = Team::factory()->create(['name' => 'Suporte', 'tenant_id' => $tenant->id, 'tenant_unit_id' => $headquarters->id]);
         $url = "/api/v1/tenants/{$tenant->id}/units/{$branch->id}/assignments";
 
-        $this->getJson($url.'?kind=teams&mode=available&q=Vendas')->assertOk()->assertJsonPath('total', 1)->assertJsonPath('data.0.unit_name', 'Matriz');
+        $this->getJson($url.'?kind=teams&mode=available&q=Vendas')->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.unit_name', 'Matriz');
         $this->patchJson($url, ['kind' => 'teams', 'operation' => 'add', 'ids' => [$first->id]])->assertNoContent();
         $this->assertDatabaseHas('teams', ['id' => $first->id, 'tenant_unit_id' => $branch->id]);
         $this->assertDatabaseHas('teams', ['id' => $second->id, 'tenant_unit_id' => $headquarters->id]);
