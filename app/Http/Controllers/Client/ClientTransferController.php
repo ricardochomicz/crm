@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Actions\Client\EvaluateClientTransferAction;
-use App\Actions\Client\EnsureClientPortfolioTransferHasNoOpenOpportunitiesAction;
+use App\Actions\Client\TransferOpenClientOpportunitiesAction;
 use App\Actions\Client\AuthorizeClientTransferReviewAction;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
@@ -144,10 +144,13 @@ class ClientTransferController extends Controller
 
             if ($data['decision'] === 'APPROVED') {
                 $reviewPolicy->execute($client, $reviewer);
-                app(EnsureClientPortfolioTransferHasNoOpenOpportunitiesAction::class)
-                    ->execute($tenant->id, [$client->id]);
                 $destination = TenantUser::query()->where('tenant_id', $tenant->id)
                     ->where('status', 'ACTIVE')->findOrFail($transfer->to_tenant_user_id);
+
+                app(TransferOpenClientOpportunitiesAction::class)->execute(
+                    $tenant->id, $client->id, $owner->tenant_user_id, $destination->id,
+                    $reviewer->user_id, 'client_transfer', $transfer->id, $data['review_note']
+                );
 
                 $owner->update(['ended_at' => now(), 'reason' => 'Transferência autorizada: ' . $transfer->id]);
                 ClientSeller::query()->create([
