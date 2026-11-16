@@ -236,9 +236,10 @@ class RedistributeClientPortfolioAction
                 'updated_at' => $now,
             ]);
 
+            $transferredOpportunities = 0;
             foreach ($assignments as $assignment) {
                 $destinationId = $distribution[$assignment->client_id];
-                app(TransferOpenClientOpportunitiesAction::class)->execute(
+                $transferredOpportunities += app(TransferOpenClientOpportunitiesAction::class)->execute(
                     $tenant->id, $assignment->client_id, $source->id, $destinationId,
                     $userId, 'portfolio_redistribution', $batchId, $data['reason']
                 );
@@ -266,7 +267,11 @@ class RedistributeClientPortfolioAction
                 ]);
             }
 
-            return ['id' => $batchId, 'client_count' => $assignments->count()];
+            return [
+                'id' => $batchId,
+                'client_count' => $assignments->count(),
+                'transferred_opportunities_count' => $transferredOpportunities,
+            ];
         }, 3);
     }
 }
