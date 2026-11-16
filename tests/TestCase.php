@@ -33,7 +33,9 @@ abstract class TestCase extends BaseTestCase
         // test-only limiter onto the isolated array store even when a cached
         // application configuration specifies another limiter store.
         config(['cache.limiter' => 'array']);
-        $this->app->forgetInstance('limiter');
+        // Laravel binds the middleware rate limiter as cache.rate_limiter.
+        // Reset that singleton so it picks up the isolated array store.
+        $this->app->forgetInstance('cache.rate_limiter');
 
         // Isolate request-based throttling across tests without bypassing it.
         // Every request within a single test still shares the same IP, so
