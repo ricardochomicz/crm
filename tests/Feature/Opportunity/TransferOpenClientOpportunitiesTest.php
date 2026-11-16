@@ -61,6 +61,49 @@ class TransferOpenClientOpportunitiesTest extends TestCase
         $this->assertDatabaseCount('opportunity_ownership_transfers', 0);
     }
 
+    public function test_transfer_is_rolled_back_when_surrounding_transaction_fails(): void
+    {
+        [$tenant, $client, $old, $new] = $this->scenario();
+        $open = $this->opportunity($tenant, $client, $old, 'open');
+
+        try {
+            DB::transaction(function () use ($tenant, $client, $old, $new): void {
+                app(TransferOpenClientOpportunitiesAction::class)->execute(
+                    $tenant->id, $client->id, $old->id, $new->id, $new->user_id,
+                    'portfolio_redistribution', (string) Str::uuid(), 'Teste de rollback'
+                );
+                throw new \\RuntimeException('Falha simulada após transferência.');
+            });
+            self::fail('A transação deveria falhar.');
+        } catch (\\RuntimeException $exception) {
+            self::assertSame('Falha simulada após transferência.', $exception->getMessage());
+        }
+
+        self::assertSame($old->id, $open->fresh()->tenant_user_id);
+        $this->assertDatabaseCount('opportunity_ownership_transfers', 0);
+    }
+
+    public function test_transfer_does_not_touch_another_tenant(): void
+    {
+        [$tenant, $client, $old, $new] = $this->scenario();
+        $foreignTenant = Tenant::factory()->create();
+        $foreignClient = Client::query()->create([
+            'tenant_id' => $foreignTenant->id, 'person_type' => 'PJ',
+            'document' => '12345678000196', 'company_name' => 'Cliente externo',
+        ]);
+        $foreignOwner = $this->member($foreignTenant);
+        $foreignOpportunity = $this->opportunity($foreignTenant, $foreignClient, $foreignOwner, 'open');
+
+        $count = DB::transaction(fn () => app(TransferOpenClientOpportunitiesAction::class)->execute(
+            $tenant->id, $client->id, $old->id, $new->id, $new->user_id,
+            'client_transfer', (string) Str::uuid(), 'Transferência restrita'
+        ));
+
+        self::assertSame(0, $count);
+        self::assertSame($foreignOwner->id, $foreignOpportunity->fresh()->tenant_user_id);
+        $this->assertDatabaseCount('opportunity_ownership_transfers', 0);
+    }
+
     private function scenario(): array
     {
         $tenant = Tenant::factory()->create();
