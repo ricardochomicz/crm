@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Actions\Client\EvaluateClientTransferAction;
+use App\Actions\Client\AuthorizeClientTransferReviewAction;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ClientSeller;
@@ -112,7 +113,7 @@ class ClientTransferController extends Controller
         ])]);
     }
 
-    public function review(Request $request, string $tenantId, string $transferId, EvaluateClientTransferAction $eligibility): JsonResponse
+    public function review(Request $request, string $tenantId, string $transferId, AuthorizeClientTransferReviewAction $reviewPolicy): JsonResponse
     {
         $tenant = $request->attributes->get('active_tenant');
         $reviewer = $this->member($request, $tenant->id);
@@ -121,7 +122,7 @@ class ClientTransferController extends Controller
             'review_note' => ['required', 'string', 'min:10', 'max:1000'],
         ]);
 
-        DB::transaction(function () use ($tenant, $reviewer, $transferId, $data, $eligibility): void {
+        DB::transaction(function () use ($tenant, $reviewer, $transferId, $data, $reviewPolicy): void {
             $transfer = ClientTransferRequest::query()->where('tenant_id', $tenant->id)
                 ->lockForUpdate()->findOrFail($transferId);
             abort_unless($transfer->status === 'PENDING', 409);
@@ -141,6 +142,7 @@ class ClientTransferController extends Controller
             abort_unless($owner->tenant_user_id === $transfer->from_tenant_user_id, 409);
 
             if ($data['decision'] === 'APPROVED') {
+                $reviewPolicy->execute($client, $reviewer);
                 $destination = TenantUser::query()->where('tenant_id', $tenant->id)
                     ->where('status', 'ACTIVE')->findOrFail($transfer->to_tenant_user_id);
 
