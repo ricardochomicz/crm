@@ -8,6 +8,8 @@ use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
 {
+    private static int $testIpSequence = 0;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,6 +28,14 @@ abstract class TestCase extends BaseTestCase
                 . 'Confira a configuração efetiva do ambiente de testes.'
             );
         }
+
+        // Isolate request-based throttling across tests without bypassing it.
+        // Every request within a single test still shares the same IP, so
+        // per-IP and per-account limit tests exercise the real middleware.
+        $sequence = self::$testIpSequence++;
+        $this->withServerVariables([
+            'REMOTE_ADDR' => sprintf('10.200.%d.%d', intdiv($sequence, 250), ($sequence % 250) + 1),
+        ]);
 
         // Each test must start with a fresh in-memory rate limiter. Keep
         // throttle middleware enabled so dedicated 429 tests still exercise
