@@ -40,6 +40,7 @@ class OpportunityForecastAuditTest extends TestCase
             'tenant_id' => $tenant->id,
             'person_type' => 'PJ',
             'company_name' => 'Cliente de auditoria',
+            'document' => '12345678000195',
         ]);
         $opportunity = Opportunity::query()->create([
             'tenant_id' => $tenant->id,
