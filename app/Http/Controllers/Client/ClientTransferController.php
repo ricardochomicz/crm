@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Actions\Client\EvaluateClientTransferAction;
+use App\Actions\Client\EnsureClientPortfolioTransferHasNoOpenOpportunitiesAction;
 use App\Actions\Client\AuthorizeClientTransferReviewAction;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
@@ -143,6 +144,8 @@ class ClientTransferController extends Controller
 
             if ($data['decision'] === 'APPROVED') {
                 $reviewPolicy->execute($client, $reviewer);
+                app(EnsureClientPortfolioTransferHasNoOpenOpportunitiesAction::class)
+                    ->execute($tenant->id, [$client->id]);
                 $destination = TenantUser::query()->where('tenant_id', $tenant->id)
                     ->where('status', 'ACTIVE')->findOrFail($transfer->to_tenant_user_id);
 
