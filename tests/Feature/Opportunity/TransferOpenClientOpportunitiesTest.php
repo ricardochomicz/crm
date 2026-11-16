@@ -72,10 +72,10 @@ class TransferOpenClientOpportunitiesTest extends TestCase
                     $tenant->id, $client->id, $old->id, $new->id, $new->user_id,
                     'portfolio_redistribution', (string) Str::uuid(), 'Teste de rollback'
                 );
-                throw new \\RuntimeException('Falha simulada após transferência.');
+                throw new \RuntimeException('Falha simulada após transferência.');
             });
             self::fail('A transação deveria falhar.');
-        } catch (\\RuntimeException $exception) {
+        } catch (\RuntimeException $exception) {
             self::assertSame('Falha simulada após transferência.', $exception->getMessage());
         }
 
