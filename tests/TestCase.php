@@ -29,6 +29,12 @@ abstract class TestCase extends BaseTestCase
             );
         }
 
+        // ThrottleMiddleware uses the resolved limiter cache store. Force the
+        // test-only limiter onto the isolated array store even when a cached
+        // application configuration specifies another limiter store.
+        config(['cache.limiter' => 'array']);
+        $this->app->forgetInstance('limiter');
+
         // Isolate request-based throttling across tests without bypassing it.
         // Every request within a single test still shares the same IP, so
         // per-IP and per-account limit tests exercise the real middleware.
@@ -40,8 +46,6 @@ abstract class TestCase extends BaseTestCase
         // Each test must start with a fresh in-memory rate limiter. Keep
         // throttle middleware enabled so dedicated 429 tests still exercise
         // the real production limits within their own test.
-        if (config('cache.default') === 'array') {
-            Cache::store('array')->flush();
-        }
+        Cache::store('array')->flush();
     }
 }
