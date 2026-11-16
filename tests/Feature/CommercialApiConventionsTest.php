@@ -123,7 +123,7 @@ class CommercialApiConventionsTest extends TestCase
         $operator = OperatorFactory::new()->create();
         $tenant->operators()->attach($operator);
         $payload = ['operator_id' => $operator->id, 'order_type' => 'NEW', 'commercial_role' => 'PARTNER',
-            'metric' => 'QUANTITY', 'starts_on' => '2026-11-01', 'is_active' => true,
+            'metric' => 'QUANTITY', 'target_scope' => 'COMPANY', 'starts_on' => '2026-11-01', 'is_active' => true,
             'tiers' => [['minimum' => 0, 'percentage' => 5], ['minimum' => 10, 'percentage' => 8]]];
 
         $this->postJson("/api/v1/tenants/{$tenant->id}/commercial-goals", $payload)
