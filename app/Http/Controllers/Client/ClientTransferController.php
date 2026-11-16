@@ -123,7 +123,7 @@ class ClientTransferController extends Controller
             'review_note' => ['required', 'string', 'min:10', 'max:1000'],
         ]);
 
-        DB::transaction(function () use ($tenant, $reviewer, $transferId, $data, $reviewPolicy): void {
+        $transferredOpportunities = DB::transaction(function () use ($tenant, $reviewer, $transferId, $data, $reviewPolicy): int {
             $transfer = ClientTransferRequest::query()->where('tenant_id', $tenant->id)
                 ->lockForUpdate()->findOrFail($transferId);
             abort_unless($transfer->status === 'PENDING', 409);
@@ -142,12 +142,13 @@ class ClientTransferController extends Controller
                 ->lockForUpdate()->firstOrFail();
             abort_unless($owner->tenant_user_id === $transfer->from_tenant_user_id, 409);
 
+            $moved = 0;
             if ($data['decision'] === 'APPROVED') {
                 $reviewPolicy->execute($client, $reviewer);
                 $destination = TenantUser::query()->where('tenant_id', $tenant->id)
                     ->where('status', 'ACTIVE')->findOrFail($transfer->to_tenant_user_id);
 
-                app(TransferOpenClientOpportunitiesAction::class)->execute(
+                $moved = app(TransferOpenClientOpportunitiesAction::class)->execute(
                     $tenant->id, $client->id, $owner->tenant_user_id, $destination->id,
                     $reviewer->user_id, 'client_transfer', $transfer->id, $data['review_note']
                 );
@@ -169,8 +170,13 @@ class ClientTransferController extends Controller
                 'review_note' => $data['review_note'] ?? null,
                 'reviewed_at' => now(),
             ]);
+
+            return $moved;
         });
 
-        return response()->json(['data' => ['status' => $data['decision']]]);
+        return response()->json(['data' => [
+            'status' => $data['decision'],
+            'transferred_opportunities_count' => $transferredOpportunities,
+        ]]);
     }
 }
