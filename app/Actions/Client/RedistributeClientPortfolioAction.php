@@ -206,6 +206,10 @@ class RedistributeClientPortfolioAction
                 ]);
             }
 
+            // Do not orphan active opportunities owned by the previous consultant.
+            app(EnsureClientPortfolioTransferHasNoOpenOpportunitiesAction::class)
+                ->execute($tenant->id, $clientIds->all());
+
             // Revalida todas as carteiras antes de iniciar qualquer alteração.
             $activeCounts = ClientSeller::query()
                 ->where('tenant_id', $tenant->id)
