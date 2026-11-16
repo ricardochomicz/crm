@@ -26,7 +26,7 @@ return new class extends Migration
                 'CREATE UNIQUE INDEX client_sellers_one_active_idx ON client_sellers (tenant_id, client_id) WHERE ended_at IS NULL'
             ),
             'mysql' => DB::statement(
-                'ALTER TABLE client_sellers ADD COLUMN active_client_id CHAR(36) GENERATED ALWAYS AS (CASE WHEN ended_at IS NULL THEN client_id ELSE NULL END) STORED, ADD UNIQUE INDEX client_sellers_one_active_idx (tenant_id, active_client_id)'
+                'ALTER TABLE client_sellers ADD COLUMN active_assignment_marker TINYINT GENERATED ALWAYS AS (CASE WHEN ended_at IS NULL THEN 1 ELSE NULL END) VIRTUAL, ADD UNIQUE INDEX client_sellers_one_active_idx (tenant_id, client_id, active_assignment_marker)'
             ),
             default => throw new RuntimeException('Driver não suportado para unicidade da carteira ativa.'),
         };
@@ -35,7 +35,7 @@ return new class extends Migration
     public function down(): void
     {
         if (DB::getDriverName() === 'mysql') {
-            DB::statement('ALTER TABLE client_sellers DROP INDEX client_sellers_one_active_idx, DROP COLUMN active_client_id');
+            DB::statement('ALTER TABLE client_sellers DROP INDEX client_sellers_one_active_idx, DROP COLUMN active_assignment_marker');
             return;
         }
 
