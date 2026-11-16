@@ -23,7 +23,7 @@ class AccountIdentityTest extends TestCase
         $user = User::factory()->create(['is_platform_admin' => true]);
         $this->actingAs($user)->getJson('/api/v1/me')
             ->assertOk()->assertJsonPath('data.is_platform_admin', true);
-        $this->getJson('/api/v1/admin/tenants')->assertOk()->assertJsonPath('total', 0);
+        $this->getJson('/api/v1/admin/tenants')->assertOk()->assertJsonPath('meta.total', 0);
     }
 
     public function test_guest_cannot_read_account_identity(): void
