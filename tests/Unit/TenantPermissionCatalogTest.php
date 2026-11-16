@@ -12,7 +12,10 @@ class TenantPermissionCatalogTest extends TestCase
     {
         $keys = array_column(TenantPermission::catalog(), 'key');
         self::assertCount(count(TenantPermission::keys()), $keys);
-        self::assertSameCanonicalizing(TenantPermission::keys(), $keys);
+        $expected = TenantPermission::keys();
+        sort($expected);
+        sort($keys);
+        self::assertSame($expected, $keys);
         self::assertCount(count(array_unique($keys)), $keys);
     }
 
