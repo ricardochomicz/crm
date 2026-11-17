@@ -10,7 +10,7 @@ return new class extends Migration {
         Schema::create('support_ticket_messages', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('support_ticket_id')->constrained('support_tickets')->cascadeOnDelete();
-            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->text('body');
             $table->timestamps();
             $table->index(['support_ticket_id', 'created_at']);
