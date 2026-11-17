@@ -53,7 +53,7 @@ class OpportunityOwnershipTransferHistoryController extends Controller
 
         $page = $query->orderByDesc('history.created_at')
             ->orderByDesc('history.id')
-            ->paginate($filters['per_page'] ?? 15);
+            ->paginate($filters['per_page'] ?? 15, ['*'], 'page', $filters['page'] ?? 1);
 
         return response()->json([
             'data' => $page->items(),
