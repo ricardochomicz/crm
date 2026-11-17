@@ -50,6 +50,11 @@ class PlatformSupportTicketController extends Controller
             ->latest()
             ->paginate(20);
 
+        $tickets->getCollection()->each(function (SupportTicket $ticket): void {
+            $ticket->setAttribute('has_unread_customer_message',
+                $ticket->admin_read_at === null || (bool) $ticket->has_unread_customer_message);
+        });
+
         return response()->json($tickets);
     }
 
