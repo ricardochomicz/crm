@@ -31,11 +31,13 @@ class PlatformSupportTicketController extends Controller
     {
         $filters = $request->validate([
             'status' => ['nullable', 'in:open,in_progress,waiting,closed'],
+            'priority' => ['nullable', 'in:low,normal,high,urgent'],
             'search' => ['nullable', 'string', 'max:160'],
         ]);
         $tickets = SupportTicket::query()
             ->with(['tenant:id,name', 'author:id,name,email'])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['priority'] ?? null, fn ($query, $priority) => $query->where('priority', $priority))
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(fn ($sub) => $sub->where('subject', 'like', '%'.$search.'%')
                     ->orWhere('id', $search));
