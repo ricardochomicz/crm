@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Support;
 
 use App\Http\Controllers\Controller;
+use App\Events\SupportTicketChanged;
 use App\Models\SupportTicket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,8 @@ class SupportTicketMessageController extends Controller
 
             return $message;
         });
+
+        SupportTicketChanged::dispatch($ticket->id, $ticket->tenant_id, (int) $ticket->user_id);
 
         return response()->json(['data' => $message->load('author:id,name')], 201);
     }
