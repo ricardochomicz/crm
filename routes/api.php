@@ -249,6 +249,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->group(function (): void {
                 Route::get('/support-tickets/{ticketId}/messages', [SupportTicketMessageController::class, 'index'])->whereUuid('ticketId');
                 Route::post('/support-tickets/{ticketId}/messages', [SupportTicketMessageController::class, 'store'])->whereUuid('ticketId')->middleware('throttle:20,1');
+                Route::get('/support-tickets/unread-count', [SupportTicketController::class, 'unreadCount']);
                 Route::get('/support-tickets', [SupportTicketController::class, 'index']);
                 Route::post('/support-tickets', [SupportTicketController::class, 'store'])->middleware('throttle:10,1');
                 Route::get('/onboarding', [TenantOnboardingController::class, 'show']);
