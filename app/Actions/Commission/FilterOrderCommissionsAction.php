@@ -3,6 +3,7 @@
 namespace App\Actions\Commission;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Actions\Commercial\ScopeVisibleCommercialOrdersAction;
 use App\Models\CommercialOrder;
 use App\Models\Tenant;
 use App\Models\User;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class FilterOrderCommissionsAction
 {
-    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+    public function __construct(private ResolveTenantPermissionsAction $permissions, private ScopeVisibleCommercialOrdersAction $visibility) {}
 
     public function findOrder(Tenant $tenant, User $user, string $orderId): CommercialOrder
     {
@@ -19,7 +20,7 @@ class FilterOrderCommissionsAction
             && $user->can('viewOrders', $tenant)
             && $user->can('viewCommissions', $tenant), 403);
 
-        return CommercialOrder::query()->where('tenant_id', $tenant->id)->findOrFail($orderId);
+        return $this->visibility->apply(CommercialOrder::query(), $tenant, $user)->findOrFail($orderId);
     }
 
     /** @param array{revision?: ?int, status?: ?string, per_page?: ?int, page?: ?int} $filters */
