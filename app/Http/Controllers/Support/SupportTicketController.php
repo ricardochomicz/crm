@@ -35,6 +35,7 @@ class SupportTicketController extends Controller
         $count = SupportTicket::query()
             ->where('tenant_id', $request->attributes->get('active_tenant')->id)
             ->where('user_id', $request->user()->id)
+            ->where('status', '!=', 'closed')
             ->whereHas('messages', function ($query) use ($request) {
                 $query->where('user_id', '!=', $request->user()->id)
                     ->where(function ($sub) {
