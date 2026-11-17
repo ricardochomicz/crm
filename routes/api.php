@@ -97,6 +97,7 @@ use App\Http\Controllers\Tenant\Units\UpdateTenantUnitController;
 use App\Http\Controllers\Timeline\TimelineController;
 use App\Http\Controllers\Search\GlobalSearchController;
 use App\Http\Controllers\Support\SupportTicketController;
+use App\Http\Controllers\Support\PlatformSupportTicketController;
 use App\Http\Controllers\Support\SupportTicketMessageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -185,6 +186,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->name('admin.')
             ->middleware('can:access-platform-admin')
             ->group(function (): void {
+                Route::get('/support-tickets', [PlatformSupportTicketController::class, 'index']);
+                Route::get('/support-tickets/{ticketId}', [PlatformSupportTicketController::class, 'show'])->whereUuid('ticketId');
+                Route::patch('/support-tickets/{ticketId}', [PlatformSupportTicketController::class, 'update'])->whereUuid('ticketId');
+                Route::post('/support-tickets/{ticketId}/messages', [PlatformSupportTicketController::class, 'reply'])->whereUuid('ticketId')->middleware('throttle:30,1');
                 Route::get('/me', function (Request $request): array {
                     $user = $request->user();
 
