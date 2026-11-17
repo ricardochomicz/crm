@@ -23,7 +23,7 @@ class SupportTicketMessageController extends Controller
     {
         $ticket = $this->ticket($request, $ticketId);
 
-        $messages = $ticket->messages()->with('author:id,name')->oldest()->get();
+        $messages = $ticket->messages()->with('author:id,name')->orderByDesc('created_at')->orderByDesc('id')->get();
         $ticket->forceFill(['customer_read_at' => now()])->save();
 
         return response()->json(['data' => $messages]);
