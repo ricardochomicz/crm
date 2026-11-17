@@ -26,5 +26,10 @@ class SupportTicket extends Model
         return $this->hasMany(SupportTicketMessage::class);
     }
 
+    protected function casts(): array
+    {
+        return ['admin_read_at' => 'datetime', 'customer_read_at' => 'datetime', 'has_unread_customer_message' => 'boolean'];
+    }
+
     protected $fillable = ['tenant_id', 'user_id', 'category', 'subject', 'description', 'status', 'priority'];
 }
