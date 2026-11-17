@@ -22,7 +22,10 @@ class SupportTicketMessageController extends Controller
     {
         $ticket = $this->ticket($request, $ticketId);
 
-        return response()->json(['data' => $ticket->messages()->with('author:id,name')->oldest()->get()]);
+        $messages = $ticket->messages()->with('author:id,name')->oldest()->get();
+        $ticket->forceFill(['customer_read_at' => now()])->save();
+
+        return response()->json(['data' => $messages]);
     }
 
     public function store(Request $request, string $tenantId, string $ticketId): JsonResponse
