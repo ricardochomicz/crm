@@ -37,6 +37,10 @@ class PlatformSupportTicketController extends Controller
         ]);
         $tickets = SupportTicket::query()
             ->with(['tenant:id,name', 'author:id,name,email'])
+            ->withExists(['messages as has_unread_customer_message' => fn ($query) => $query
+                ->whereColumn('support_ticket_messages.user_id', 'support_tickets.user_id')
+                ->where(fn ($sub) => $sub->whereNull('support_tickets.admin_read_at')
+                    ->orWhereColumn('support_ticket_messages.created_at', '>', 'support_tickets.admin_read_at'))])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['priority'] ?? null, fn ($query, $priority) => $query->where('priority', $priority))
             ->when($filters['search'] ?? null, function ($query, $search) {
@@ -53,6 +57,8 @@ class PlatformSupportTicketController extends Controller
     {
         $ticket = SupportTicket::with(['tenant:id,name', 'author:id,name,email', 'messages.author:id,name'])
             ->findOrFail($ticketId);
+
+        $ticket->forceFill(['admin_read_at' => now()])->save();
 
         return response()->json(['data' => $ticket]);
     }
