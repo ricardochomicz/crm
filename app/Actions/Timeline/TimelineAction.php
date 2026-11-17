@@ -2,6 +2,8 @@
 namespace App\Actions\Timeline;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Actions\Client\ScopeVisibleClientsAction;
+use App\Actions\Commercial\ScopeVisibleCommercialOrdersAction;
 use App\Enums\TenantPermission;
 use App\Enums\TenantUserRole;
 use App\Models\Attachment;
@@ -15,19 +17,28 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class TimelineAction {
-    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+    public function __construct(
+        private ResolveTenantPermissionsAction $permissions,
+        private ScopeVisibleClientsAction $clients,
+        private ScopeVisibleCommercialOrdersAction $orders,
+    ) {}
 
     public function authorize(Tenant $tenant, User $user, string $type, string $id, bool $write = false): void {
         $models = ['opportunity' => \App\Models\Opportunity::class, 'client' => \App\Models\Client::class, 'commercial_order' => \App\Models\CommercialOrder::class];
         abort_unless(isset($models[$type]), 404);
         $permission = match ($type) {
             'client' => $write ? TenantPermission::UpdateClients : TenantPermission::ViewClients,
+            'commercial_order' => $write ? TenantPermission::ManageOrders : TenantPermission::ViewOrders,
             default => $write ? TenantPermission::UpdateOpportunities : TenantPermission::ViewOpportunities,
         };
         abort_unless($this->permissions->allows($user, $tenant, $permission), 403);
         $member = $this->permissions->membership($user, $tenant);
         abort_unless($member, 403);
-        $subject = $models[$type]::query()->where('tenant_id', $tenant->id)->findOrFail($id);
+        $subject = match ($type) {
+            'client' => $this->clients->findOrFail($tenant->id, $user->id, $id),
+            'commercial_order' => $this->orders->apply(CommercialOrder::query(), $tenant, $user)->findOrFail($id),
+            default => $models[$type]::query()->where('tenant_id', $tenant->id)->findOrFail($id),
+        };
         if ($type === 'opportunity' && !in_array($member->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
             abort_unless($subject->tenant_user_id === $member->id, 403);
         }
