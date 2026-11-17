@@ -60,7 +60,7 @@ class PlatformSupportTicketController extends Controller
 
     public function show(string $ticketId): JsonResponse
     {
-        $ticket = SupportTicket::with(['tenant:id,name', 'author:id,name,email', 'messages.author:id,name'])
+        $ticket = SupportTicket::with(['tenant:id,name', 'author:id,name,email', 'messages' => fn ($query) => $query->with('author:id,name')->orderByDesc('created_at')->orderByDesc('id')])
             ->findOrFail($ticketId);
 
         $ticket->forceFill(['admin_read_at' => now()])->save();
