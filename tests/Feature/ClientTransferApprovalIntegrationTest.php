@@ -95,6 +95,39 @@ class ClientTransferApprovalIntegrationTest extends TestCase
         $this->review($tenant, $manager, $transfer, 'APPROVED');
     }
 
+    public function test_unrelated_consultant_cannot_approve_transfer(): void
+    {
+        [$tenant, $client, $source, , , $transfer] = $this->scenario();
+        $outsider = $this->member($tenant, 'CONSULTANT');
+
+        try {
+            $this->review($tenant, $outsider, $transfer, 'APPROVED');
+            self::fail('Um consultor sem supervisão não pode aprovar.');
+        } catch (HttpException $exception) {
+            self::assertSame(403, $exception->getStatusCode());
+        }
+
+        self::assertSame('PENDING', $transfer->fresh()->status);
+        self::assertSame($source->id, ClientSeller::query()->where('client_id', $client->id)
+            ->whereNull('ended_at')->sole()->tenant_user_id);
+        $this->assertDatabaseCount('opportunity_ownership_transfers', 0);
+    }
+
+    public function test_manager_cannot_review_request_from_another_tenant(): void
+    {
+        [$tenant, , , , $manager] = $this->scenario();
+        [, , , , , $foreignTransfer] = $this->scenario();
+
+        try {
+            $this->review($tenant, $manager, $foreignTransfer, 'APPROVED');
+            self::fail('A solicitação de outro tenant não deve ser encontrada.');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $exception) {
+            self::assertSame('PENDING', $foreignTransfer->fresh()->status);
+        }
+
+        $this->assertDatabaseCount('opportunity_ownership_transfers', 0);
+    }
+
     private function review(Tenant $tenant, TenantUser $reviewer, ClientTransferRequest $transfer, string $decision): \Illuminate\Http\JsonResponse
     {
         $request = Request::create('/api/v1/tenants/' . $tenant->id . '/clients/transfers/' . $transfer->id . '/review', 'POST', [
