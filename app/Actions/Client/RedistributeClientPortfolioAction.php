@@ -97,12 +97,19 @@ class RedistributeClientPortfolioAction
                 ]);
             }
 
-            $expectedIds = $assignments->pluck('client_id')->sort()->values()->all();
             $reviewedIds = collect($data['client_ids'])->sort()->values()->all();
-
-            if ($expectedIds !== $reviewedIds) {
+            $availableIds = $assignments->pluck('client_id')->all();
+            if (count($reviewedIds) !== count(array_unique($reviewedIds))
+                || count(array_diff($reviewedIds, $availableIds)) > 0) {
                 throw ValidationException::withMessages([
-                    'client_ids' => 'A carteira mudou desde a conferência. Atualize a lista e revise novamente.',
+                    'client_ids' => 'Um ou mais clientes não pertencem mais à carteira. Atualize a lista.',
+                ]);
+            }
+
+            $assignments = $assignments->whereIn('client_id', $reviewedIds)->values();
+            if ($assignments->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'client_ids' => 'Selecione pelo menos um cliente para redistribuir.',
                 ]);
             }
 
@@ -118,12 +125,12 @@ class RedistributeClientPortfolioAction
             $mode = $data['mode'];
 
             if ($mode === 'manual') {
-                $expected = $assignments->pluck('client_id')->sort()->values()->all();
+                $expected = $reviewedIds;
                 $provided = collect(array_keys($mapping))->sort()->values()->all();
 
                 if ($expected !== $provided) {
                     throw ValidationException::withMessages([
-                        'assignments' => 'Informe um destino para todos os clientes da carteira atual.',
+                        'assignments' => 'Informe um destino para todos os clientes selecionados.',
                     ]);
                 }
 
