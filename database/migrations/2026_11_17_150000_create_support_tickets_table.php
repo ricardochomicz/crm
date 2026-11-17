@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->string('subject', 160);
             $table->text('description');
             $table->string('status', 24)->default('open');
+            $table->string('priority', 16)->default('normal');
             $table->timestamps();
             $table->index(['tenant_id', 'user_id', 'created_at']);
         });
