@@ -186,6 +186,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->name('admin.')
             ->middleware('can:access-platform-admin')
             ->group(function (): void {
+                Route::get('/support-tickets/summary', [PlatformSupportTicketController::class, 'summary']);
                 Route::get('/support-tickets', [PlatformSupportTicketController::class, 'index']);
                 Route::get('/support-tickets/{ticketId}', [PlatformSupportTicketController::class, 'show'])->whereUuid('ticketId');
                 Route::patch('/support-tickets/{ticketId}', [PlatformSupportTicketController::class, 'update'])->whereUuid('ticketId');
