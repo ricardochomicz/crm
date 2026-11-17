@@ -98,6 +98,79 @@ class RedistributeClientPortfolioIntegrationTest extends TestCase
         }
     }
 
+    public function test_partial_redistribution_moves_only_selected_client(): void
+    {
+        [$tenant, $manager, $source, $destination, $clients] = $this->scenario(2);
+        $selectedOpen = $this->opportunity($tenant, $clients[0], $source, 'open');
+        $untouchedOpen = $this->opportunity($tenant, $clients[1], $source, 'open');
+
+        $result = app(RedistributeClientPortfolioAction::class)->execute(
+            $tenant, $manager->user_id, $this->payload($source, $destination, [$clients[0]])
+        );
+
+        self::assertSame(1, $result['client_count']);
+        self::assertSame(1, $result['transferred_opportunities_count']);
+        self::assertSame($destination->id, $selectedOpen->fresh()->tenant_user_id);
+        self::assertSame($source->id, $untouchedOpen->fresh()->tenant_user_id);
+        $this->assertDatabaseHas('client_sellers', [
+            'client_id' => $clients[0]->id, 'tenant_user_id' => $destination->id, 'ended_at' => null,
+        ]);
+        $this->assertDatabaseHas('client_sellers', [
+            'client_id' => $clients[1]->id, 'tenant_user_id' => $source->id, 'ended_at' => null,
+        ]);
+        self::assertSame(1, DB::table('client_portfolio_redistribution_items')
+            ->where('redistribution_id', $result['id'])->count());
+        self::assertSame(1, DB::table('opportunity_ownership_transfers')
+            ->where('source_id', $result['id'])->count());
+    }
+
+    public function test_manual_redistribution_accepts_only_selected_client_assignments(): void
+    {
+        [$tenant, $manager, $source, $destination, $clients] = $this->scenario(2);
+        $payload = $this->payload($source, $destination, [$clients[1]]);
+        $payload['mode'] = 'manual';
+        $payload['destination_ids'] = [];
+        $payload['assignments'] = [$clients[1]->id => $destination->id];
+
+        $result = app(RedistributeClientPortfolioAction::class)->execute(
+            $tenant, $manager->user_id, $payload
+        );
+
+        self::assertSame(1, $result['client_count']);
+        $this->assertDatabaseHas('client_sellers', [
+            'client_id' => $clients[0]->id, 'tenant_user_id' => $source->id, 'ended_at' => null,
+        ]);
+        $this->assertDatabaseHas('client_sellers', [
+            'client_id' => $clients[1]->id, 'tenant_user_id' => $destination->id, 'ended_at' => null,
+        ]);
+    }
+
+    public function test_partial_redistribution_rejects_client_not_owned_by_source(): void
+    {
+        [$tenant, $manager, $source, $destination, $clients] = $this->scenario(2);
+        $otherSource = $this->member($tenant, 'CONSULTANT');
+        ClientSeller::query()->where('client_id', $clients[1]->id)->whereNull('ended_at')->update(['ended_at' => now()]);
+        ClientSeller::query()->create([
+            'tenant_id' => $tenant->id, 'client_id' => $clients[1]->id,
+            'tenant_user_id' => $otherSource->id, 'assigned_by' => $manager->user_id,
+            'started_at' => now(),
+        ]);
+
+        try {
+            app(RedistributeClientPortfolioAction::class)->execute(
+                $tenant, $manager->user_id, $this->payload($source, $destination, [$clients[1]])
+            );
+            self::fail('Cliente de outra carteira não pode ser transferido.');
+        } catch (ValidationException $exception) {
+            self::assertArrayHasKey('client_ids', $exception->errors());
+        }
+
+        $this->assertDatabaseCount('client_portfolio_redistributions', 0);
+        $this->assertDatabaseHas('client_sellers', [
+            'client_id' => $clients[1]->id, 'tenant_user_id' => $otherSource->id, 'ended_at' => null,
+        ]);
+    }
+
     private function scenario(int $count): array
     {
         $tenant = Tenant::factory()->create();
