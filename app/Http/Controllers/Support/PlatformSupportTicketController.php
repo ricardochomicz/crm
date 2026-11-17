@@ -10,6 +10,23 @@ use Illuminate\Support\Facades\DB;
 
 class PlatformSupportTicketController extends Controller
 {
+    public function summary(): JsonResponse
+    {
+        $counts = SupportTicket::query()
+            ->selectRaw("SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open_count")
+            ->selectRaw("SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS in_progress_count")
+            ->selectRaw("SUM(CASE WHEN status = 'waiting' THEN 1 ELSE 0 END) AS waiting_count")
+            ->selectRaw("SUM(CASE WHEN status != 'closed' AND priority = 'urgent' THEN 1 ELSE 0 END) AS urgent_count")
+            ->first();
+
+        return response()->json(['data' => [
+            'open' => (int) ($counts->open_count ?? 0),
+            'in_progress' => (int) ($counts->in_progress_count ?? 0),
+            'waiting' => (int) ($counts->waiting_count ?? 0),
+            'urgent' => (int) ($counts->urgent_count ?? 0),
+        ]]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
