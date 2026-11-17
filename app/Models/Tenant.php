@@ -27,6 +27,7 @@ class Tenant extends Model
         return [
             'type' => TenantType::class,
             'status' => TenantStatus::class,
+            'onboarding_completed_at' => 'datetime',
 
         ];
     }
