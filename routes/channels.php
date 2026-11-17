@@ -27,3 +27,16 @@ Broadcast::channel('tenant.{tenantId}.commercial', function ($user, string $tena
         $user->can('viewTeamCalendar', $tenant)
     );
 });
+
+Broadcast::channel('platform.support', function ($user): bool {
+    return (bool) $user->is_platform_admin;
+});
+
+Broadcast::channel('tenant.{tenantId}.user.{userId}.support', function ($user, string $tenantId, string $userId): bool {
+    return (string) $user->id === $userId
+        && \App\Models\TenantUser::query()
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $user->id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+});
