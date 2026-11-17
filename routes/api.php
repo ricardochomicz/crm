@@ -97,6 +97,7 @@ use App\Http\Controllers\Tenant\Units\UpdateTenantUnitController;
 use App\Http\Controllers\Timeline\TimelineController;
 use App\Http\Controllers\Search\GlobalSearchController;
 use App\Http\Controllers\Support\SupportTicketController;
+use App\Http\Controllers\Support\SupportTicketMessageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -240,6 +241,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->whereUuid('tenantId')
             ->middleware('tenant.active')
             ->group(function (): void {
+                Route::get('/support-tickets/{ticketId}/messages', [SupportTicketMessageController::class, 'index'])->whereUuid('ticketId');
+                Route::post('/support-tickets/{ticketId}/messages', [SupportTicketMessageController::class, 'store'])->whereUuid('ticketId')->middleware('throttle:20,1');
                 Route::get('/support-tickets', [SupportTicketController::class, 'index']);
                 Route::post('/support-tickets', [SupportTicketController::class, 'store'])->middleware('throttle:10,1');
                 Route::get('/onboarding', [TenantOnboardingController::class, 'show']);
