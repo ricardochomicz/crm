@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Client;
 
 use App\Actions\Tenant\ResolveTenantPermissionsAction;
+use App\Actions\Client\ScopeVisibleClientsAction;
 use App\Enums\TenantPermission;
-use App\Enums\TenantUserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Tenant;
@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ClientDocumentController extends Controller
 {
-    public function __construct(private ResolveTenantPermissionsAction $permissions) {}
+    public function __construct(private ResolveTenantPermissionsAction $permissions, private ScopeVisibleClientsAction $visibility) {}
 
     private function access(Request $request, string $clientId, bool $write = false): array
     {
@@ -26,14 +26,7 @@ class ClientDocumentController extends Controller
         abort_unless($tenant instanceof Tenant, 403);
         $member = $this->permissions->membership($request->user(), $tenant);
         abort_unless($member && $this->permissions->allows($request->user(), $tenant, $write ? TenantPermission::UpdateClients : TenantPermission::ViewClients), 403);
-        $client = Client::query()->where('tenant_id', $tenant->id)->findOrFail($clientId);
-        if (! in_array($member->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
-            abort_unless(
-                DB::table('client_sellers')->where('tenant_id', $tenant->id)->where('client_id', $client->id)
-                    ->where('tenant_user_id', $member->id)->whereNull('ended_at')->exists(),
-                403
-            );
-        }
+        $client = $this->visibility->findOrFail($tenant->id, $request->user()->id, $clientId);
         return [$tenant, $member, $client];
     }
 
