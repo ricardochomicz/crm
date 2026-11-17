@@ -71,6 +71,7 @@ use App\Http\Controllers\Tenant\Management\ListTenantsController;
 use App\Http\Controllers\Tenant\Management\SelectTenantController;
 use App\Http\Controllers\Tenant\Management\ShowActiveTenantController;
 use App\Http\Controllers\Tenant\Management\StoreTenantController;
+use App\Http\Controllers\Tenant\Management\TenantOnboardingController;
 use App\Http\Controllers\Tenant\Management\UpdateTenantController;
 use App\Http\Controllers\Tenant\Management\UpdateTenantLogoController;
 use App\Http\Controllers\Tenant\Members\ListTenantMembersController;
@@ -238,6 +239,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->whereUuid('tenantId')
             ->middleware('tenant.active')
             ->group(function (): void {
+                Route::get('/onboarding', [TenantOnboardingController::class, 'show']);
+                Route::post('/onboarding/complete', [TenantOnboardingController::class, 'complete'])->middleware('subscription.writable');
+
                 Route::get('/', ShowActiveTenantController::class)
                     ->name('tenants.show');
 
