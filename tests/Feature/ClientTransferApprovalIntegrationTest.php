@@ -13,7 +13,6 @@ use App\Models\TenantUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -103,8 +102,6 @@ class ClientTransferApprovalIntegrationTest extends TestCase
             'review_note' => 'Decisão registrada para teste de integração',
         ]);
         $request->attributes->set('active_tenant', $tenant);
-        $request->setContainer(app());
-        $request->setRedirector(app('redirect'));
         $request->setUserResolver(fn () => $reviewer->user);
 
         return app(ClientTransferController::class)->review(
