@@ -6,6 +6,7 @@ use App\Actions\Commercial\CaptureOrderRenewalSnapshotAction;
 use App\Actions\Commercial\CompleteOrderAction;
 use App\Actions\Commercial\ActivateOrderItemsAction;
 use App\Actions\Client\ListClientContractRenewalsAction;
+use App\Actions\Client\ListContractPortfolioAction;
 use App\Enums\OrderStatusCode;
 use App\Models\OrderStatus;
 use App\Models\Subscription;
@@ -196,7 +197,7 @@ class OrderRenewalSnapshotTest extends TestCase
                 'tenant_id' => $tenant->id, 'client_id' => $client->id,
                 'operator_id' => $operator->id, 'classification_id' => $classification->id,
             ]);
-            ClassificationRenewalRule::query()->create([
+            $rule = ClassificationRenewalRule::query()->create([
                 'tenant_id' => $tenant->id, 'classification_id' => $classification->id,
                 'minimum_months' => 18, 'valid_from' => '2026-01-01',
                 'is_active' => true,
@@ -225,6 +226,25 @@ class OrderRenewalSnapshotTest extends TestCase
             $this->assertSame(18, $completed->renewal_months_snapshot);
             $this->assertSame('2028-04-30', $completed->renewal_date_snapshot->toDateString());
             $this->assertNotNull($completed->renewal_snapshot_at);
+
+            $rule->update(['minimum_months' => 24, 'is_active' => false]);
+            $portfolio = app(ListContractPortfolioAction::class)->execute(
+                $tenant->id, $user->id, ['renewal_state' => 'available']
+            );
+            $this->assertSame(1, $portfolio->total());
+            $contract = $portfolio->items()[0];
+            $this->assertSame($order->id, $contract['order_id']);
+            $this->assertSame('2026-10-31', $contract['average_activation_date']);
+            $this->assertSame(18, $contract['renewal_months']);
+            $this->assertSame('2028-04-30', $contract['renewal_date']);
+
+            $otherTenant = Tenant::factory()->create();
+            $otherUser = User::factory()->create();
+            $otherTenant->users()->attach($otherUser, ['role' => 'OWNER', 'status' => 'ACTIVE']);
+            $otherPortfolio = app(ListContractPortfolioAction::class)->execute(
+                $otherTenant->id, $otherUser->id, ['renewal_state' => 'available']
+            );
+            $this->assertSame(0, $otherPortfolio->total());
         } finally {
             CarbonImmutable::setTestNow();
         }
