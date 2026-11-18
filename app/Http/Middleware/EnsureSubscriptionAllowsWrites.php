@@ -32,7 +32,7 @@ class EnsureSubscriptionAllowsWrites
         // before operational access is enabled. Other writes remain protected.
         $initialClassificationSetup = $tenant->onboarding_completed_at === null
             && $subscription !== null
-            && $request->is('api/tenants/*/operator-classifications*')
+            && preg_match('~(?:^|/)tenants/[^/]+/operator-classifications(?:/[^/]+(?:/renewal-rules(?:/[^/]+)?)?)?$~', $request->path()) === 1
             && in_array($request->method(), ['POST', 'PATCH'], true)
             && app(ResolveTenantPermissionsAction::class)->membership($request->user(), $tenant)?->role === TenantUserRole::Owner;
 
