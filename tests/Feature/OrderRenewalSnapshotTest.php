@@ -3,6 +3,11 @@
 namespace Tests\Feature;
 
 use App\Actions\Commercial\CaptureOrderRenewalSnapshotAction;
+use App\Actions\Commercial\CompleteOrderAction;
+use App\Enums\OrderStatusCode;
+use App\Models\OrderStatus;
+use App\Models\Subscription;
+use App\Models\User;
 use App\Models\Client;
 use App\Models\ClientOperatorClassification;
 use App\Models\ClassificationRenewalRule;
@@ -18,6 +23,66 @@ use Database\Factories\ProductFactory;
 class OrderRenewalSnapshotTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    public function test_administrative_completion_captures_renewal_snapshot(): void
+    {
+        CarbonImmutable::setTestNow('2026-11-18 12:00:00');
+
+        try {
+            $tenant = Tenant::factory()->create();
+            $user = User::factory()->create();
+            $tenant->users()->attach($user, ['role' => 'OWNER', 'status' => 'ACTIVE']);
+            Subscription::factory()->for($tenant)->trialing()->create();
+            $operator = Operator::factory()->create();
+            $product = ProductFactory::new()->create([
+                'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+            ]);
+            $client = Client::query()->create([
+                'tenant_id' => $tenant->id, 'person_type' => 'PJ',
+                'document' => '12345678000195', 'company_name' => 'Cliente integração',
+                'is_active' => true,
+            ]);
+            $classification = OperatorClassification::query()->create([
+                'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+                'code' => 'INTEGRATION', 'name' => 'Integração', 'is_active' => true,
+            ]);
+            ClientOperatorClassification::query()->create([
+                'tenant_id' => $tenant->id, 'client_id' => $client->id,
+                'operator_id' => $operator->id, 'classification_id' => $classification->id,
+            ]);
+            ClassificationRenewalRule::query()->create([
+                'tenant_id' => $tenant->id, 'classification_id' => $classification->id,
+                'minimum_months' => 18, 'valid_from' => '2026-01-01',
+                'is_active' => true,
+            ]);
+            OrderStatus::query()->create([
+                'name' => 'Concluído', 'code' => OrderStatusCode::Completed->value,
+                'is_initial' => false,
+            ]);
+            $order = CommercialOrder::query()->create([
+                'tenant_id' => $tenant->id, 'client_id' => $client->id,
+                'operator_id' => $operator->id, 'product_id' => $product->id,
+                'code' => 'SNAP-COMPLETE', 'order_type' => 'PORTABILITY',
+                'customer_name' => 'Cliente', 'monthly_amount' => 100,
+                'line_quantity' => 1, 'sold_on' => '2026-10-01',
+            ]);
+            $order->items()->create([
+                'product_id' => $product->id, 'description' => 'Linha',
+                'quantity' => 1, 'monthly_unit_amount' => 100,
+                'status' => 'ACTIVE', 'activated_at' => '2026-10-31',
+            ]);
+
+            app(CompleteOrderAction::class)->execute($tenant, $user, $order->id);
+
+            $completed = $order->fresh();
+            $this->assertNotNull($completed->administratively_completed_at);
+            $this->assertSame(18, $completed->renewal_months_snapshot);
+            $this->assertSame('2028-04-30', $completed->renewal_date_snapshot->toDateString());
+            $this->assertNotNull($completed->renewal_snapshot_at);
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    }
 
     public function test_missing_rule_does_not_invent_renewal_conditions(): void
     {
