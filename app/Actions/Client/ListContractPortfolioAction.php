@@ -142,6 +142,17 @@ class ListContractPortfolioAction
                 'status' => ! $valid ? 'classification_required' : ($rule ? 'activation_data_required' : 'rule_required'),
             ];
 
+            if ($order->renewal_snapshot_at !== null && $order->renewal_months_snapshot > 0 && $order->renewal_date_snapshot !== null) {
+                $days = (int) $today->diffInDays($order->renewal_date_snapshot, false);
+
+                return array_merge($row, [
+                    'renewal_months' => $order->renewal_months_snapshot,
+                    'renewal_date' => $order->renewal_date_snapshot->toDateString(),
+                    'days_until_renewal' => $days,
+                    'status' => $days < 0 ? 'overdue' : ($days <= 90 ? 'upcoming' : 'waiting'),
+                ]);
+            }
+
             if (! $rule || $order->items->isEmpty() || $order->items->contains(
                 fn ($item) => $item->status !== 'ACTIVE' || ! $item->activated_at || $item->quantity < 1
             )) {
