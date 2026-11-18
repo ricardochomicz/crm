@@ -61,8 +61,14 @@ class TimelineAction {
         if ($type === 'client') {
             $canViewOpportunities = $this->permissions->allows($user, $tenant, TenantPermission::ViewOpportunities);
             $canViewAll = $member && in_array($member->role, [TenantUserRole::Owner, TenantUserRole::Manager], true);
+            $canViewOrders = $this->permissions->allows($user, $tenant, TenantPermission::ViewOrders);
+            $visibleOrderIds = $canViewOrders
+                ? $this->orders->apply(CommercialOrder::query(), $tenant, $user)
+                    ->whereHas('opportunity', fn (Builder $orderOpportunity) => $orderOpportunity->where('client_id', $id))
+                    ->select('id')
+                : null;
 
-            $query->where(function (Builder $query) use ($tenant, $id, $memberId, $canViewOpportunities, $canViewAll): void {
+            $query->where(function (Builder $query) use ($tenant, $id, $memberId, $canViewOpportunities, $canViewAll, $visibleOrderIds): void {
                 $query->where(function (Builder $direct) use ($id): void {
                     $direct->where('commentable_type', 'client')->where('commentable_id', $id);
                 });
@@ -79,14 +85,13 @@ class TimelineAction {
                             ->whereIn('commentable_id', $opportunityIds);
                     });
 
-                    $orderIds = CommercialOrder::query()
-                        ->where('tenant_id', $tenant->id)
-                        ->whereIn('opportunity_id', $opportunityIds)
-                        ->select('id');
 
-                    $query->orWhere(function (Builder $related) use ($orderIds): void {
+                }
+
+                if ($visibleOrderIds !== null) {
+                    $query->orWhere(function (Builder $related) use ($visibleOrderIds): void {
                         $related->where('commentable_type', 'commercial_order')
-                            ->whereIn('commentable_id', $orderIds);
+                            ->whereIn('commentable_id', $visibleOrderIds);
                     });
                 }
             });
