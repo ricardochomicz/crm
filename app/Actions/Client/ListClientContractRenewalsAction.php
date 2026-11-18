@@ -68,6 +68,16 @@ class ListClientContractRenewalsAction
 
             $result['classification_id'] = $classificationId;
 
+            if ($order->renewal_snapshot_at !== null && $order->renewal_months_snapshot > 0 && $order->renewal_date_snapshot !== null) {
+                $days = (int) CarbonImmutable::today()->diffInDays($order->renewal_date_snapshot, false);
+                return array_merge($result, [
+                    'renewal_months' => $order->renewal_months_snapshot,
+                    'renewal_date' => $order->renewal_date_snapshot->toDateString(),
+                    'days_until_renewal' => $days,
+                    'status' => $days < 0 ? 'overdue' : ($days <= 90 ? 'upcoming' : 'waiting'),
+                ]);
+            }
+
             if (! $rule) {
                 $result['status'] = 'rule_required';
 
