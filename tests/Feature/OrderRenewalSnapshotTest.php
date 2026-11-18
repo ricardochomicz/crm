@@ -7,6 +7,8 @@ use App\Actions\Commercial\CompleteOrderAction;
 use App\Actions\Commercial\ActivateOrderItemsAction;
 use App\Actions\Client\ListClientContractRenewalsAction;
 use App\Actions\Client\ListContractPortfolioAction;
+use App\Actions\Client\RenewHistoricalOrderAction;
+use Illuminate\Validation\ValidationException;
 use App\Enums\OrderStatusCode;
 use App\Models\OrderStatus;
 use App\Models\Subscription;
@@ -245,6 +247,22 @@ class OrderRenewalSnapshotTest extends TestCase
                 $otherTenant->id, $otherUser->id, ['renewal_state' => 'available']
             );
             $this->assertSame(0, $otherPortfolio->total());
+
+            // The original frozen date is still in the future, even though its rule was disabled.
+            try {
+                app(RenewHistoricalOrderAction::class)->execute(
+                    $tenant, $user, $order->id, [$order->items()->firstOrFail()->id]
+                );
+                $this->fail('A renovação antecipada deveria ser bloqueada pelo snapshot.');
+            } catch (ValidationException $exception) {
+                $this->assertSame(
+                    'Este pedido ainda não está vencido.',
+                    $exception->errors()['order'][0] ?? null
+                );
+            }
+            $this->assertDatabaseMissing('contract_renewal_opportunities', [
+                'tenant_id' => $tenant->id, 'source_order_id' => $order->id,
+            ]);
         } finally {
             CarbonImmutable::setTestNow();
         }
