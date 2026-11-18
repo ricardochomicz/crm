@@ -253,7 +253,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/support-tickets', [SupportTicketController::class, 'index']);
                 Route::post('/support-tickets', [SupportTicketController::class, 'store'])->middleware('throttle:10,1');
                 Route::get('/onboarding', [TenantOnboardingController::class, 'show']);
-                Route::post('/onboarding/complete', [TenantOnboardingController::class, 'complete'])->middleware('subscription.writable');
+                Route::post('/onboarding/complete', [TenantOnboardingController::class, 'complete']);
 
                 Route::get('/', ShowActiveTenantController::class)
                     ->name('tenants.show');
