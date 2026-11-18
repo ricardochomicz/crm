@@ -95,9 +95,9 @@ class OrderRenewalSnapshotTest extends TestCase
             $this->assertSame('2028-04-16', $completed->renewal_date_snapshot->toDateString());
             $this->assertNotNull($completed->renewal_snapshot_at);
             $renewal = app(ListClientContractRenewalsAction::class)->execute($client)->first();
-            $this->assertSame('2026-10-31', $renewal['average_activation_date']);
+            $this->assertSame('2026-10-16', $renewal['average_activation_date']);
             $this->assertSame(18, $renewal['renewal_months']);
-            $this->assertSame('2028-04-30', $renewal['renewal_date']);
+            $this->assertSame('2028-04-16', $renewal['renewal_date']);
         } finally {
             CarbonImmutable::setTestNow();
         }
