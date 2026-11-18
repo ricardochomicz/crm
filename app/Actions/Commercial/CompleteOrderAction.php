@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class CompleteOrderAction
 {
-    public function __construct(private ResolveTenantPermissionsAction $permissions, private ScopeVisibleCommercialOrdersAction $scope) {}
+    public function __construct(private ResolveTenantPermissionsAction $permissions, private ScopeVisibleCommercialOrdersAction $scope, private CaptureOrderRenewalSnapshotAction $renewalSnapshot) {}
 
     public function execute(Tenant $tenant, User $user, string $orderId): CommercialOrder
     {
@@ -46,6 +46,8 @@ class CompleteOrderAction
                 'order_status_id' => $status->id,
                 'administratively_completed_at' => now(),
             ]);
+
+            $this->renewalSnapshot->execute($order, $items);
 
             Comment::create([
                 'tenant_id' => $tenant->id,
