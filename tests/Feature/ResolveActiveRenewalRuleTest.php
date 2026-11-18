@@ -87,4 +87,30 @@ class ResolveActiveRenewalRuleTest extends TestCase
             $resolver->query($tenant->id, $today)->pluck('classification_id')->all()
         );
     }
+    public function test_rule_is_effective_only_within_its_dates_and_while_active(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $operator = Operator::factory()->create();
+        $classification = OperatorClassification::query()->create([
+            'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+            'code' => 'OURO', 'name' => 'Ouro', 'is_active' => true,
+        ]);
+        $rule = ClassificationRenewalRule::query()->create([
+            'tenant_id' => $tenant->id,
+            'classification_id' => $classification->id,
+            'minimum_months' => 18,
+            'valid_from' => '2026-03-01',
+            'valid_until' => '2026-09-30',
+            'is_active' => true,
+        ]);
+
+        $resolver = app(ResolveActiveRenewalRuleAction::class);
+        $this->assertNull($resolver->execute($tenant->id, $classification->id, CarbonImmutable::parse('2026-02-28')));
+        $this->assertSame($rule->id, $resolver->execute($tenant->id, $classification->id, CarbonImmutable::parse('2026-03-01'))?->id);
+        $this->assertSame($rule->id, $resolver->execute($tenant->id, $classification->id, CarbonImmutable::parse('2026-09-30'))?->id);
+        $this->assertNull($resolver->execute($tenant->id, $classification->id, CarbonImmutable::parse('2026-10-01')));
+
+        $rule->update(['is_active' => false]);
+        $this->assertNull($resolver->execute($tenant->id, $classification->id, CarbonImmutable::parse('2026-06-01')));
+    }
 }
