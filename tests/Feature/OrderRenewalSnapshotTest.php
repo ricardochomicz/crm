@@ -19,6 +19,69 @@ class OrderRenewalSnapshotTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    public function test_missing_rule_does_not_invent_renewal_conditions(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $operator = Operator::factory()->create();
+        $product = ProductFactory::new()->create([
+            'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+        ]);
+        $client = Client::query()->create([
+            'tenant_id' => $tenant->id,
+            'person_type' => 'PJ',
+            'document' => '12345678000195',
+            'company_name' => 'Cliente sem regra',
+            'is_active' => true,
+        ]);
+        $order = CommercialOrder::query()->create([
+            'tenant_id' => $tenant->id, 'client_id' => $client->id,
+            'operator_id' => $operator->id, 'product_id' => $product->id,
+            'code' => 'SNAP-NO-RULE', 'order_type' => 'PORTABILITY',
+            'customer_name' => 'Cliente', 'monthly_amount' => 100,
+            'line_quantity' => 1, 'sold_on' => '2026-10-01',
+        ]);
+        $item = $order->items()->create([
+            'product_id' => $product->id, 'description' => 'Linha',
+            'quantity' => 1, 'monthly_unit_amount' => 100,
+            'status' => 'ACTIVE', 'activated_at' => '2026-10-31',
+        ]);
+
+        app(CaptureOrderRenewalSnapshotAction::class)->execute($order, collect([$item]));
+
+        $this->assertNull($order->fresh()->renewal_snapshot_at);
+        $this->assertNull($order->fresh()->renewal_months_snapshot);
+        $this->assertNull($order->fresh()->renewal_date_snapshot);
+    }
+
+    public function test_incomplete_activation_does_not_capture_renewal(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $operator = Operator::factory()->create();
+        $product = ProductFactory::new()->create([
+            'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+        ]);
+        $client = Client::query()->create([
+            'tenant_id' => $tenant->id, 'person_type' => 'PJ',
+            'document' => '12345678000195', 'company_name' => 'Cliente parcial',
+            'is_active' => true,
+        ]);
+        $order = CommercialOrder::query()->create([
+            'tenant_id' => $tenant->id, 'client_id' => $client->id,
+            'operator_id' => $operator->id, 'product_id' => $product->id,
+            'code' => 'SNAP-PARTIAL', 'order_type' => 'PORTABILITY',
+            'customer_name' => 'Cliente', 'monthly_amount' => 100,
+            'line_quantity' => 1, 'sold_on' => '2026-10-01',
+        ]);
+        $pending = $order->items()->create([
+            'product_id' => $product->id, 'description' => 'Linha',
+            'quantity' => 1, 'monthly_unit_amount' => 100, 'status' => 'PENDING',
+        ]);
+
+        app(CaptureOrderRenewalSnapshotAction::class)->execute($order, collect([$pending]));
+
+        $this->assertNull($order->fresh()->renewal_snapshot_at);
+    }
+
     public function test_completed_order_keeps_original_term_after_rule_change(): void
     {
         CarbonImmutable::setTestNow('2026-11-18 12:00:00');
