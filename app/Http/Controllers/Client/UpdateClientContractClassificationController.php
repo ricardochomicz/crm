@@ -49,7 +49,7 @@ class UpdateClientContractClassificationController extends Controller
                 ->whereKey($data['classification_id'])
                 ->where('operator_id', $order->operator_id)
                 ->where('is_active', true)
-                ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id))
+                ->where('tenant_id', $tenant->id)
                 ->first();
 
             if (! $classification) {
