@@ -28,8 +28,6 @@ class RedistributeClientPortfolioAction
             'Somente proprietários e gerentes podem redistribuir carteiras.'
         );
 
-        abort_unless($tenant->subscription?->allowsOperationalWrites(), 403);
-
         return $actor;
     }
 
@@ -79,6 +77,7 @@ class RedistributeClientPortfolioAction
     public function execute(Tenant $tenant, int $userId, array $data): array
     {
         $this->authorize($tenant, $userId);
+        abort_unless($tenant->subscription?->allowsOperationalWrites(), 403, 'A assinatura não permite redistribuições neste momento.');
 
         return DB::transaction(function () use ($tenant, $userId, $data): array {
             $source = TenantUser::query()->where('tenant_id', $tenant->id)
