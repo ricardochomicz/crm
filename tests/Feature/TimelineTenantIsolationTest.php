@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Timeline\TimelineAction;
+use App\Models\Attachment;
 use App\Models\Client;
 use App\Models\Comment;
 use App\Models\Tenant;
@@ -10,6 +11,7 @@ use App\Models\TenantUser;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TimelineTenantIsolationTest extends TestCase
@@ -68,6 +70,71 @@ class TimelineTenantIsolationTest extends TestCase
         $this->expectException(ModelNotFoundException::class);
 
         app(TimelineAction::class)->comment($tenant, $owner->user, $foreignComment->id);
+    }
+
+    public function test_owner_cannot_download_attachment_from_another_tenant(): void
+    {
+        Storage::fake('local');
+
+        $tenant = Tenant::factory()->create();
+        $otherTenant = Tenant::factory()->create();
+        $owner = $this->owner($tenant);
+        $foreignOwner = $this->owner($otherTenant);
+        $foreignClient = $this->client($otherTenant, '12345678934');
+        $comment = Comment::query()->create([
+            'tenant_id' => $otherTenant->id,
+            'tenant_user_id' => $foreignOwner->id,
+            'commentable_type' => 'client',
+            'commentable_id' => $foreignClient->id,
+            'content' => 'Arquivo privado',
+        ]);
+        $path = 'tenants/'.$otherTenant->id.'/comments/'.$comment->id.'/private.txt';
+        Storage::disk('local')->put($path, 'Conteúdo confidencial');
+        $attachment = Attachment::query()->create([
+            'tenant_id' => $otherTenant->id,
+            'tenant_user_id' => $foreignOwner->id,
+            'comment_id' => $comment->id,
+            'original_name' => 'private.txt',
+            'storage_path' => $path,
+            'mime_type' => 'text/plain',
+            'size_bytes' => 21,
+        ]);
+
+        $this->expectException(ModelNotFoundException::class);
+
+        app(TimelineAction::class)->download($tenant, $owner->user, $attachment->id);
+    }
+
+    public function test_owner_can_download_attachment_from_own_client_timeline(): void
+    {
+        Storage::fake('local');
+
+        $tenant = Tenant::factory()->create();
+        $owner = $this->owner($tenant);
+        $client = $this->client($tenant, '12345678935');
+        $comment = Comment::query()->create([
+            'tenant_id' => $tenant->id,
+            'tenant_user_id' => $owner->id,
+            'commentable_type' => 'client',
+            'commentable_id' => $client->id,
+            'content' => 'Documento autorizado',
+        ]);
+        $path = 'tenants/'.$tenant->id.'/comments/'.$comment->id.'/document.txt';
+        Storage::disk('local')->put($path, 'Documento de teste');
+        $attachment = Attachment::query()->create([
+            'tenant_id' => $tenant->id,
+            'tenant_user_id' => $owner->id,
+            'comment_id' => $comment->id,
+            'original_name' => 'document.txt',
+            'storage_path' => $path,
+            'mime_type' => 'text/plain',
+            'size_bytes' => 18,
+        ]);
+
+        $response = app(TimelineAction::class)->download($tenant, $owner->user, $attachment->id);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertStringContainsString('document.txt', $response->headers->get('content-disposition'));
     }
 
     public function test_owner_can_read_own_tenants_client_timeline(): void
