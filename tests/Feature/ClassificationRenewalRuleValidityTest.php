@@ -88,4 +88,25 @@ class ClassificationRenewalRuleValidityTest extends TestCase
             'minimum_months' => 0,
         ]);
     }
+    public function test_fractional_renewal_term_is_rejected(): void
+    {
+        $classification = $this->classification();
+
+        $this->expectException(ValidationException::class);
+        app(SaveRenewalRuleAction::class)->execute($classification->tenant_id, $classification->id, [
+            ...$this->data('2026-01-01', null),
+            'minimum_months' => 1.5,
+        ]);
+    }
+
+    public function test_term_above_maximum_is_rejected(): void
+    {
+        $classification = $this->classification();
+
+        $this->expectException(ValidationException::class);
+        app(SaveRenewalRuleAction::class)->execute($classification->tenant_id, $classification->id, [
+            ...$this->data('2026-01-01', null),
+            'minimum_months' => 1201,
+        ]);
+    }
 }
