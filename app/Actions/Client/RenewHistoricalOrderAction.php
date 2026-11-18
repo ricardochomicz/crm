@@ -93,6 +93,7 @@ class RenewHistoricalOrderAction
                 'client_id' => $client->id,
                 'operator_id' => $order->operator_id,
                 'order_type_id' => $type->id,
+                'status' => 'open',
                 'source' => 'contract_renewal',
                 'description' => 'Renovação originada do pedido ' . $order->code . '.',
                 'items' => $items,
