@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\Commercial\CaptureOrderRenewalSnapshotAction;
 use App\Actions\Commercial\CompleteOrderAction;
+use App\Actions\Commercial\ActivateOrderItemsAction;
 use App\Enums\OrderStatusCode;
 use App\Models\OrderStatus;
 use App\Models\Subscription;
@@ -23,6 +24,79 @@ use Database\Factories\ProductFactory;
 class OrderRenewalSnapshotTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    public function test_partial_activation_captures_snapshot_only_after_last_line(): void
+    {
+        CarbonImmutable::setTestNow('2026-11-18 12:00:00');
+
+        try {
+            $tenant = Tenant::factory()->create();
+            $user = User::factory()->create();
+            $tenant->users()->attach($user, ['role' => 'OWNER', 'status' => 'ACTIVE']);
+            Subscription::factory()->for($tenant)->trialing()->create();
+            $operator = Operator::factory()->create();
+            $product = ProductFactory::new()->create([
+                'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+            ]);
+            $client = Client::query()->create([
+                'tenant_id' => $tenant->id, 'person_type' => 'PJ',
+                'document' => '12345678000195', 'company_name' => 'Cliente parcial',
+                'is_active' => true,
+            ]);
+            $classification = OperatorClassification::query()->create([
+                'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+                'code' => 'PARTIAL-SNAPSHOT', 'name' => 'Parcial', 'is_active' => true,
+            ]);
+            ClientOperatorClassification::query()->create([
+                'tenant_id' => $tenant->id, 'client_id' => $client->id,
+                'operator_id' => $operator->id, 'classification_id' => $classification->id,
+            ]);
+            ClassificationRenewalRule::query()->create([
+                'tenant_id' => $tenant->id, 'classification_id' => $classification->id,
+                'minimum_months' => 18, 'valid_from' => '2026-01-01',
+                'is_active' => true,
+            ]);
+            foreach ([
+                ['name' => 'Parcialmente ativado', 'code' => OrderStatusCode::PartiallyActivated->value],
+                ['name' => 'Concluído', 'code' => OrderStatusCode::Completed->value],
+            ] as $status) {
+                OrderStatus::query()->create([...$status, 'is_initial' => false]);
+            }
+            $order = CommercialOrder::query()->create([
+                'tenant_id' => $tenant->id, 'client_id' => $client->id,
+                'operator_id' => $operator->id, 'product_id' => $product->id,
+                'code' => 'SNAP-PARTIAL-FLOW', 'order_type' => 'PORTABILITY',
+                'customer_name' => 'Cliente', 'monthly_amount' => 200,
+                'line_quantity' => 2, 'sold_on' => '2026-10-01',
+            ]);
+            $first = $order->items()->create([
+                'product_id' => $product->id, 'description' => 'Linha 1',
+                'quantity' => 1, 'monthly_unit_amount' => 100, 'status' => 'PENDING',
+            ]);
+            $last = $order->items()->create([
+                'product_id' => $product->id, 'description' => 'Linha 2',
+                'quantity' => 1, 'monthly_unit_amount' => 100, 'status' => 'PENDING',
+            ]);
+
+            $activate = app(ActivateOrderItemsAction::class);
+            $activate->execute($tenant, $user, $order->id, [
+                'item_ids' => [$first->id], 'activated_at' => '2026-10-01',
+            ]);
+            $this->assertNull($order->fresh()->administratively_completed_at);
+            $this->assertNull($order->fresh()->renewal_snapshot_at);
+
+            $activate->execute($tenant, $user, $order->id, [
+                'item_ids' => [$last->id], 'activated_at' => '2026-10-31',
+            ]);
+            $completed = $order->fresh();
+            $this->assertNotNull($completed->administratively_completed_at);
+            $this->assertSame(18, $completed->renewal_months_snapshot);
+            $this->assertSame('2028-04-16', $completed->renewal_date_snapshot->toDateString());
+            $this->assertNotNull($completed->renewal_snapshot_at);
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    }
 
     public function test_administrative_completion_captures_renewal_snapshot(): void
     {
