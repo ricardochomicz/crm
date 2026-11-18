@@ -199,7 +199,7 @@ class OrderRenewalSnapshotTest extends TestCase
                 'tenant_id' => $tenant->id,
                 'client_id' => $client->id,
                 'tenant_user_id' => $membership->id,
-                'assigned_by' => $membership->id,
+                'assigned_by' => $user->id,
                 'started_at' => now(),
             ]);
             $classification = OperatorClassification::query()->create([
