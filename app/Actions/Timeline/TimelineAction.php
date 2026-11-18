@@ -40,7 +40,8 @@ class TimelineAction {
             default => $models[$type]::query()->where('tenant_id', $tenant->id)->findOrFail($id),
         };
         if ($type === 'opportunity' && !in_array($member->role, [TenantUserRole::Owner, TenantUserRole::Manager], true)) {
-            abort_unless($subject->tenant_user_id === $member->id, 403);
+            $visibleMembershipIds = $write ? [$member->id] : $this->orders->membershipIds($tenant, $user);
+            abort_unless(in_array($subject->tenant_user_id, $visibleMembershipIds, true), 403);
         }
     }
 
@@ -60,7 +61,7 @@ class TimelineAction {
 
         if ($type === 'client') {
             $canViewOpportunities = $this->permissions->allows($user, $tenant, TenantPermission::ViewOpportunities);
-            $canViewAll = $member && in_array($member->role, [TenantUserRole::Owner, TenantUserRole::Manager], true);
+            $visibleOpportunityMemberIds = $this->orders->membershipIds($tenant, $user);
             $canViewOrders = $this->permissions->allows($user, $tenant, TenantPermission::ViewOrders);
             $visibleOrderIds = $canViewOrders
                 ? $this->orders->apply(CommercialOrder::query(), $tenant, $user)
@@ -68,7 +69,7 @@ class TimelineAction {
                     ->select('id')
                 : null;
 
-            $query->where(function (Builder $query) use ($tenant, $id, $memberId, $canViewOpportunities, $canViewAll, $visibleOrderIds): void {
+            $query->where(function (Builder $query) use ($tenant, $id, $canViewOpportunities, $visibleOpportunityMemberIds, $visibleOrderIds): void {
                 $query->where(function (Builder $direct) use ($id): void {
                     $direct->where('commentable_type', 'client')->where('commentable_id', $id);
                 });
@@ -77,7 +78,7 @@ class TimelineAction {
                     $opportunityIds = Opportunity::query()
                         ->where('tenant_id', $tenant->id)
                         ->where('client_id', $id)
-                        ->when(!$canViewAll, fn (Builder $query) => $query->where('tenant_user_id', $memberId))
+                        ->when($visibleOpportunityMemberIds !== null, fn (Builder $query) => $query->whereIn('tenant_user_id', $visibleOpportunityMemberIds))
                         ->select('id');
 
                     $query->orWhere(function (Builder $related) use ($opportunityIds): void {
