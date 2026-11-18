@@ -58,7 +58,12 @@ class ListClientContractRenewalsAction
 
             if ($order->renewal_snapshot_at !== null && $order->renewal_months_snapshot > 0 && $order->renewal_date_snapshot !== null) {
                 $days = (int) CarbonImmutable::today()->diffInDays($order->renewal_date_snapshot, false);
+                $activation = $order->items->isNotEmpty() && ! $order->items->contains(
+                    fn ($item) => $item->status !== 'ACTIVE' || ! $item->activated_at || $item->quantity < 1
+                ) ? $this->calculator->execute($order->items, $order->renewal_months_snapshot) : null;
+
                 return array_merge($result, [
+                    'average_activation_date' => $activation['average_activation_date'] ?? null,
                     'renewal_months' => $order->renewal_months_snapshot,
                     'renewal_date' => $order->renewal_date_snapshot->toDateString(),
                     'days_until_renewal' => $days,
