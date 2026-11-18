@@ -7,7 +7,6 @@ use App\Models\Client;
 use App\Models\CommercialOrder;
 use App\Models\OrderType;
 use App\Models\ClientOperatorClassification;
-use App\Models\ClassificationRenewalRule;
 use Carbon\CarbonImmutable;
 use App\Models\Opportunity;
 use App\Models\Tenant;
@@ -21,6 +20,7 @@ class RenewHistoricalOrderAction
         private ScopeVisibleClientsAction $visibility,
         private OpportunityAction $opportunities,
         private CalculateContractRenewalAction $calculator,
+        private ResolveActiveRenewalRuleAction $rules,
     ) {}
 
     public function execute(Tenant $tenant, User $user, string $orderId, array $lineIds): Opportunity
@@ -36,11 +36,7 @@ class RenewHistoricalOrderAction
             $classificationId = ClientOperatorClassification::query()->where('tenant_id', $tenant->id)
                 ->where('client_id', $client->id)->where('operator_id', $order->operator_id)->value('classification_id');
             $today = CarbonImmutable::today();
-            $rule = ClassificationRenewalRule::query()->where('classification_id', $classificationId)
-                ->where(fn ($q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id))
-                ->where('is_active', true)->whereDate('valid_from', '<=', $today->toDateString())
-                ->where(fn ($q) => $q->whereNull('valid_until')->orWhereDate('valid_until', '>=', $today->toDateString()))
-                ->orderByRaw('CASE WHEN tenant_id IS NULL THEN 1 ELSE 0 END')->orderByDesc('valid_from')->first();
+            $rule = $this->rules->execute($tenant->id, $classificationId ? (int) $classificationId : null, $today);
             if (! $rule || $order->items->isEmpty() || $order->items->contains(
                 fn ($item) => $item->status !== 'ACTIVE' || ! $item->activated_at || $item->quantity < 1
             )) throw ValidationException::withMessages(['order' => 'O pedido não possui dados completos para calcular a renovação.']);
