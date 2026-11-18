@@ -4,14 +4,16 @@ namespace App\Actions\Client;
 
 use App\Models\Client;
 use App\Models\CommercialOrder;
-use App\Models\ClassificationRenewalRule;
 use App\Models\OperatorClassification;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 class ListClientContractRenewalsAction
 {
-    public function __construct(private CalculateContractRenewalAction $calculator) {}
+    public function __construct(
+        private CalculateContractRenewalAction $calculator,
+        private ResolveActiveRenewalRuleAction $rules,
+    ) {}
 
     /**
      * Cada pedido concluído representa um contrato integral independente.
@@ -57,24 +59,12 @@ class ListClientContractRenewalsAction
             if (! $classificationId || ! OperatorClassification::query()
                 ->whereKey($classificationId)
                 ->where('operator_id', $order->operator_id)
-                ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $client->tenant_id))
+                ->where('tenant_id', $client->tenant_id)
                 ->exists()) {
                 return $result;
             }
 
-            $rule = ClassificationRenewalRule::query()
-                ->where('classification_id', $classificationId)
-                ->where(function ($query) use ($client) {
-                    $query->where('tenant_id', $client->tenant_id)->orWhereNull('tenant_id');
-                })
-                ->where('is_active', true)
-                ->whereDate('valid_from', '<=', CarbonImmutable::today()->toDateString())
-                ->where(function ($query) {
-                    $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', CarbonImmutable::today()->toDateString());
-                })
-                ->orderByRaw('CASE WHEN tenant_id IS NULL THEN 1 ELSE 0 END')
-                ->orderByDesc('valid_from')
-                ->first();
+            $rule = $this->rules->execute($client->tenant_id, (int) $classificationId, CarbonImmutable::today());
 
             $result['classification_id'] = $classificationId;
 
