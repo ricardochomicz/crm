@@ -21,6 +21,7 @@ class ResolveActiveRenewalRuleAction
             ->whereIn('classification_id', OperatorClassification::query()
                 ->select('id')->where('tenant_id', $tenantId))
             ->where('is_active', true)
+            ->whereBetween('minimum_months', [1, 1200])
             ->whereDate('valid_from', '<=', $date->toDateString())
             ->where(fn (Builder $query) => $query->whereNull('valid_until')
                 ->orWhereDate('valid_until', '>=', $date->toDateString()))
