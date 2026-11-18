@@ -22,7 +22,7 @@ class ClientOperatorClassificationController extends Controller
         $data = $request->validate([
             'classification_id' => ['required', 'integer', Rule::exists('operator_classifications', 'id')
                 ->where('operator_id', $operatorId)
-                ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id))],
+                ->where('tenant_id', $tenant->id)],
         ]);
         DB::transaction(function () use ($tenant, $client, $operatorId, $data, $request) {
             $assignment = ClientOperatorClassification::query()->where('tenant_id', $tenant->id)
