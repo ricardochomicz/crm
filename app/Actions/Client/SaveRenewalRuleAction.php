@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 class SaveRenewalRuleAction {
  public function execute(?string $tenantId,int $classificationId,array $data,?string $ruleId=null):ClassificationRenewalRule {
-  $classification=OperatorClassification::where(fn($q)=>$q->whereNull('tenant_id')->orWhere('tenant_id',$tenantId))->findOrFail($classificationId);
+  $classification=OperatorClassification::where('tenant_id',$tenantId)->findOrFail($classificationId);
   if($tenantId===null && $classification->tenant_id!==null)abort(403);
   // A classificação global ou da empresa já foi validada acima. O vínculo
   // em tenant_operators não deve impedir o cadastro de sua regra de renovação.
