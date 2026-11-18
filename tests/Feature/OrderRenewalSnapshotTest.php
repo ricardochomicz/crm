@@ -11,6 +11,7 @@ use App\Actions\Client\RenewHistoricalOrderAction;
 use Illuminate\Validation\ValidationException;
 use App\Enums\OrderStatusCode;
 use App\Models\OrderStatus;
+use App\Models\OrderType;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Models\Client;
@@ -263,6 +264,34 @@ class OrderRenewalSnapshotTest extends TestCase
             $this->assertDatabaseMissing('contract_renewal_opportunities', [
                 'tenant_id' => $tenant->id, 'source_order_id' => $order->id,
             ]);
+
+            OrderType::query()->create(['name' => 'Renovação', 'is_active' => true]);
+            CarbonImmutable::setTestNow('2028-05-01 12:00:00');
+            $renewalAction = app(RenewHistoricalOrderAction::class);
+            $lineIds = [$order->items()->firstOrFail()->id];
+            $opportunity = $renewalAction->execute($tenant, $user, $order->id, $lineIds);
+            $this->assertSame($tenant->id, $opportunity->tenant_id);
+            $this->assertSame($client->id, $opportunity->client_id);
+            $this->assertSame('open', $opportunity->status);
+            $this->assertDatabaseHas('contract_renewal_opportunities', [
+                'tenant_id' => $tenant->id,
+                'source_order_id' => $order->id,
+                'opportunity_id' => $opportunity->id,
+            ]);
+
+            try {
+                $renewalAction->execute($tenant, $user, $order->id, $lineIds);
+                $this->fail('Uma segunda renovação em aberto deveria ser bloqueada.');
+            } catch (ValidationException $exception) {
+                $this->assertSame(
+                    'Já existe uma renovação em andamento ou concluída para este pedido.',
+                    $exception->errors()['order'][0] ?? null
+                );
+            }
+            $this->assertSame(1, \Illuminate\Support\Facades\DB::table('contract_renewal_opportunities')
+                ->where('tenant_id', $tenant->id)
+                ->where('source_order_id', $order->id)
+                ->count());
         } finally {
             CarbonImmutable::setTestNow();
         }
