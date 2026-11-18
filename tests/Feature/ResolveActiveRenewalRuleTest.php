@@ -113,4 +113,28 @@ class ResolveActiveRenewalRuleTest extends TestCase
         $rule->update(['is_active' => false]);
         $this->assertNull($resolver->execute($tenant->id, $classification->id, CarbonImmutable::parse('2026-06-01')));
     }
+    public function test_invalid_legacy_term_is_ignored_without_crashing_renewal_calculation(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $operator = Operator::factory()->create();
+        $classification = OperatorClassification::query()->create([
+            'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+            'code' => 'LEGACY', 'name' => 'Legada', 'is_active' => true,
+        ]);
+        $rule = ClassificationRenewalRule::query()->create([
+            'tenant_id' => $tenant->id, 'classification_id' => $classification->id,
+            'minimum_months' => 0, 'valid_from' => '2026-01-01',
+            'valid_until' => null, 'is_active' => true,
+        ]);
+        $resolver = app(ResolveActiveRenewalRuleAction::class);
+        $date = CarbonImmutable::parse('2026-11-18');
+
+        $this->assertNull($resolver->execute($tenant->id, $classification->id, $date));
+
+        $rule->update(['minimum_months' => 1201]);
+        $this->assertNull($resolver->execute($tenant->id, $classification->id, $date));
+
+        $rule->update(['minimum_months' => 18]);
+        $this->assertSame($rule->id, $resolver->execute($tenant->id, $classification->id, $date)?->id);
+    }
 }
