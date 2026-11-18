@@ -26,6 +26,73 @@ class OrderRenewalSnapshotTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    public function test_legacy_order_without_snapshot_uses_current_rule_and_is_tenant_scoped(): void
+    {
+        CarbonImmutable::setTestNow('2026-11-18 12:00:00');
+
+        try {
+            $tenant = Tenant::factory()->create();
+            $otherTenant = Tenant::factory()->create();
+            $operator = Operator::factory()->create();
+            $product = ProductFactory::new()->create([
+                'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+            ]);
+            $client = Client::query()->create([
+                'tenant_id' => $tenant->id, 'person_type' => 'PJ',
+                'document' => '12345678000195', 'company_name' => 'Cliente legado',
+                'is_active' => true,
+            ]);
+            $otherClient = Client::query()->create([
+                'tenant_id' => $otherTenant->id, 'person_type' => 'PJ',
+                'document' => '12345678000195', 'company_name' => 'Outra empresa',
+                'is_active' => true,
+            ]);
+            $classification = OperatorClassification::query()->create([
+                'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+                'code' => 'LEGACY-TEST', 'name' => 'Legado', 'is_active' => true,
+            ]);
+            ClientOperatorClassification::query()->create([
+                'tenant_id' => $tenant->id, 'client_id' => $client->id,
+                'operator_id' => $operator->id, 'classification_id' => $classification->id,
+            ]);
+            $rule = ClassificationRenewalRule::query()->create([
+                'tenant_id' => $tenant->id, 'classification_id' => $classification->id,
+                'minimum_months' => 18, 'valid_from' => '2026-01-01',
+                'is_active' => true,
+            ]);
+            $order = CommercialOrder::query()->create([
+                'tenant_id' => $tenant->id, 'client_id' => null,
+                'customer_document' => $client->document,
+                'operator_id' => $operator->id, 'product_id' => $product->id,
+                'code' => 'LEGACY-RENEWAL', 'order_type' => 'PORTABILITY',
+                'customer_name' => 'Cliente legado', 'monthly_amount' => 100,
+                'line_quantity' => 1, 'sold_on' => '2026-10-01',
+                'administratively_completed_at' => '2026-11-01 12:00:00',
+            ]);
+            $order->items()->create([
+                'product_id' => $product->id, 'description' => 'Linha',
+                'quantity' => 1, 'monthly_unit_amount' => 100,
+                'status' => 'ACTIVE', 'activated_at' => '2026-10-31',
+            ]);
+
+            $this->assertNull($order->fresh()->renewal_snapshot_at);
+            $renewals = app(ListClientContractRenewalsAction::class);
+            $original = $renewals->execute($client)->first();
+            $this->assertSame($order->id, $original['order_id']);
+            $this->assertSame(18, $original['renewal_months']);
+            $this->assertSame('2028-04-30', $original['renewal_date']);
+            $this->assertTrue($renewals->execute($otherClient)->isEmpty());
+
+            $rule->update(['minimum_months' => 24]);
+            $updated = $renewals->execute($client)->first();
+            $this->assertSame(24, $updated['renewal_months']);
+            $this->assertSame('2028-10-31', $updated['renewal_date']);
+            $this->assertNull($order->fresh()->renewal_snapshot_at);
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    }
+
     public function test_partial_activation_captures_snapshot_only_after_last_line(): void
     {
         CarbonImmutable::setTestNow('2026-11-18 12:00:00');
