@@ -78,4 +78,14 @@ class ClassificationRenewalRuleValidityTest extends TestCase
             $this->data('2026-12-01', '2026-01-01')
         );
     }
+    public function test_zero_month_renewal_rule_is_rejected_before_persistence(): void
+    {
+        $classification = $this->classification();
+
+        $this->expectException(ValidationException::class);
+        app(SaveRenewalRuleAction::class)->execute($classification->tenant_id, $classification->id, [
+            ...$this->data('2026-01-01', null),
+            'minimum_months' => 0,
+        ]);
+    }
 }
