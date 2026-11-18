@@ -25,7 +25,13 @@ class OrderRenewalSnapshotTest extends TestCase
         try {
             $tenant = Tenant::factory()->create();
             $operator = Operator::factory()->create();
-            $client = Client::factory()->create(['tenant_id' => $tenant->id]);
+            $client = Client::query()->create([
+                'tenant_id' => $tenant->id,
+                'person_type' => 'PJ',
+                'document' => '12345678000195',
+                'company_name' => 'Cliente de teste',
+                'is_active' => true,
+            ]);
             $classification = OperatorClassification::query()->create([
                 'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
                 'code' => 'GOLD', 'name' => 'Gold', 'is_active' => true,
