@@ -335,6 +335,22 @@ class OrderRenewalSnapshotTest extends TestCase
             }
 
             CarbonImmutable::setTestNow('2028-11-01 12:00:00');
+            $rule->update(['is_active' => false]);
+            try {
+                $renewalAction->execute($tenant, $user, $legacy->id, [$legacyLine->id]);
+                $this->fail('Pedido legado sem regra ativa não deveria gerar oportunidade.');
+            } catch (ValidationException $exception) {
+                $this->assertSame(
+                    'O pedido não possui regra de renovação vigente.',
+                    $exception->errors()['order'][0] ?? null
+                );
+            }
+            $this->assertDatabaseMissing('contract_renewal_opportunities', [
+                'tenant_id' => $tenant->id,
+                'source_order_id' => $legacy->id,
+            ]);
+
+            $rule->update(['is_active' => true]);
             $legacyOpportunity = $renewalAction->execute(
                 $tenant, $user, $legacy->id, [$legacyLine->id]
             );
@@ -345,6 +361,14 @@ class OrderRenewalSnapshotTest extends TestCase
                 'opportunity_id' => $legacyOpportunity->id,
             ]);
             $this->assertNull($legacy->fresh()->renewal_snapshot_at);
+
+            // An unrelated company cannot renew another tenant's order.
+            try {
+                $renewalAction->execute($otherTenant, $otherUser, $legacy->id, [$legacyLine->id]);
+                $this->fail('Pedido de outra empresa não deveria ser acessível.');
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $exception) {
+                $this->assertSame(CommercialOrder::class, $exception->getModel());
+            }
         } finally {
             CarbonImmutable::setTestNow();
         }
