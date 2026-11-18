@@ -84,8 +84,6 @@ class TimelineAction {
                         $related->where('commentable_type', 'opportunity')
                             ->whereIn('commentable_id', $opportunityIds);
                     });
-
-
                 }
 
                 if ($visibleOrderIds !== null) {
