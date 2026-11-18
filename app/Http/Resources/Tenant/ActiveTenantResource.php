@@ -21,6 +21,7 @@ class ActiveTenantResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'timezone' => $this->timezone,
+            'onboarding_completed_at' => $this->onboarding_completed_at?->toIso8601String(),
             'logo_url' => $this->logo ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->logo) : null,
             'access' => $this->access,
         ];
