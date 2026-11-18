@@ -20,6 +20,7 @@ class ActivateOrderItemsAction
         private ResolveTenantPermissionsAction $permissions,
         private CaptureOrderCommissionsAction $commissions,
         private ScopeVisibleCommercialOrdersAction $scope,
+        private CaptureOrderRenewalSnapshotAction $renewalSnapshot,
     ) {}
 
     public function execute(Tenant $tenant, User $user, string $orderId, array $data): CommercialOrder
@@ -75,6 +76,10 @@ class ActivateOrderItemsAction
                 'activated_at' => $remaining === 0 ? $data['activated_at'] : null,
                 'administratively_completed_at' => $remaining === 0 ? now() : null,
             ]);
+
+            if ($remaining === 0) {
+                $this->renewalSnapshot->execute($order, $items->map(fn ($item) => $item->refresh()));
+            }
 
             Comment::create([
                 'tenant_id' => $tenant->id,
