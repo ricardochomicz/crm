@@ -3,6 +3,7 @@
 namespace App\Actions\Client;
 
 use App\Models\ClassificationRenewalRule;
+use App\Models\OperatorClassification;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -17,6 +18,8 @@ class ResolveActiveRenewalRuleAction
     {
         return ClassificationRenewalRule::query()
             ->where('tenant_id', $tenantId)
+            ->whereIn('classification_id', OperatorClassification::query()
+                ->select('id')->where('tenant_id', $tenantId))
             ->where('is_active', true)
             ->whereDate('valid_from', '<=', $date->toDateString())
             ->where(fn (Builder $query) => $query->whereNull('valid_until')
