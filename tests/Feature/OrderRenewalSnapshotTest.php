@@ -302,6 +302,49 @@ class OrderRenewalSnapshotTest extends TestCase
                 ->where('tenant_id', $tenant->id)
                 ->where('source_order_id', $order->id)
                 ->count());
+
+            // Legacy completed orders have no frozen term and use the current active rule.
+            $rule->update(['is_active' => true]);
+            $legacy = CommercialOrder::query()->create([
+                'tenant_id' => $tenant->id, 'client_id' => $client->id,
+                'operator_id' => $operator->id, 'product_id' => $product->id,
+                'code' => 'LEGACY-RENEWAL-FLOW', 'order_type' => 'PORTABILITY',
+                'customer_name' => 'Cliente', 'monthly_amount' => 100,
+                'line_quantity' => 1, 'sold_on' => '2026-10-01',
+                'administratively_completed_at' => '2026-11-01 12:00:00',
+            ]);
+            $legacyLine = $legacy->items()->create([
+                'product_id' => $product->id, 'description' => 'Linha legada',
+                'quantity' => 1, 'monthly_unit_amount' => 100,
+                'status' => 'ACTIVE', 'activated_at' => '2026-10-31',
+            ]);
+            $this->assertNull($legacy->fresh()->renewal_snapshot_at);
+            $legacyRenewal = app(ListClientContractRenewalsAction::class)
+                ->execute($client)->firstWhere('order_id', $legacy->id);
+            $this->assertSame(24, $legacyRenewal['renewal_months']);
+            $this->assertSame('2028-10-31', $legacyRenewal['renewal_date']);
+
+            try {
+                $renewalAction->execute($tenant, $user, $legacy->id, [$legacyLine->id]);
+                $this->fail('O pedido legado ainda não está vencido segundo a regra vigente.');
+            } catch (ValidationException $exception) {
+                $this->assertSame(
+                    'Este pedido ainda não está vencido.',
+                    $exception->errors()['order'][0] ?? null
+                );
+            }
+
+            CarbonImmutable::setTestNow('2028-11-01 12:00:00');
+            $legacyOpportunity = $renewalAction->execute(
+                $tenant, $user, $legacy->id, [$legacyLine->id]
+            );
+            $this->assertSame('open', $legacyOpportunity->status);
+            $this->assertDatabaseHas('contract_renewal_opportunities', [
+                'tenant_id' => $tenant->id,
+                'source_order_id' => $legacy->id,
+                'opportunity_id' => $legacyOpportunity->id,
+            ]);
+            $this->assertNull($legacy->fresh()->renewal_snapshot_at);
         } finally {
             CarbonImmutable::setTestNow();
         }
