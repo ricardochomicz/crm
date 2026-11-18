@@ -184,6 +184,7 @@ class OrderRenewalSnapshotTest extends TestCase
             $tenant->users()->attach($user, ['role' => 'OWNER', 'status' => 'ACTIVE']);
             Subscription::factory()->for($tenant)->trialing()->create();
             $operator = Operator::factory()->create();
+            $tenant->operators()->attach($operator->id);
             $product = ProductFactory::new()->create([
                 'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
             ]);
