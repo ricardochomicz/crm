@@ -43,7 +43,7 @@ class SaveClientRequest extends FormRequest {
     $tenant=$this->attributes->get('active_tenant');
     $valid=OperatorClassification::whereKey($data['classification_id'])
      ->where('operator_id',$data['operator_id']??null)
-     ->where(fn($q)=>$q->whereNull('tenant_id')->orWhere('tenant_id',$tenant->id))
+     ->where('tenant_id',$tenant->id)
      ->exists();
     if (!$valid) $validator->errors()->add('classification_id','Classificação não pertence à operadora ou à empresa.');
    }
