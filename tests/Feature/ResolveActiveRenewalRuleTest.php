@@ -46,4 +46,45 @@ class ResolveActiveRenewalRuleTest extends TestCase
         $this->assertSame($current->id, $resolver->execute($tenant->id, $classification->id, CarbonImmutable::parse('2026-11-18'))?->id);
         $this->assertNull($resolver->execute($tenant->id, null, CarbonImmutable::parse('2026-11-18')));
     }
+    public function test_rejects_legacy_rule_when_classification_belongs_to_another_scope(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $other = Tenant::factory()->create();
+        $operator = Operator::factory()->create();
+
+        $global = OperatorClassification::query()->create([
+            'tenant_id' => null, 'operator_id' => $operator->id,
+            'code' => 'GLOBAL', 'name' => 'Global', 'is_active' => true,
+        ]);
+        $foreign = OperatorClassification::query()->create([
+            'tenant_id' => $other->id, 'operator_id' => $operator->id,
+            'code' => 'FOREIGN', 'name' => 'Outra empresa', 'is_active' => true,
+        ]);
+        $owned = OperatorClassification::query()->create([
+            'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
+            'code' => 'OWN', 'name' => 'Própria', 'is_active' => true,
+        ]);
+
+        foreach ([$global, $foreign, $owned] as $classification) {
+            ClassificationRenewalRule::query()->create([
+                'tenant_id' => $tenant->id,
+                'classification_id' => $classification->id,
+                'minimum_months' => 18,
+                'valid_from' => '2026-01-01',
+                'valid_until' => null,
+                'is_active' => true,
+            ]);
+        }
+
+        $resolver = app(ResolveActiveRenewalRuleAction::class);
+        $today = CarbonImmutable::parse('2026-11-18');
+
+        $this->assertNull($resolver->execute($tenant->id, $global->id, $today));
+        $this->assertNull($resolver->execute($tenant->id, $foreign->id, $today));
+        $this->assertNotNull($resolver->execute($tenant->id, $owned->id, $today));
+        $this->assertSame(
+            [$owned->id],
+            $resolver->query($tenant->id, $today)->pluck('classification_id')->all()
+        );
+    }
 }
