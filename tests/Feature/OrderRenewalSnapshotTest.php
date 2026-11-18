@@ -13,6 +13,7 @@ use App\Models\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
+use Database\Factories\ProductFactory;
 
 class OrderRenewalSnapshotTest extends TestCase
 {
@@ -25,6 +26,10 @@ class OrderRenewalSnapshotTest extends TestCase
         try {
             $tenant = Tenant::factory()->create();
             $operator = Operator::factory()->create();
+            $product = ProductFactory::new()->create([
+                'tenant_id' => $tenant->id,
+                'operator_id' => $operator->id,
+            ]);
             $client = Client::query()->create([
                 'tenant_id' => $tenant->id,
                 'person_type' => 'PJ',
@@ -47,12 +52,13 @@ class OrderRenewalSnapshotTest extends TestCase
             ]);
             $order = CommercialOrder::query()->create([
                 'tenant_id' => $tenant->id, 'client_id' => $client->id,
-                'operator_id' => $operator->id, 'code' => 'SNAP-001',
+                'operator_id' => $operator->id, 'product_id' => $product->id, 'code' => 'SNAP-001',
                 'order_type' => 'PORTABILITY', 'customer_name' => 'Cliente',
                 'monthly_amount' => 100, 'line_quantity' => 1,
                 'sold_on' => '2026-10-01',
             ]);
             $item = $order->items()->create([
+                'product_id' => $product->id,
                 'description' => 'Linha', 'quantity' => 1,
                 'monthly_unit_amount' => 100, 'status' => 'ACTIVE',
                 'activated_at' => '2026-10-31',
