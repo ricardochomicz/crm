@@ -15,6 +15,7 @@ use App\Models\OrderType;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Models\Client;
+use App\Models\ClientSeller;
 use App\Models\ClientOperatorClassification;
 use App\Models\ClassificationRenewalRule;
 use App\Models\CommercialOrder;
@@ -192,6 +193,14 @@ class OrderRenewalSnapshotTest extends TestCase
                 'tenant_id' => $tenant->id, 'person_type' => 'PJ',
                 'document' => '12345678000195', 'company_name' => 'Cliente integração',
                 'is_active' => true,
+            ]);
+            $membership = $tenant->users()->whereKey($user->id)->firstOrFail()->membership;
+            ClientSeller::query()->create([
+                'tenant_id' => $tenant->id,
+                'client_id' => $client->id,
+                'tenant_user_id' => $membership->id,
+                'assigned_by' => $membership->id,
+                'started_at' => now(),
             ]);
             $classification = OperatorClassification::query()->create([
                 'tenant_id' => $tenant->id, 'operator_id' => $operator->id,
