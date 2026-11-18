@@ -5,7 +5,6 @@ namespace App\Actions\Client;
 use App\Models\Client;
 use App\Models\ClientOperatorClassification;
 use App\Models\CommercialOrder;
-use App\Models\ClassificationRenewalRule;
 use App\Models\OperatorClassification;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -17,6 +16,7 @@ class ListContractPortfolioAction
     public function __construct(
         private ScopeVisibleClientsAction $visibility,
         private CalculateContractRenewalAction $calculator,
+        private ResolveActiveRenewalRuleAction $ruleResolver,
     ) {}
 
     /** @param array<string, mixed> $filters */
@@ -103,19 +103,13 @@ class ListContractPortfolioAction
 
         $classifications = OperatorClassification::query()
             ->whereIn('id', $classificationIds)
-            ->where(fn (Builder $q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenantId))
+            ->where('tenant_id', $tenantId)
             ->get()->keyBy('id');
 
         $today = CarbonImmutable::today();
-        $rules = ClassificationRenewalRule::query()
+        $rules = $this->ruleResolver->query($tenantId, $today)
             ->whereIn('classification_id', $classifications->keys())
-            ->where(fn (Builder $q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenantId))
-            ->where('is_active', true)
-            ->whereDate('valid_from', '<=', $today->toDateString())
-            ->where(fn (Builder $q) => $q->whereNull('valid_until')->orWhereDate('valid_until', '>=', $today->toDateString()))
             ->get()
-            ->sortByDesc('valid_from')
-            ->sortBy(fn ($rule) => $rule->tenant_id === null ? 1 : 0)
             ->groupBy('classification_id');
 
         $paginator->setCollection($orders->map(function (CommercialOrder $order) use ($legacyClients, $assignments, $classifications, $rules, $today, $renewals): array {
